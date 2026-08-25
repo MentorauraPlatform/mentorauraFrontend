@@ -6,6 +6,8 @@
  * to the NestJS API and renders what comes back.
  */
 
+import type { MentorProfile, UserSkill } from '../types';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type ApiResponse<T> = {
@@ -63,4 +65,66 @@ export const apiClient = {
 
   delete: <T>(path: string, token?: string) =>
     request<T>(path, { method: 'DELETE' }, token),
+};
+
+// ── Mentor Onboarding ─────────────────────────────────────────────────────────
+
+export interface CreateMentorProfilePayload {
+  fullName: string;
+  title: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise?: string[];
+}
+
+export interface UpdateMentorProfilePayload {
+  title?: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise?: string[];
+}
+
+export interface AddSkillPayload {
+  skillId: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+}
+
+export interface UpdateSkillPayload {
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+}
+
+export interface UpdateAvailabilityPayload {
+  availability: Record<string, unknown>;
+}
+
+export interface SubmitOnboardingPayload {
+  confirmed: boolean;
+}
+
+export const mentorApi = {
+  createProfile: (token: string, data: CreateMentorProfilePayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications', data, token),
+
+  getMyProfile: (token: string) =>
+    apiClient.get<MentorProfile>('/mentor/applications/me', token),
+
+  updateProfile: (token: string, data: UpdateMentorProfilePayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me', data, token),
+
+  addSkill: (token: string, data: AddSkillPayload) =>
+    apiClient.post<UserSkill>('/mentor/applications/me/skills', data, token),
+
+  updateSkill: (token: string, skillId: string, data: UpdateSkillPayload) =>
+    apiClient.patch<UserSkill>(`/mentor/applications/me/skills/${skillId}`, data, token),
+
+  removeSkill: (token: string, skillId: string) =>
+    apiClient.delete<{ message: string }>(`/mentor/applications/me/skills/${skillId}`, token),
+
+  updateAvailability: (token: string, data: UpdateAvailabilityPayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me/availability', data, token),
+
+  submitOnboarding: (token: string, data: SubmitOnboardingPayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications/me/submit', data, token),
 };

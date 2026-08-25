@@ -21,23 +21,53 @@ export interface AuthTokens {
 }
 
 // ── Mentor ────────────────────────────────────────────────────────────────────
-export type ApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
+export type OnboardingStatus = 'INCOMPLETE' | 'PENDING' | 'COMPLETE';
 export type MentorStatus = 'draft' | 'active' | 'suspended' | 'deactivated';
+
+export interface UserSkill {
+  id: string;
+  userId: string;
+  skillId: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface MentorProfile {
   id: string;
   userId: string;
-  displayName: string;
-  headline: string;
-  bio: string;
-  avatarUrl: string;
-  categories: Category[];
-  skills: Skill[];
-  languages: Language[];
-  status: MentorStatus;
-  averageRating: number;
-  totalReviews: number;
+  fullName: string;
+  title: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise: string[];
+  availability?: Record<string, unknown>;
+  onboardingStatus: OnboardingStatus;
+  isVerified: boolean;
   createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    userSkills: UserSkill[];
+  };
+}
+
+// ── Skills ────────────────────────────────────────────────────────────────────
+export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+
+export interface Skill {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ── Marketplace ───────────────────────────────────────────────────────────────
@@ -62,17 +92,6 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-}
-
-export interface Language {
-  id: string;
-  name: string;
-  code: string;
 }
 
 // ── Mentorship ────────────────────────────────────────────────────────────────
