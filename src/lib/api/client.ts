@@ -27,11 +27,7 @@ export type ApiError = {
   error?: string;
 };
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  accessToken?: string,
-): Promise<ApiResponse<T>> {
+async function request<T>(path: string, options: RequestInit = {}, accessToken?: string): Promise<ApiResponse<T>> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -52,6 +48,29 @@ async function request<T>(
   }
 
   return res.json() as Promise<ApiResponse<T>>;
+}
+
+async function rawRequest<T>(path: string, options: RequestInit = {}, accessToken?: string): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...options.headers,
+  };
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const err: ApiError = await res.json().catch(() => ({
+      statusCode: res.status,
+      message: res.statusText,
+    }));
+    throw err;
+  }
+
+  return res.json() as Promise<T>;
 }
 
 // ── Convenience wrappers ──────────────────────────────────────────────────────
@@ -93,16 +112,16 @@ export interface RefreshTokenPayload {
 
 export const authApi = {
   register: (data: RegisterPayload) =>
-    apiClient.post<RegisterResponse>('/auth/register', data),
+    rawRequest<RegisterResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
   login: (data: LoginPayload) =>
-    apiClient.post<LoginResponse>('/auth/login', data),
+    rawRequest<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
 
   refreshToken: (data: RefreshTokenPayload) =>
-    apiClient.post<RefreshTokenResponse>('/auth/refresh', data),
+    rawRequest<RefreshTokenResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify(data) }),
 
   getMe: (token: string) =>
-    apiClient.get<MeResponse>('/auth/me', token),
+    rawRequest<MeResponse>('/auth/me', { method: 'GET' }, token),
 };
 
 // ── Mentor Onboarding ─────────────────────────────────────────────────────────
