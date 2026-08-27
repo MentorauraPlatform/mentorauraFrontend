@@ -18,6 +18,73 @@ export interface AuthUser {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  tokenType: string;
+  expiresIn: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+  tokens: AuthTokens;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    fullName: string;
+    avatarUrl: string | null;
+  };
+  tokens: AuthTokens;
+}
+
+export interface RefreshTokenResponse {
+  message: string;
+  tokens: AuthTokens;
+}
+
+export interface MenteeProfile {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  headline: string | null;
+  goals: string | null;
+  interests: string[];
+}
+
+export interface MentorProfileSummary {
+  id: string;
+  fullName: string;
+  title: string;
+  company: string | null;
+  bio: string | null;
+  isVerified: boolean;
+}
+
+export interface UserSkillSummary {
+  id: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  menteeProfile: MenteeProfile | null;
+  mentorProfile: MentorProfileSummary | null;
+  userSkills: UserSkillSummary[];
 }
 
 // ── Mentor ────────────────────────────────────────────────────────────────────

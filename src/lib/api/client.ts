@@ -7,6 +7,12 @@
  */
 
 import type { MentorProfile, UserSkill } from '../types';
+import type {
+  RegisterResponse,
+  LoginResponse,
+  RefreshTokenResponse,
+  MeResponse,
+} from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
@@ -65,6 +71,38 @@ export const apiClient = {
 
   delete: <T>(path: string, token?: string) =>
     request<T>(path, { method: 'DELETE' }, token),
+};
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  fullName: string;
+  role?: 'MENTEE' | 'MENTOR';
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RefreshTokenPayload {
+  refreshToken: string;
+}
+
+export const authApi = {
+  register: (data: RegisterPayload) =>
+    apiClient.post<RegisterResponse>('/auth/register', data),
+
+  login: (data: LoginPayload) =>
+    apiClient.post<LoginResponse>('/auth/login', data),
+
+  refreshToken: (data: RefreshTokenPayload) =>
+    apiClient.post<RefreshTokenResponse>('/auth/refresh', data),
+
+  getMe: (token: string) =>
+    apiClient.get<MeResponse>('/auth/me', token),
 };
 
 // ── Mentor Onboarding ─────────────────────────────────────────────────────────
