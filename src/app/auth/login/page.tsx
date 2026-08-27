@@ -24,7 +24,9 @@ export default function LoginPage() {
       const { accessToken, refreshToken } = res.tokens;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      toast.success('Welcome back');
+      toast.success('Welcome back', {
+        className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+      });
       if (res.user.role === 'MENTOR') {
         window.location.href = '/mentor/onboarding';
       } else {
@@ -54,7 +56,7 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div className="w-full max-w-[26rem]">
+      <div className="w-full max-w-[32rem]">
         <div className="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(16,27,51,0.15)] border border-[#E2E5EB] overflow-hidden">
           {/* Header - Same as Register */}
           <div className="bg-[#101B33] px-8 pt-10 pb-8 text-center">

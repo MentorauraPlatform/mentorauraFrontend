@@ -71,10 +71,10 @@ export default function MentorOnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [skillSearch, setSkillSearch] = useState('');
   const [selectedSkillId, setSelectedSkillId] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel>('BEGINNER');
   const [saving, setSaving] = useState(false);
+  const [rawAreas, setRawAreas] = useState('');
   const tokenRef = useRef<string | null>(null);
 
   const initializeData = useCallback(async (token: string) => {
@@ -106,6 +106,7 @@ export default function MentorOnboardingPage() {
           })),
           availability: (existing.availability as Record<string, unknown>) || initialData.availability,
         });
+        setRawAreas((existing.areasOfExpertise || []).join(', '));
         if (existing.onboardingStatus === 'COMPLETE' || existing.onboardingStatus === 'PENDING') {
           setCurrentStep(7);
         }
@@ -131,6 +132,17 @@ export default function MentorOnboardingPage() {
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const parseAreas = (value: string) =>
+    value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+  const syncAreasFromRaw = () => {
+    const areas = parseAreas(rawAreas);
+    updateData({ areasOfExpertise: areas });
   };
 
   const nextStep = () => {
@@ -181,8 +193,9 @@ export default function MentorOnboardingPage() {
         }));
       }
       setSelectedSkillId('');
-      setSkillSearch('');
-      toast.success('Skill added');
+      toast.success('Skill added', {
+  className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+});
     } catch (err: unknown) {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to add skill');
@@ -201,7 +214,9 @@ export default function MentorOnboardingPage() {
         ...prev,
         skills: prev.skills.filter((s) => s.id !== skillId),
       }));
-      toast.success('Skill removed');
+      toast.success('Skill removed', {
+  className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+});
     } catch (err: unknown) {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to remove skill');
@@ -220,7 +235,9 @@ export default function MentorOnboardingPage() {
         ...prev,
         skills: prev.skills.map((s) => (s.id === skillId ? { ...s, level } : s)),
       }));
-      toast.success('Skill level updated');
+      toast.success('Skill level updated', {
+  className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+});
     } catch (err: unknown) {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to update skill level');
@@ -235,7 +252,9 @@ export default function MentorOnboardingPage() {
       setSaving(true);
       setError(null);
       await mentorApi.updateAvailability(tokenRef.current, { availability: data.availability });
-      toast.success('Availability saved');
+      toast.success('Availability saved', {
+  className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+});
     } catch (err: unknown) {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to update availability');
@@ -269,7 +288,9 @@ export default function MentorOnboardingPage() {
       }
       await mentorApi.updateAvailability(tokenRef.current, { availability: data.availability });
       await mentorApi.submitOnboarding(tokenRef.current, { confirmed: true });
-      toast.success('Onboarding submitted for review');
+      toast.success('Onboarding submitted for review', {
+  className: 'bg-[#E8F5EE] text-[#14532D] border border-[#2F9E68] [&_[data-sonner-toast-icon]]:text-[#2F9E68]',
+});
       setCurrentStep(7);
     } catch (err: unknown) {
       const apiError = err as { message?: string };
@@ -279,7 +300,6 @@ export default function MentorOnboardingPage() {
     }
   };
 
-  const filteredSkills = skills.filter((s) => s.name.toLowerCase().includes(skillSearch.toLowerCase()));
   const visibleSteps = STEPS.filter((s) => s.id <= 6);
 
   const inputClass =
@@ -423,7 +443,7 @@ export default function MentorOnboardingPage() {
                     <select
                       value={skill.level}
                       onChange={(e) => handleUpdateSkillLevel(skill.id, e.target.value as SkillLevel)}
-                      className="border border-[#E2E5EB] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                      className="border border-[#E2E5EB] rounded-lg px-3 py-2 text-sm bg-white text-[#12172B] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
                     >
                       <option value="BEGINNER">Beginner</option>
                       <option value="INTERMEDIATE">Intermediate</option>
@@ -444,7 +464,7 @@ export default function MentorOnboardingPage() {
               ))}
               {data.skills.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-[#E2E5EB] rounded-xl">
-                  <p className="text-[#9AA1B0]">No skills added yet. Search and add skills below.</p>
+                  <p className="text-[#9AA1B0]">No skills added yet. Select a skill below.</p>
                 </div>
               )}
             </div>
@@ -452,37 +472,22 @@ export default function MentorOnboardingPage() {
             <div className="border-t border-[#E2E5EB] pt-6">
               <label className={labelClass}>Add a skill</label>
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={skillSearch}
-                    onChange={(e) => setSkillSearch(e.target.value)}
-                    className={inputClass}
-                    placeholder="Search skills..."
-                  />
-                  {filteredSkills.length > 0 && skillSearch && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-[#E2E5EB] rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredSkills.map((skill) => (
-                        <button
-                          key={skill.id}
-                          onClick={() => {
-                            setSelectedSkillId(skill.id);
-                            setSkillSearch('');
-                          }}
-                          className={`block w-full text-left px-4 py-3 hover:bg-[#F5F6F8] transition-colors ${
-                            selectedSkillId === skill.id ? 'bg-[#E8A33D]/10' : ''
-                          }`}
-                        >
-                          <span className="font-medium text-[#12172B]">{skill.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <select
+                  value={selectedSkillId}
+                  onChange={(e) => setSelectedSkillId(e.target.value)}
+                  className="border border-[#E2E5EB] rounded-lg px-4 py-2 bg-white text-[#12172B] placeholder:text-[#9AA1B0] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                >
+                  <option value="">Select a skill</option>
+                  {skills.map((skill) => (
+                    <option key={skill.id} value={skill.id} className="text-[#12172B]">
+                      {skill.name}
+                    </option>
+                  ))}
+                </select>
                 <select
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
-                  className="border border-[#E2E5EB] rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                  className="border border-[#E2E5EB] rounded-lg px-4 py-2 bg-white text-[#12172B] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
                 >
                   <option value="BEGINNER">Beginner</option>
                   <option value="INTERMEDIATE">Intermediate</option>
@@ -533,15 +538,15 @@ export default function MentorOnboardingPage() {
                 <label className={labelClass}>Areas of expertise</label>
                 <input
                   type="text"
-                  value={data.areasOfExpertise.join(', ')}
-                  onChange={(e) =>
-                    updateData({
-                      areasOfExpertise: e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
+                  value={rawAreas}
+                  onChange={(e) => setRawAreas(e.target.value)}
+                  onBlur={syncAreasFromRaw}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      syncAreasFromRaw();
+                    }
+                  }}
                   className={inputClass}
                   placeholder="Software Engineering, Leadership, Career Growth"
                 />
@@ -611,15 +616,15 @@ export default function MentorOnboardingPage() {
                           <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#101B33] text-[#E8A33D] text-xs font-semibold flex items-center justify-center">
                             {DAY_LABELS[slot.day] || slot.day.slice(0, 3)}
                           </span>
-                          <select
-                            value={slot.day}
-                            onChange={(e) => {
-                              const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                              newSlots[index] = { ...newSlots[index], day: e.target.value };
-                              updateData({ availability: { ...data.availability, slots: newSlots } });
-                            }}
-                            className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
-                          >
+                           <select
+                             value={slot.day}
+                             onChange={(e) => {
+                               const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
+                               newSlots[index] = { ...newSlots[index], day: e.target.value };
+                               updateData({ availability: { ...data.availability, slots: newSlots } });
+                             }}
+                             className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white text-[#12172B] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                           >
                             <option value="MONDAY">Monday</option>
                             <option value="TUESDAY">Tuesday</option>
                             <option value="WEDNESDAY">Wednesday</option>
@@ -628,27 +633,27 @@ export default function MentorOnboardingPage() {
                             <option value="SATURDAY">Saturday</option>
                             <option value="SUNDAY">Sunday</option>
                           </select>
-                          <input
-                            type="time"
-                            value={slot.startTime}
-                            onChange={(e) => {
-                              const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                              newSlots[index] = { ...newSlots[index], startTime: e.target.value };
-                              updateData({ availability: { ...data.availability, slots: newSlots } });
-                            }}
-                            className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
-                          />
-                          <span className="text-[#9AA1B0] font-medium">to</span>
-                          <input
-                            type="time"
-                            value={slot.endTime}
-                            onChange={(e) => {
-                              const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                              newSlots[index] = { ...newSlots[index], endTime: e.target.value };
-                              updateData({ availability: { ...data.availability, slots: newSlots } });
-                            }}
-                            className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
-                          />
+                           <input
+                             type="time"
+                             value={slot.startTime}
+                             onChange={(e) => {
+                               const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
+                               newSlots[index] = { ...newSlots[index], startTime: e.target.value };
+                               updateData({ availability: { ...data.availability, slots: newSlots } });
+                             }}
+                             className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white text-[#12172B] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                           />
+                           <span className="text-[#12172B] font-medium">to</span>
+                           <input
+                             type="time"
+                             value={slot.endTime}
+                             onChange={(e) => {
+                               const newSlots = [...(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
+                               newSlots[index] = { ...newSlots[index], endTime: e.target.value };
+                               updateData({ availability: { ...data.availability, slots: newSlots } });
+                             }}
+                             className="border border-[#E2E5EB] rounded-lg px-3 py-2 bg-white text-[#12172B] focus:outline-none focus:ring-2 focus:ring-[#E8A33D]/40 focus:border-[#E8A33D]"
+                           />
                           <button
                             onClick={() => {
                               const newSlots = (data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>).filter((_, i) => i !== index);
