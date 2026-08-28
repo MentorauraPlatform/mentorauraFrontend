@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { authApi } from '@/lib/api/client';
-import type { MeResponse } from '@/lib/types';
+import { authApi, mentorApi } from '@/lib/api/client';
+import type { MeResponse, MentorProfile } from '@/lib/types';
 import Link from 'next/link';
 import { 
   FiStar, 
@@ -21,6 +21,7 @@ import {
 
 export default function HomePage() {
   const [user, setUser] = useState<MeResponse | null>(null);
+  const [mentorProfile, setMentorProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const initialized = useRef(false);
 
@@ -35,7 +36,17 @@ export default function HomePage() {
     }
 
     authApi.getMe(token)
-      .then(setUser)
+      .then(async (me) => {
+        setUser(me);
+        if (me.role === 'MENTOR') {
+          try {
+            const profile = await mentorApi.getMyProfile(token);
+            setMentorProfile(profile.data);
+          } catch {
+            setMentorProfile(null);
+          }
+        }
+      })
       .catch(() => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -46,12 +57,17 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading && user) {
       if (user.role === 'MENTOR') {
-        window.location.href = '/mentor/onboarding';
+        const status = mentorProfile?.onboardingStatus;
+        if (status === 'COMPLETE' || status === 'PENDING') {
+          window.location.href = '/mentor/dashboard';
+        } else {
+          window.location.href = '/mentor/onboarding';
+        }
       } else {
         window.location.href = '/mentee/dashboard';
       }
     }
-  }, [loading, user]);
+  }, [loading, user, mentorProfile]);
 
   if (loading) {
     return (

@@ -75,6 +75,8 @@ export default function MentorOnboardingPage() {
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel>('BEGINNER');
   const [saving, setSaving] = useState(false);
   const [rawAreas, setRawAreas] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const tokenRef = useRef<string | null>(null);
 
   const initializeData = useCallback(async (token: string) => {
@@ -123,12 +125,29 @@ export default function MentorOnboardingPage() {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
       return;
     }
+
     tokenRef.current = token;
-    initializeData(token);
+
+    queueMicrotask(() => {
+      setIsAuthenticated(true);
+      setAuthChecked(true);
+      void initializeData(token);
+    });
   }, [router, initializeData]);
+
+  if (!authChecked || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F6F8]">
+        <div className="flex items-center gap-3 text-[#5B6478]">
+          <span className="w-5 h-5 rounded-full border-2 border-[#E2E5EB] border-t-[#E8A33D] animate-spin" />
+          <span className="text-lg">Loading…</span>
+        </div>
+      </div>
+    );
+  }
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
