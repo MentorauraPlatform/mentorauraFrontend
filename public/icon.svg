@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172033"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="auraGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#FB923C"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Container -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGradient)"/>
+  
+  <!-- Subtle Aura Halo ring -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#F97316" stroke-width="12" opacity="0.25" stroke-dasharray="16 12"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#FB923C" stroke-width="6" opacity="0.4"/>
+  
+  <!-- Stylized M & Glowing Aura Peak Icon -->
+  <path d="M128 368 V 168 L 224 288 L 320 168 V 368" stroke="url(#auraGlow)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Sparkles / Aura Star -->
+  <path d="M384 144 L394 168 L418 178 L394 188 L384 212 L374 188 L350 178 L374 168 Z" fill="#F97316"/>
+</svg>
