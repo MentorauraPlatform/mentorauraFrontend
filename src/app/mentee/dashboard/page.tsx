@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi } from '@/lib/api/client';
+import { authService } from '@/services/auth.service';
 import type { MeResponse } from '@/lib/types';
 
 export default function MenteeDashboardPage() {
@@ -9,18 +9,12 @@ export default function MenteeDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      window.location.href = '/auth/login';
-      return;
-    }
-
-    authApi.getMe(token)
+    authService.getCurrentUser()
       .then(setUser)
       .catch(() => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/auth/login';
+        window.location.href = '/auth?mode=login';
       })
       .finally(() => setLoading(false));
   }, []);

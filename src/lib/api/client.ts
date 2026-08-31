@@ -121,7 +121,7 @@ export const authApi = {
     rawRequest<RefreshTokenResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify(data) }),
 
   getMe: (token: string) =>
-    rawRequest<MeResponse>('/auth/me', { method: 'GET' }, token),
+    request<MeResponse>('/auth/me', { method: 'GET' }, token),
 };
 
 // ── Mentor Onboarding ─────────────────────────────────────────────────────────

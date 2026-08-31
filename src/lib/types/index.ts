@@ -27,7 +27,7 @@ export interface RegisterResponse {
   user: {
     id: string;
     email: string;
-    role: string;
+    isMentor: boolean;
   };
   tokens: AuthTokens;
 }
@@ -37,7 +37,7 @@ export interface LoginResponse {
   user: {
     id: string;
     email: string;
-    role: string;
+    isMentor: boolean;
     fullName: string;
     avatarUrl: string | null;
   };
