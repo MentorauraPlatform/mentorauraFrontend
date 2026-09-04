@@ -302,20 +302,25 @@ export default function MentorOnboardingPage() {
   };
 
   const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
+    const previous = data.skills;
+    setData((prev) => ({
+      ...prev,
+      skills: prev.skills.map((s) => (s.id === skillId ? { ...s, level } : s)),
+    }));
     try {
       setSaving(true);
       setError(null);
       await mentorApi.updateSkill(skillId, { level });
-      setData((prev) => ({
-        ...prev,
-        skills: prev.skills.map((s) => (s.id === skillId ? { ...s, level } : s)),
-      }));
       toast.success('Skill level updated', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
       });
     } catch (err: unknown) {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to update skill level');
+      setData((prev) => ({
+        ...prev,
+        skills: previous,
+      }));
     } finally {
       setSaving(false);
     }

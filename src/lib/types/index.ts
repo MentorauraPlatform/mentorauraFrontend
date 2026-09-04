@@ -144,6 +144,9 @@ export interface UserSkill {
 }
 
 export interface MentorProfile {
+  totalMenteesServed: number;
+  avgRating: any;
+  avgRating: any;
   id: string;
   userId: string;
   fullName: string;

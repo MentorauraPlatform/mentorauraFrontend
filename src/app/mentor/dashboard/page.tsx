@@ -98,6 +98,10 @@ export default function MentorDashboardPage() {
     SUNDAY: 'Sun',
   };
 
+  const getDayLabel = (day: string): string => {
+    return DAY_LABELS[day as AvailabilityDay] ?? day;
+  };
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -214,6 +218,18 @@ export default function MentorDashboardPage() {
   };
 
   const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
+    const previousProfile = profile;
+    if (profile) {
+      setProfile({
+        ...profile,
+        user: {
+          ...profile.user,
+          userSkills: profile.user.userSkills.map((us) =>
+            us.id === skillId ? { ...us, level } : us
+          ),
+        },
+      });
+    }
     try {
       setSavingSkills(true);
       setError(null);
@@ -227,6 +243,7 @@ export default function MentorDashboardPage() {
       const apiError = err as { message?: string };
       setError(apiError.message || 'Failed to update skill level');
       toast.error('Failed to update skill level');
+      setProfile(previousProfile);
     } finally {
       setSavingSkills(false);
     }
@@ -318,6 +335,10 @@ export default function MentorDashboardPage() {
   }
 
   const isOnboarded = profile.onboardingStatus === 'COMPLETE' || profile.onboardingStatus === 'PENDING';
+  const profileMetrics = profile as MentorProfile & {
+    avgRating?: number | null;
+    totalMenteesServed?: number | null;
+  };
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans overflow-x-hidden text-[#172033]">
@@ -590,71 +611,70 @@ export default function MentorDashboardPage() {
                         </div>
                         {Array.isArray(availability.slots) && (
                           <div className="space-y-3">
-                            {(availability.slots as Array<{ day: string; startTime: string; endTime: string }>).map(
-                              (slot, index) => (
-                                <div
-                                  key={index}
-                                  className="flex flex-wrap gap-4 items-center bg-gradient-to-r from-[#F8FAFC] to-white p-5 rounded-xl border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200"
+                            {(availability.slots as AvailabilitySlot[]).map((slot, index) => (
+                              <div
+                                key={index}
+                                className="flex flex-wrap gap-4 items-center bg-gradient-to-r from-[#F8FAFC] to-white p-5 rounded-xl border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200"
+                              >
+                                <span className="flex-shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-sm font-bold flex items-center justify-center shadow-sm">
+                                  {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
+                                </span>
+                                <select
+                                  value={slot.day}
+                                  onChange={(e) => {
+                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                    newSlots[index] = {
+                                      ...newSlots[index],
+                                      day: e.target.value as AvailabilityDay,
+                                    };
+                                    setAvailability({ ...availability, slots: newSlots });
+                                  }}
+                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
                                 >
-                                  <span className="flex-shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-sm font-bold flex items-center justify-center shadow-sm">
-                                    {DAY_LABELS[slot.day] || slot.day.slice(0, 3)}
-                                  </span>
-                                  <select
-                                    value={slot.day}
-                                    onChange={(e) => {
-                                      const newSlots = [...(availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                                      newSlots[index] = { ...newSlots[index], day: e.target.value };
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                                  >
-                                    {DAYS.map((day) => (
-                                      <option key={day} value={day}>
-                                        {day}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <input
-                                    type="time"
-                                    value={slot.startTime}
-                                    onChange={(e) => {
-                                      const newSlots = [...(availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                                      newSlots[index] = { ...newSlots[index], startTime: e.target.value };
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
-                                  />
-                                  <span className="text-[#64748B] font-medium">to</span>
-                                  <input
-                                    type="time"
-                                    value={slot.endTime}
-                                    onChange={(e) => {
-                                      const newSlots = [...(availability.slots as Array<{ day: string; startTime: string; endTime: string }>)];
-                                      newSlots[index] = { ...newSlots[index], endTime: e.target.value };
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const newSlots = (availability.slots as Array<{ day: string; startTime: string; endTime: string }>).filter((_, i) => i !== index);
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="ml-auto text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                  >
-                                    <FiTrash2 className="w-6 h-6" />
-                                  </button>
-                                </div>
-                              ),
-                            )}
+                                  {DAYS.map((day) => (
+                                    <option key={day} value={day}>
+                                      {day}
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="time"
+                                  value={slot.startTime}
+                                  onChange={(e) => {
+                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                    newSlots[index] = { ...newSlots[index], startTime: e.target.value };
+                                    setAvailability({ ...availability, slots: newSlots });
+                                  }}
+                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
+                                />
+                                <span className="text-[#64748B] font-medium">to</span>
+                                <input
+                                  type="time"
+                                  value={slot.endTime}
+                                  onChange={(e) => {
+                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                    newSlots[index] = { ...newSlots[index], endTime: e.target.value };
+                                    setAvailability({ ...availability, slots: newSlots });
+                                  }}
+                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const newSlots: AvailabilitySlot[] = availability.slots.filter((_, i) => i !== index);
+                                    setAvailability({ ...availability, slots: newSlots });
+                                  }}
+                                  className="ml-auto text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <FiTrash2 className="w-6 h-6" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         )}
                         <button
                           onClick={() => {
-                            const newSlots = [
-                              ...(Array.isArray(availability.slots)
-                                ? (availability.slots as Array<{ day: string; startTime: string; endTime: string }>)
-                                : []),
+                            const newSlots: AvailabilitySlot[] = [
+                              ...(Array.isArray(availability.slots) ? availability.slots : []),
                               { day: 'MONDAY', startTime: '09:00', endTime: '12:00' },
                             ];
                             setAvailability({ ...availability, slots: newSlots });
@@ -827,7 +847,7 @@ export default function MentorDashboardPage() {
                               key={i}
                               className="bg-[#F8FAFC] border border-[#E5E7EB] px-4 py-2 rounded-lg text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
                             >
-                              {DAY_LABELS[slot.day] || slot.day} {slot.startTime}–{slot.endTime}
+                              {getDayLabel(String(slot.day))} {slot.startTime}–{slot.endTime}
                             </span>
                           ))}
                         </div>
