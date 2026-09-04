@@ -27,16 +27,16 @@ export type ApiError = {
   error?: string;
 };
 
-async function request<T>(path: string, options: RequestInit = {}, accessToken?: string): Promise<ApiResponse<T>> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
+    credentials: 'include',
   });
 
   if (!res.ok) {
@@ -50,16 +50,16 @@ async function request<T>(path: string, options: RequestInit = {}, accessToken?:
   return res.json() as Promise<ApiResponse<T>>;
 }
 
-async function rawRequest<T>(path: string, options: RequestInit = {}, accessToken?: string): Promise<T> {
+async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
+    credentials: 'include',
   });
 
   if (!res.ok) {
@@ -76,20 +76,20 @@ async function rawRequest<T>(path: string, options: RequestInit = {}, accessToke
 // ── Convenience wrappers ──────────────────────────────────────────────────────
 
 export const apiClient = {
-  get: <T>(path: string, token?: string) =>
-    request<T>(path, { method: 'GET' }, token),
+  get: <T>(path: string) =>
+    request<T>(path, { method: 'GET' }),
 
-  post: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }, token),
+  post: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
 
-  patch: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }, token),
+  patch: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
 
-  put: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }, token),
+  put: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
 
-  delete: <T>(path: string, token?: string) =>
-    request<T>(path, { method: 'DELETE' }, token),
+  delete: <T>(path: string) =>
+    request<T>(path, { method: 'DELETE' }),
 };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -120,8 +120,8 @@ export const authApi = {
   refreshToken: (data: RefreshTokenPayload) =>
     rawRequest<RefreshTokenResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify(data) }),
 
-  getMe: (token: string) =>
-    request<MeResponse>('/auth/me', { method: 'GET' }, token),
+  getMe: () =>
+    request<MeResponse>('/auth/me', { method: 'GET' }),
 };
 
 // ── Mentor Onboarding ─────────────────────────────────────────────────────────
@@ -161,27 +161,27 @@ export interface SubmitOnboardingPayload {
 }
 
 export const mentorApi = {
-  createProfile: (token: string, data: CreateMentorProfilePayload) =>
-    apiClient.post<MentorProfile>('/mentor/applications', data, token),
+  createProfile: (data: CreateMentorProfilePayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications', data),
 
-  getMyProfile: (token: string) =>
-    apiClient.get<MentorProfile>('/mentor/applications/me', token),
+  getMyProfile: () =>
+    apiClient.get<MentorProfile>('/mentor/applications/me'),
 
-  updateProfile: (token: string, data: UpdateMentorProfilePayload) =>
-    apiClient.patch<MentorProfile>('/mentor/applications/me', data, token),
+  updateProfile: (data: UpdateMentorProfilePayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me', data),
 
-  addSkill: (token: string, data: AddSkillPayload) =>
-    apiClient.post<UserSkill>('/mentor/applications/me/skills', data, token),
+  addSkill: (data: AddSkillPayload) =>
+    apiClient.post<UserSkill>('/mentor/applications/me/skills', data),
 
-  updateSkill: (token: string, skillId: string, data: UpdateSkillPayload) =>
-    apiClient.patch<UserSkill>(`/mentor/applications/me/skills/${skillId}`, data, token),
+  updateSkill: (skillId: string, data: UpdateSkillPayload) =>
+    apiClient.patch<UserSkill>(`/mentor/applications/me/skills/${skillId}`, data),
 
-  removeSkill: (token: string, skillId: string) =>
-    apiClient.delete<{ message: string }>(`/mentor/applications/me/skills/${skillId}`, token),
+  removeSkill: (skillId: string) =>
+    apiClient.delete<{ message: string }>(`/mentor/applications/me/skills/${skillId}`),
 
-  updateAvailability: (token: string, data: UpdateAvailabilityPayload) =>
-    apiClient.patch<MentorProfile>('/mentor/applications/me/availability', data, token),
+  updateAvailability: (data: UpdateAvailabilityPayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me/availability', data),
 
-  submitOnboarding: (token: string, data: SubmitOnboardingPayload) =>
-    apiClient.post<MentorProfile>('/mentor/applications/me/submit', data, token),
+  submitOnboarding: (data: SubmitOnboardingPayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications/me/submit', data),
 };

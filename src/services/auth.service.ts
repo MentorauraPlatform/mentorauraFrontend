@@ -64,16 +64,15 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<MeResponse> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token) {
-      throw { statusCode: 401, message: 'No access token' } as { statusCode: number; message: string };
-    }
-    const response = await authApi.getMe(token);
+    const response = await authApi.getMe();
     return response.data;
   },
 
   async logout() {
-    return authApi.refreshToken({ refreshToken: '' });
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
   },
 
   async resendVerification(email: string) {

@@ -58,7 +58,6 @@ export default function MentorDashboardPage() {
   const [savingSkills, setSavingSkills] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [loadingSkills, setLoadingSkills] = useState(false);
-  const tokenRef = useRef<string | null>(null);
 
   const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
   const DAY_LABELS: Record<string, string> = {
@@ -79,19 +78,11 @@ export default function MentorDashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      window.location.href = '/auth?mode=login';
-      return;
-    }
-
-    tokenRef.current = token;
-
     void (async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await mentorApi.getMyProfile(token);
+        const res = await mentorApi.getMyProfile();
         setProfile(res.data);
         setEditData({
           title: res.data.title,
@@ -107,7 +98,7 @@ export default function MentorDashboardPage() {
 
         try {
           setLoadingSkills(true);
-          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills', token);
+          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills');
           setSkills(skillsRes.data);
         } catch {
           // ignore skills loading failure
@@ -124,12 +115,10 @@ export default function MentorDashboardPage() {
   }, [user, authLoading]);
 
   const handleUpdate = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await mentorApi.updateProfile(token, editData);
+      const res = await mentorApi.updateProfile(editData);
       setProfile(res.data);
       setIsEditing(false);
       toast.success('Profile updated successfully', {
@@ -145,15 +134,15 @@ export default function MentorDashboardPage() {
   };
 
   const handleAddSkill = async () => {
-    if (!selectedSkillId || !tokenRef.current) return;
+    if (!selectedSkillId) return;
     try {
       setSavingSkills(true);
       setError(null);
-      await mentorApi.addSkill(tokenRef.current, {
+      await mentorApi.addSkill({
         skillId: selectedSkillId,
         level: selectedLevel,
       });
-      const updated = await mentorApi.getMyProfile(tokenRef.current);
+      const updated = await mentorApi.getMyProfile();
       setProfile(updated.data);
       setSelectedSkillId('');
       toast.success('Skill added successfully', {
@@ -169,12 +158,11 @@ export default function MentorDashboardPage() {
   };
 
   const handleRemoveSkill = async (skillId: string) => {
-    if (!tokenRef.current) return;
     try {
       setSavingSkills(true);
       setError(null);
-      await mentorApi.removeSkill(tokenRef.current, skillId);
-      const updated = await mentorApi.getMyProfile(tokenRef.current);
+      await mentorApi.removeSkill(skillId);
+      const updated = await mentorApi.getMyProfile();
       setProfile(updated.data);
       toast.success('Skill removed', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
@@ -189,12 +177,11 @@ export default function MentorDashboardPage() {
   };
 
   const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
-    if (!tokenRef.current) return;
     try {
       setSavingSkills(true);
       setError(null);
-      await mentorApi.updateSkill(tokenRef.current, skillId, { level });
-      const updated = await mentorApi.getMyProfile(tokenRef.current);
+      await mentorApi.updateSkill(skillId, { level });
+      const updated = await mentorApi.getMyProfile();
       setProfile(updated.data);
       toast.success('Skill level updated', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
@@ -209,11 +196,10 @@ export default function MentorDashboardPage() {
   };
 
   const handleSaveAvailability = async () => {
-    if (!tokenRef.current) return;
     try {
       setSavingAvailability(true);
       setError(null);
-      const updated = await mentorApi.updateAvailability(tokenRef.current, {
+      const updated = await mentorApi.updateAvailability({
         availability,
       });
       setProfile(updated.data);

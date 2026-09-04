@@ -129,14 +129,11 @@ export default function AuthPage() {
 
     try {
       const res = await authService.login({ email, password });
-      const { accessToken, refreshToken } = res.tokens;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
       await refetchUser();
       showToast('Logged in successfully!', 'success');
 
       if (res.user?.isMentor) {
-        const mentorRes = await mentorApi.getMyProfile(accessToken).catch(() => null);
+        const mentorRes = await mentorApi.getMyProfile().catch(() => null);
         const status = mentorRes?.data?.onboardingStatus;
         if (status === 'COMPLETE' || status === 'PENDING') {
           router.push('/mentor/dashboard');

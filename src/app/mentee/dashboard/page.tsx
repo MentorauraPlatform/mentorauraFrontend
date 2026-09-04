@@ -12,8 +12,6 @@ export default function MenteeDashboardPage() {
     authService.getCurrentUser()
       .then(setUser)
       .catch(() => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         window.location.href = '/auth?mode=login';
       })
       .finally(() => setLoading(false));
@@ -69,9 +67,7 @@ export default function MenteeDashboardPage() {
           <div className="mt-8">
             <button
               onClick={() => {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                window.location.href = '/';
+                window.location.href = '/auth?mode=login';
               }}
               className="text-blue-600 hover:text-blue-700 font-medium"
             >

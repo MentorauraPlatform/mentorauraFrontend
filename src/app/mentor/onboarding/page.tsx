@@ -110,7 +110,6 @@ export default function MentorOnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [rawAreas, setRawAreas] = useState('');
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const tokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -120,21 +119,13 @@ export default function MentorOnboardingPage() {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.replace('/auth?mode=login');
-      return;
-    }
-
-    tokenRef.current = token;
-
     void (async () => {
       try {
         setLoading(true);
-        const profileRes = await mentorApi.getMyProfile(token).catch(() => null);
+        const profileRes = await mentorApi.getMyProfile().catch(() => null);
         let skillsData: Skill[] = [];
         try {
-          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills', token);
+          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills');
           skillsData = skillsRes.data;
         } catch {
           // skills loading failed, use empty array
@@ -256,11 +247,11 @@ export default function MentorOnboardingPage() {
   };
 
   const handleAddSkill = async () => {
-    if (!selectedSkillId || !tokenRef.current) return;
+    if (!selectedSkillId) return;
     try {
       setSaving(true);
       setError(null);
-      await mentorApi.addSkill(tokenRef.current, {
+      await mentorApi.addSkill({
         skillId: selectedSkillId,
         level: selectedLevel,
       });
@@ -284,11 +275,10 @@ export default function MentorOnboardingPage() {
   };
 
   const handleRemoveSkill = async (skillId: string) => {
-    if (!tokenRef.current) return;
     try {
       setSaving(true);
       setError(null);
-      await mentorApi.removeSkill(tokenRef.current, skillId);
+      await mentorApi.removeSkill(skillId);
       setData((prev) => ({
         ...prev,
         skills: prev.skills.filter((s) => s.id !== skillId),
@@ -305,11 +295,10 @@ export default function MentorOnboardingPage() {
   };
 
   const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
-    if (!tokenRef.current) return;
     try {
       setSaving(true);
       setError(null);
-      await mentorApi.updateSkill(tokenRef.current, skillId, { level });
+      await mentorApi.updateSkill(skillId, { level });
       setData((prev) => ({
         ...prev,
         skills: prev.skills.map((s) => (s.id === skillId ? { ...s, level } : s)),
@@ -326,11 +315,10 @@ export default function MentorOnboardingPage() {
   };
 
   const handleUpdateAvailability = async () => {
-    if (!tokenRef.current) return;
     try {
       setSaving(true);
       setError(null);
-      await mentorApi.updateAvailability(tokenRef.current, { availability: data.availability });
+      await mentorApi.updateAvailability({ availability: data.availability });
       toast.success('Availability saved', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
       });
@@ -343,12 +331,11 @@ export default function MentorOnboardingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!tokenRef.current) return;
     try {
       setLoading(true);
       setError(null);
       if (!profile) {
-        await mentorApi.createProfile(tokenRef.current, {
+        await mentorApi.createProfile({
           fullName: data.fullName,
           title: data.title,
           company: data.company,
@@ -357,7 +344,7 @@ export default function MentorOnboardingPage() {
           areasOfExpertise: data.areasOfExpertise,
         });
       } else {
-        await mentorApi.updateProfile(tokenRef.current, {
+        await mentorApi.updateProfile({
           title: data.title,
           company: data.company,
           bio: data.bio,
@@ -365,8 +352,8 @@ export default function MentorOnboardingPage() {
           areasOfExpertise: data.areasOfExpertise,
         });
       }
-      await mentorApi.updateAvailability(tokenRef.current, { availability: data.availability });
-      await mentorApi.submitOnboarding(tokenRef.current, { confirmed: true });
+      await mentorApi.updateAvailability({ availability: data.availability });
+      await mentorApi.submitOnboarding({ confirmed: true });
       toast.success('Onboarding submitted for review!', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
       });
