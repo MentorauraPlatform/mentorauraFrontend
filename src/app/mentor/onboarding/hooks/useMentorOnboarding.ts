@@ -77,6 +77,11 @@ export function useMentorOnboarding() {
       return;
     }
 
+    if (user.role !== 'mentor') {
+      router.replace('/');
+      return;
+    }
+
     void (async () => {
       try {
         setLoading(true);

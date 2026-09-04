@@ -107,6 +107,11 @@ export default function MentorDashboardPage() {
       return;
     }
 
+    if (user.role !== 'mentor') {
+      window.location.href = '/';
+      return;
+    }
+
     void (async () => {
       try {
         setLoading(true);
