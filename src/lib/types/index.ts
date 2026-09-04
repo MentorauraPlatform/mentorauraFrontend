@@ -127,9 +127,6 @@ export interface MeResponse {
 }
 
 // ── Mentor ────────────────────────────────────────────────────────────────────
-export type OnboardingStatus = 'INCOMPLETE' | 'PENDING' | 'COMPLETE';
-export type MentorStatus = 'draft' | 'active' | 'suspended' | 'deactivated';
-
 export interface UserSkill {
   id: string;
   userId: string;
@@ -145,7 +142,6 @@ export interface UserSkill {
 
 export interface MentorProfile {
   totalMenteesServed: number;
-  avgRating: any;
   avgRating: any;
   id: string;
   userId: string;
