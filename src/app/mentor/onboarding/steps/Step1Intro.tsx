@@ -13,9 +13,6 @@ export function Step1Intro({ visibleSteps }: Step1IntroProps) {
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 mb-6">
-          <Sparkles className="w-10 h-10 text-[#F97316]" />
-        </div>
         <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
           {t('beforeYouBegin')}
         </span>

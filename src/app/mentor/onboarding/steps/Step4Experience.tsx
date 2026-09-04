@@ -15,11 +15,12 @@ interface Step4ExperienceProps {
   data: OnboardingData;
   rawAreas: string;
   onRawAreasChange: (value: string) => void;
+  onExperienceChange: (value: string) => void;
   onBlur: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-export function Step4Experience({ data, rawAreas, onRawAreasChange, onBlur, onKeyDown }: Step4ExperienceProps) {
+export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperienceChange, onBlur, onKeyDown }: Step4ExperienceProps) {
   const t = useTranslations('onboarding');
 
   return (
@@ -46,7 +47,7 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onBlur, onKe
           <label className={labelClass}>{t('experience.experienceRequired')} <span className="text-red-500">*</span></label>
           <textarea
             value={data.experience}
-            onChange={(e) => onRawAreasChange(e.target.value)}
+            onChange={(e) => onExperienceChange(e.target.value)}
             rows={10}
             className={`${textareaClass} ${
               !data.experience.trim() ? 'border-[#F97316]' : 'border-[#E5E7EB]'

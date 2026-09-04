@@ -67,6 +67,7 @@ export function useMentorOnboarding() {
   const [error, setError] = useState<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [submitFailed, setSubmitFailed] = useState(false);
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -79,8 +80,12 @@ export function useMentorOnboarding() {
     void (async () => {
       try {
         setLoading(true);
-        const [profileRes] = await Promise.all([
+        const [profileRes, skillsRes] = await Promise.all([
           mentorApi.getMyProfile().catch(() => null),
+          apiClient.get<Skill[]>('/mentor/applications/skills').catch((err) => {
+            console.error('Failed to fetch skills list:', err);
+            return { data: [] as Skill[] };
+          }),
         ]);
 
         if (profileRes) {
@@ -104,8 +109,11 @@ export function useMentorOnboarding() {
             setCurrentStep(7);
           }
         }
-      } catch {
-        // ignore initialization errors
+
+        setSkills(skillsRes.data);
+        console.log('Fetched skills count:', skillsRes.data?.length ?? 0);
+      } catch (err) {
+        console.error('Onboarding initialization error:', err);
       } finally {
         setLoading(false);
         setProfileLoaded(true);
@@ -223,6 +231,7 @@ export function useMentorOnboarding() {
     submitFailed,
     authLoading,
     router,
+    skills,
     updateData,
     validateStep,
     nextStep,

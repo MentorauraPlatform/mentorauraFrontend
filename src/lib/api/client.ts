@@ -27,6 +27,8 @@ export type ApiError = {
   error?: string;
 };
 
+// ── Core request functions ─────────────────────────────────────────────────────
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -36,7 +38,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
-    credentials: 'include',
+    credentials: 'include', // ✅ Cookies are sent automatically
   });
 
   if (!res.ok) {
@@ -59,7 +61,7 @@ async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
-    credentials: 'include',
+    credentials: 'include', // ✅ Cookies are sent automatically
   });
 
   if (!res.ok) {
@@ -112,13 +114,22 @@ export interface RefreshTokenPayload {
 
 export const authApi = {
   register: (data: RegisterPayload) =>
-    rawRequest<RegisterResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+    rawRequest<RegisterResponse>('/auth/register', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
 
   login: (data: LoginPayload) =>
-    rawRequest<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+    rawRequest<LoginResponse>('/auth/login', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
 
   refreshToken: (data: RefreshTokenPayload) =>
-    rawRequest<RefreshTokenResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify(data) }),
+    rawRequest<RefreshTokenResponse>('/auth/refresh', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
 
   getMe: () =>
     request<MeResponse>('/auth/me', { method: 'GET' }),
@@ -167,6 +178,7 @@ export interface SubmitOnboardingPayload {
   confirmed: boolean;
 }
 
+// ✅ Mentor API - All requests use credentials: 'include' via apiClient
 export const mentorApi = {
   createProfile: (data: CreateMentorProfilePayload) =>
     apiClient.post<MentorProfile>('/mentor/applications', data),

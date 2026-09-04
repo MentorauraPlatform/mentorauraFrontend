@@ -14,7 +14,6 @@ import { Step5Availability } from './steps/Step5Availability';
 import { Step6Review } from './steps/Step6Review';
 import { Step7Complete } from './steps/Step7Complete';
 import type { OnboardingData } from './hooks/useMentorOnboarding';
-import type { Skill } from '@/lib/types';
 
 const STEPS = [
   { id: 1, title: 'steps.intro.title', description: 'steps.intro.description' },
@@ -31,22 +30,9 @@ const visibleSteps = STEPS.filter((s) => s.id <= 6);
 export default function MentorOnboardingPage() {
   const onboarding = useMentorOnboarding();
   const [rawAreas, setRawAreas] = useState('');
-  const [skills, setSkills] = useState<Skill[]>([]);
-
-  useEffect(() => {
-    setSkills(
-      onboarding.data.skills.map((s) => ({
-        id: s.id,
-        name: s.name,
-        level: s.level,
-        createdAt: '',
-        updatedAt: '',
-      })),
-    );
-  }, [onboarding.data.skills]);
 
   const skillsHook = useSkills(
-    skills,
+    onboarding.skills,
     onboarding.data.skills,
     onboarding.updateData,
     onboarding.setError,
@@ -117,7 +103,7 @@ export default function MentorOnboardingPage() {
               <div>
                 <h1 className="text-2xl font-extrabold text-white tracking-tight">Mentor Onboarding</h1>
                 <p className="text-sm text-white/60 font-medium">
-                  Step {onboarding.currentStep} of 6: {STEPS[onboarding.currentStep - 1]?.title}
+                  Step {onboarding.currentStep} of 6: {onboarding.t(STEPS[onboarding.currentStep - 1]?.title)}
                 </p>
               </div>
             </div>
@@ -151,7 +137,7 @@ export default function MentorOnboardingPage() {
                         <span className={`text-xs sm:text-sm font-bold text-center ${
                           isActive ? 'text-[#F97316]' : isCompleted ? 'text-emerald-600' : 'text-[#64748B]'
                         }`}>
-                          {step.title}
+                          {onboarding.t(step.title)}
                         </span>
                       </div>
                       {index < visibleSteps.length - 1 && (
@@ -193,7 +179,7 @@ export default function MentorOnboardingPage() {
             {onboarding.currentStep === 3 && (
               <Step3Skills
                 data={onboarding.data}
-                skills={skills}
+                skills={onboarding.skills}
                 selectedSkillId={skillsHook.selectedSkillId}
                 selectedLevel={skillsHook.selectedLevel}
                 saving={skillsHook.saving}
@@ -209,6 +195,7 @@ export default function MentorOnboardingPage() {
                 data={onboarding.data}
                 rawAreas={rawAreas}
                 onRawAreasChange={setRawAreas}
+                onExperienceChange={(value) => onboarding.updateData({ experience: value })}
                 onBlur={syncAreasFromRaw}
                 onKeyDown={handleKeyDown}
               />

@@ -29,11 +29,6 @@ import {
   FiTrash2,
   FiGlobe,
   FiZap,
-  FiMail,
-  FiLinkedin,
-  FiGithub,
-  FiTwitter,
-  FiMoreHorizontal
 } from 'react-icons/fi';
 
 type AvailabilityDay =
@@ -270,24 +265,33 @@ export default function MentorDashboardPage() {
     }
   };
 
-  // ── Enhanced Style Tokens ──────────────────────────────────────────────────
+  // ── Style Tokens ─────────────────────────────────────────────────────────
   const inputClass =
-    'w-full h-14 text-base border border-[#E5E7EB] rounded-xl px-5 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30';
+    'w-full h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30';
   const textareaClass =
-    'w-full text-base border border-[#E5E7EB] rounded-xl px-5 py-4 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 resize-none hover:border-[#F97316]/30';
+    'w-full text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 py-4 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 resize-none hover:border-[#F97316]/30';
   const labelClass = 'block text-sm font-bold uppercase tracking-wider text-[#64748B] mb-2';
-  const sectionLabelClass = 'text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2';
+  const sectionLabelClass =
+    'text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2';
   const primaryBtnClass =
-    'bg-[#F97316] text-white px-8 py-3.5 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2';
+    'bg-[#F97316] text-white px-6 sm:px-8 py-3.5 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2';
   const secondaryBtnClass =
-    'border border-[#E5E7EB] rounded-xl hover:bg-[#FFFCF9] hover:border-[#F97316]/30 font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[#172033] flex items-center justify-center gap-2 px-8 py-3.5';
+    'border border-[#E5E7EB] rounded-xl hover:bg-[#FFFCF9] hover:border-[#F97316]/30 font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[#172033] flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5';
+
+  const initials = (name?: string) =>
+    (name || '')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0]?.toUpperCase())
+      .join('') || '—';
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] px-4">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-lg text-[#64748B] font-medium">Loading your profile…</span>
+          <span className="text-base sm:text-lg text-[#64748B] font-medium">Loading your profile…</span>
         </div>
       </div>
     );
@@ -295,7 +299,7 @@ export default function MentorDashboardPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#FFFCF9] font-sans text-[#172033]">
+      <div className="min-h-screen bg-[#FFFCF9] font-sans text-[#172033] flex flex-col">
         <style jsx global>{`
           @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800;900&display=swap');
           .font-serif {
@@ -308,27 +312,32 @@ export default function MentorDashboardPage() {
 
         <Navbar />
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-          <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] p-8 sm:p-14 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] border border-[#F97316]/20 mb-6">
-              <FiUser className="w-10 h-10 text-[#F97316]" />
+        <main className="flex-1 flex items-center">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 w-full">
+            <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] p-8 sm:p-14 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] border border-[#F97316]/20 mb-6">
+                <FiUser className="w-8 h-8 sm:w-10 sm:h-10 text-[#F97316]" />
+              </div>
+              <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
+                No profile yet
+              </span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#172033] tracking-tight leading-tight">
+                No Mentor Profile
+              </h1>
+              <p className="mt-4 text-base sm:text-xl text-[#475569] leading-relaxed max-w-xl mx-auto">
+                You haven&apos;t created a mentor profile yet. Start your journey to become a
+                mentor today.
+              </p>
+              <Link
+                href="/mentor/onboarding"
+                className={`${primaryBtnClass} mt-8 inline-flex w-full sm:w-auto`}
+              >
+                Start Onboarding
+                <FiArrowRight className="w-5 h-5" />
+              </Link>
             </div>
-            <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-              No profile yet
-            </span>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight leading-tight">
-              No Mentor Profile
-            </h1>
-            <p className="mt-4 text-xl text-[#475569] leading-relaxed max-w-xl mx-auto">
-              You haven&apos;t created a mentor profile yet. Start your journey to become a
-              mentor today.
-            </p>
-            <Link href="/mentor/onboarding" className={`${primaryBtnClass} mt-8 inline-flex w-auto`}>
-              Start Onboarding
-              <FiArrowRight className="w-5 h-5" />
-            </Link>
           </div>
-        </div>
+        </main>
 
         <Footer />
       </div>
@@ -356,22 +365,27 @@ export default function MentorDashboardPage() {
       <Navbar />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
-          <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] overflow-hidden">
-            {/* Header — Enhanced with gradient accent */}
-            <div className="bg-[#172033] px-8 sm:px-10 py-8 sm:py-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316]/5 rounded-full blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#F97316]/5 rounded-full blur-2xl" />
-              <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#F97316] to-[#ea580c] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#F97316]/30">
-                    <FiUser className="w-7 h-7 text-white" />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-12 lg:py-16">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-[#E5E7EB] overflow-hidden">
+            {/* Header */}
+            <div className="bg-[#172033] px-5 sm:px-10 py-7 sm:py-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316]/5 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#F97316]/5 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6">
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#F97316] to-[#ea580c] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#F97316]/30">
+                    <span className="text-white font-extrabold text-base sm:text-lg">
+                      {initials(profile.fullName)}
+                    </span>
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight">{t('title')}</h1>
-                    <div className="flex flex-wrap items-center gap-3 mt-1">
-                      <span className="text-sm text-white/70 font-medium">{profile.fullName}</span>
-                      <span className="w-1 h-1 rounded-full bg-white/30" />
+                  <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight truncate">
+                      {t('title')}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1">
+                      <span className="text-sm text-white/70 font-medium truncate max-w-[220px] sm:max-w-none">
+                        {profile.fullName}
+                      </span>
                       <span
                         className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
                           isOnboarded
@@ -387,7 +401,7 @@ export default function MentorDashboardPage() {
                 {!isOnboarded && (
                   <Link
                     href="/mentor/onboarding"
-                    className="bg-[#F97316] text-white px-6 py-3 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 font-bold text-sm transition-all duration-200 flex items-center gap-2 w-full sm:w-auto justify-center"
+                    className="bg-[#F97316] text-white px-5 sm:px-6 py-3 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 font-bold text-sm transition-all duration-200 flex items-center gap-2 w-full sm:w-auto justify-center flex-shrink-0"
                   >
                     <FiAlertCircle className="w-4 h-4" />
                     Continue Onboarding
@@ -397,29 +411,30 @@ export default function MentorDashboardPage() {
             </div>
 
             {/* Content */}
-            <div className="p-8 sm:p-10 lg:p-12">
+            <div className="p-5 sm:p-10 lg:p-12">
               {error && (
-                <div className="mb-8 bg-red-50/80 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex items-center gap-4 text-base">
-                  <FiAlertCircle className="w-6 h-6 flex-shrink-0 text-red-500" />
-                  {error}
+                <div className="mb-8 bg-red-50/80 border border-red-200 text-red-700 px-5 sm:px-6 py-4 rounded-xl flex items-start sm:items-center gap-3 sm:gap-4 text-sm sm:text-base">
+                  <FiAlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-red-500 mt-0.5 sm:mt-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
               {isEditing ? (
-                /* ── Enhanced Edit Mode ────────────────────────────────── */
+                /* ── Edit Mode ─────────────────────────────────────────── */
                 <div className="space-y-8 max-w-3xl mx-auto">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start sm:items-center justify-between gap-4">
                     <div>
-                      <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-4">
+                      <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-3 sm:mb-4">
                         Editing profile
                       </span>
-                      <h2 className="text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#172033] tracking-tight">
                         Edit Profile
                       </h2>
                     </div>
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="text-[#94A3B8] hover:text-[#64748B] transition-colors p-2 hover:bg-[#FFFCF9] rounded-lg"
+                      className="text-[#94A3B8] hover:text-[#64748B] transition-colors p-2 hover:bg-[#FFFCF9] rounded-lg flex-shrink-0"
+                      aria-label="Close editing"
                     >
                       <FiX className="w-6 h-6" />
                     </button>
@@ -427,16 +442,18 @@ export default function MentorDashboardPage() {
 
                   <div className="space-y-6">
                     <div>
-                      <label className={labelClass}>Professional Title <span className="text-red-500">*</span></label>
+                      <label className={labelClass}>
+                        Professional Title <span className="text-red-500">*</span>
+                      </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                          <FiBriefcase className="w-6 h-6 text-[#94A3B8]" />
+                        <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
+                          <FiBriefcase className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
                         </div>
                         <input
                           type="text"
                           value={editData.title}
                           onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                          className={`${inputClass} pl-14`}
+                          className={`${inputClass} pl-12 sm:pl-14`}
                           placeholder="e.g. Senior Software Engineer"
                         />
                       </div>
@@ -444,29 +461,27 @@ export default function MentorDashboardPage() {
                     <div>
                       <label className={labelClass}>Company</label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                          <FiZap className="w-6 h-6 text-[#94A3B8]" />
+                        <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
+                          <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
                         </div>
                         <input
                           type="text"
                           value={editData.company}
                           onChange={(e) => setEditData({ ...editData, company: e.target.value })}
-                          className={`${inputClass} pl-14`}
+                          className={`${inputClass} pl-12 sm:pl-14`}
                           placeholder="e.g. Acme Corp"
                         />
                       </div>
                     </div>
                     <div>
                       <label className={labelClass}>Bio</label>
-                      <div className="relative">
-                        <textarea
-                          value={editData.bio}
-                          onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                          rows={6}
-                          className={textareaClass}
-                          placeholder="Tell us about yourself, your background, and what drives you..."
-                        />
-                      </div>
+                      <textarea
+                        value={editData.bio}
+                        onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                        rows={6}
+                        className={textareaClass}
+                        placeholder="Tell us about yourself, your background, and what drives you..."
+                      />
                     </div>
                     <div>
                       <label className={labelClass}>Professional Experience</label>
@@ -504,11 +519,11 @@ export default function MentorDashboardPage() {
                         <FiAward className="w-4 h-4 text-[#F97316]" />
                         Skills
                       </h3>
-                      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
                         <select
                           value={selectedSkillId}
                           onChange={(e) => setSelectedSkillId(e.target.value)}
-                          className="flex-1 h-14 text-base border border-[#E5E7EB] rounded-xl px-5 text-[#172033] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
+                          className="flex-1 h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 text-[#172033] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
                         >
                           <option value="">Select a skill</option>
                           {skills.map((skill) => (
@@ -517,39 +532,43 @@ export default function MentorDashboardPage() {
                             </option>
                           ))}
                         </select>
-                        <select
-                          value={selectedLevel}
-                          onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
-                          className="w-full sm:w-48 h-14 text-base border border-[#E5E7EB] rounded-xl px-5 bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                        >
-                          <option value="BEGINNER">Beginner</option>
-                          <option value="INTERMEDIATE">Intermediate</option>
-                          <option value="ADVANCED">Advanced</option>
-                          <option value="EXPERT">Expert</option>
-                        </select>
-                        <button
-                          onClick={handleAddSkill}
-                          disabled={!selectedSkillId || savingSkills}
-                          className="w-full sm:w-auto bg-[#F97316] text-white px-8 py-3.5 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2"
-                        >
-                          <FiPlus className="w-5 h-5" />
-                          {savingSkills ? 'Adding…' : 'Add Skill'}
-                        </button>
+                        <div className="flex gap-3 sm:gap-4">
+                          <select
+                            value={selectedLevel}
+                            onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
+                            className="flex-1 sm:flex-none sm:w-48 h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
+                          >
+                            <option value="BEGINNER">Beginner</option>
+                            <option value="INTERMEDIATE">Intermediate</option>
+                            <option value="ADVANCED">Advanced</option>
+                            <option value="EXPERT">Expert</option>
+                          </select>
+                          <button
+                            onClick={handleAddSkill}
+                            disabled={!selectedSkillId || savingSkills}
+                            className="flex-shrink-0 bg-[#F97316] text-white px-5 sm:px-8 h-12 sm:h-14 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2"
+                          >
+                            <FiPlus className="w-5 h-5" />
+                            <span className="hidden sm:inline">{savingSkills ? 'Adding…' : 'Add Skill'}</span>
+                          </button>
+                        </div>
                       </div>
                       {profile.user?.userSkills && profile.user.userSkills.length > 0 ? (
                         <div className="space-y-3">
                           {profile.user.userSkills.map((us: UserSkill) => (
                             <div
                               key={us.id}
-                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gradient-to-r from-[#FFFCF9] to-white rounded-xl px-6 py-5 border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200 gap-4 sm:gap-0"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-[#FFFCF9] to-white rounded-xl px-4 sm:px-6 py-4 sm:py-5 border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200 gap-4"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
                                   <FiAward className="w-5 h-5 text-[#F97316]" />
                                 </div>
-                                <span className="font-bold text-[#172033] text-lg">{us.skill.name}</span>
+                                <span className="font-bold text-[#172033] text-base sm:text-lg truncate">
+                                  {us.skill.name}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-4 w-full sm:w-auto">
+                              <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <select
                                   value={us.level}
                                   onChange={(e) => handleUpdateSkillLevel(us.id, e.target.value as SkillLevel)}
@@ -562,7 +581,8 @@ export default function MentorDashboardPage() {
                                 </select>
                                 <button
                                   onClick={() => handleRemoveSkill(us.id)}
-                                  className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                  className="text-red-500 hover:text-red-700 p-2.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                  aria-label={`Remove ${us.skill.name}`}
                                 >
                                   <FiTrash2 className="w-5 h-5" />
                                 </button>
@@ -571,8 +591,8 @@ export default function MentorDashboardPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12 border-2 border-dashed border-[#E5E7EB] rounded-2xl">
-                          <FiAward className="w-12 h-12 text-[#94A3B8] mx-auto mb-4 opacity-50" />
+                        <div className="text-center py-10 sm:py-12 border-2 border-dashed border-[#E5E7EB] rounded-2xl">
+                          <FiAward className="w-10 h-10 sm:w-12 sm:h-12 text-[#94A3B8] mx-auto mb-4 opacity-50" />
                           <p className="text-base text-[#64748B]">No skills added yet.</p>
                         </div>
                       )}
@@ -588,15 +608,15 @@ export default function MentorDashboardPage() {
                         <div className="max-w-sm">
                           <label className={labelClass}>Timezone</label>
                           <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                              <FiGlobe className="w-6 h-6 text-[#94A3B8]" />
+                            <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
+                              <FiGlobe className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
                             </div>
                             <select
                               value={(availability.timezone as string) || 'Africa/Douala'}
                               onChange={(e) =>
                                 setAvailability({ ...availability, timezone: e.target.value })
                               }
-                              className={`${inputClass} pl-14 appearance-none`}
+                              className={`${inputClass} pl-12 sm:pl-14 appearance-none`}
                             >
                               <option value="Africa/Douala">Africa/Douala</option>
                               <option value="Africa/Lagos">Africa/Lagos</option>
@@ -615,59 +635,83 @@ export default function MentorDashboardPage() {
                             {(availability.slots as AvailabilitySlot[]).map((slot, index) => (
                               <div
                                 key={index}
-                                className="flex flex-wrap gap-4 items-center bg-gradient-to-r from-[#F8FAFC] to-white p-5 rounded-xl border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200"
+                                className="bg-gradient-to-r from-[#F8FAFC] to-white p-4 sm:p-5 rounded-xl border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200"
                               >
-                                <span className="flex-shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-sm font-bold flex items-center justify-center shadow-sm">
-                                  {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
-                                </span>
-                                <select
-                                  value={slot.day}
-                                  onChange={(e) => {
-                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                    newSlots[index] = {
-                                      ...newSlots[index],
-                                      day: e.target.value as AvailabilityDay,
-                                    };
-                                    setAvailability({ ...availability, slots: newSlots });
-                                  }}
-                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                                >
-                                  {DAYS.map((day) => (
-                                    <option key={day} value={day}>
-                                      {day}
-                                    </option>
-                                  ))}
-                                </select>
-                                <input
-                                  type="time"
-                                  value={slot.startTime}
-                                  onChange={(e) => {
-                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                    newSlots[index] = { ...newSlots[index], startTime: e.target.value };
-                                    setAvailability({ ...availability, slots: newSlots });
-                                  }}
-                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
-                                />
-                                <span className="text-[#64748B] font-medium">to</span>
-                                <input
-                                  type="time"
-                                  value={slot.endTime}
-                                  onChange={(e) => {
-                                    const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                    newSlots[index] = { ...newSlots[index], endTime: e.target.value };
-                                    setAvailability({ ...availability, slots: newSlots });
-                                  }}
-                                  className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 w-32"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newSlots: AvailabilitySlot[] = availability.slots.filter((_, i) => i !== index);
-                                    setAvailability({ ...availability, slots: newSlots });
-                                  }}
-                                  className="ml-auto text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <FiTrash2 className="w-6 h-6" />
-                                </button>
+                                <div className="flex items-center justify-between mb-3 sm:hidden">
+                                  <span className="w-9 h-9 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                                    {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      const newSlots: AvailabilitySlot[] = availability.slots.filter(
+                                        (_, i) => i !== index
+                                      );
+                                      setAvailability({ ...availability, slots: newSlots });
+                                    }}
+                                    className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                    aria-label="Remove time slot"
+                                  >
+                                    <FiTrash2 className="w-5 h-5" />
+                                  </button>
+                                </div>
+                                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                                  <span className="hidden sm:flex flex-shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-sm font-bold items-center justify-center shadow-sm">
+                                    {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
+                                  </span>
+                                  <select
+                                    value={slot.day}
+                                    onChange={(e) => {
+                                      const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                      newSlots[index] = {
+                                        ...newSlots[index],
+                                        day: e.target.value as AvailabilityDay,
+                                      };
+                                      setAvailability({ ...availability, slots: newSlots });
+                                    }}
+                                    className="flex-1 sm:flex-none min-w-[120px] border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
+                                  >
+                                    {DAYS.map((day) => (
+                                      <option key={day} value={day}>
+                                        {day}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                                    <input
+                                      type="time"
+                                      value={slot.startTime}
+                                      onChange={(e) => {
+                                        const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                        newSlots[index] = { ...newSlots[index], startTime: e.target.value };
+                                        setAvailability({ ...availability, slots: newSlots });
+                                      }}
+                                      className="flex-1 sm:flex-none border border-[#E5E7EB] rounded-lg px-3 sm:px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 sm:w-32"
+                                    />
+                                    <span className="text-[#64748B] font-medium text-sm flex-shrink-0">to</span>
+                                    <input
+                                      type="time"
+                                      value={slot.endTime}
+                                      onChange={(e) => {
+                                        const newSlots: AvailabilitySlot[] = [...availability.slots];
+                                        newSlots[index] = { ...newSlots[index], endTime: e.target.value };
+                                        setAvailability({ ...availability, slots: newSlots });
+                                      }}
+                                      className="flex-1 sm:flex-none border border-[#E5E7EB] rounded-lg px-3 sm:px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 sm:w-32"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const newSlots: AvailabilitySlot[] = availability.slots.filter(
+                                        (_, i) => i !== index
+                                      );
+                                      setAvailability({ ...availability, slots: newSlots });
+                                    }}
+                                    className="hidden sm:flex ml-auto text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                    aria-label="Remove time slot"
+                                  >
+                                    <FiTrash2 className="w-6 h-6" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -689,7 +733,7 @@ export default function MentorDashboardPage() {
                       <button
                         onClick={handleSaveAvailability}
                         disabled={savingAvailability}
-                        className="mt-6 bg-emerald-600 text-white px-8 py-3.5 rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 disabled:opacity-50 font-bold text-base transition-all duration-200 flex items-center gap-3"
+                        className="mt-6 w-full sm:w-auto bg-emerald-600 text-white px-8 py-3.5 rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 disabled:opacity-50 font-bold text-base transition-all duration-200 flex items-center justify-center gap-3"
                       >
                         <FiSave className="w-5 h-5" />
                         {savingAvailability ? 'Saving…' : 'Save Availability'}
@@ -697,7 +741,7 @@ export default function MentorDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-[#E5E7EB] pt-10">
+                  <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 border-t border-[#E5E7EB] pt-8 sm:pt-10">
                     <button onClick={() => setIsEditing(false)} className={`w-full sm:w-auto ${secondaryBtnClass}`}>
                       Cancel
                     </button>
@@ -712,108 +756,108 @@ export default function MentorDashboardPage() {
                   </div>
                 </div>
               ) : (
-                /* ── Enhanced View Mode ────────────────────────────────── */
-                <div className="space-y-10 max-w-3xl mx-auto">
+                /* ── View Mode ─────────────────────────────────────────── */
+                <div className="space-y-8 sm:space-y-10 max-w-3xl mx-auto">
                   <div>
-                    <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
+                    <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
                       Your profile
                     </span>
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
                       {profile.fullName}
                     </h2>
-                    <p className="mt-3 text-xl text-[#475569]">{profile.title}</p>
+                    <p className="mt-2 sm:mt-3 text-lg sm:text-xl text-[#475569]">{profile.title}</p>
                   </div>
 
-                  {/* Enhanced Stats Row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-[#FFF7ED] to-white border border-[#F97316]/20 rounded-2xl p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-2 text-[#64748B] text-xs font-bold uppercase tracking-wider">
-                        <FiStar className="w-4 h-4 text-[#F97316]" />
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div className="bg-gradient-to-br from-[#FFF7ED] to-white border border-[#F97316]/20 rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                        <FiStar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F97316]" />
                         Rating
                       </div>
-                      <p className="mt-2 text-3xl font-extrabold text-[#172033]">
+                      <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#172033]">
                         {profile.avgRating ? profile.avgRating.toFixed(1) : '—'}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-2 text-[#64748B] text-xs font-bold uppercase tracking-wider">
-                        <FiUsers className="w-4 h-4 text-[#172033]" />
+                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                        <FiUsers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#172033]" />
                         Mentees
                       </div>
-                      <p className="mt-2 text-3xl font-extrabold text-[#172033]">
+                      <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#172033]">
                         {profile.totalMenteesServed || 0}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-2 text-[#64748B] text-xs font-bold uppercase tracking-wider">
-                        <FiCheckCircle className="w-4 h-4 text-emerald-600" />
+                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                        <FiCheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
                         Status
                       </div>
-                      <p className="mt-2 text-lg font-extrabold text-[#172033]">
+                      <p className="mt-2 text-sm sm:text-lg font-extrabold text-[#172033]">
                         {isOnboarded ? 'Active' : 'In Progress'}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-2 text-[#64748B] text-xs font-bold uppercase tracking-wider">
-                        <FiShield className="w-4 h-4 text-blue-600" />
+                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                        <FiShield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                         Verified
                       </div>
-                      <p className="mt-2 text-lg font-extrabold text-[#172033]">
+                      <p className="mt-2 text-sm sm:text-lg font-extrabold text-[#172033]">
                         {profile.isVerified ? 'Yes' : 'Pending'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Enhanced Detail Sections */}
+                  {/* Detail Sections */}
                   <div className="border border-[#E5E7EB] rounded-2xl divide-y divide-[#E5E7EB] overflow-hidden">
-                    <div className="p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
+                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
                         <FiUser className="w-4 h-4 text-[#F97316]" />
                         Profile Information
                       </h3>
                       <dl className="space-y-3 text-base">
-                        <div className="flex flex-wrap gap-x-4 py-1.5">
-                          <dt className="w-40 text-[#64748B] font-medium">Full Name</dt>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
+                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Full Name</dt>
                           <dd className="text-[#172033] font-semibold">{profile.fullName}</dd>
                         </div>
-                        <div className="flex flex-wrap gap-x-4 py-1.5">
-                          <dt className="w-40 text-[#64748B] font-medium">Title</dt>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
+                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Title</dt>
                           <dd className="text-[#172033]">{profile.title}</dd>
                         </div>
-                        <div className="flex flex-wrap gap-x-4 py-1.5">
-                          <dt className="w-40 text-[#64748B] font-medium">Company</dt>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
+                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Company</dt>
                           <dd className="text-[#172033]">{profile.company || '—'}</dd>
                         </div>
-                        <div className="flex flex-wrap gap-x-4 py-1.5">
-                          <dt className="w-40 text-[#64748B] font-medium">Bio</dt>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
+                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Bio</dt>
                           <dd className="text-[#172033]">{profile.bio || '—'}</dd>
                         </div>
                       </dl>
                     </div>
 
-                    <div className="p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
+                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
                         <FiTrendingUp className="w-4 h-4 text-[#F97316]" />
                         Experience
                       </h3>
                       <p className="text-[#172033] whitespace-pre-wrap leading-relaxed">{profile.experience || '—'}</p>
-                      <p className="mt-4 text-base text-[#64748B]">
+                      <p className="mt-4 text-sm sm:text-base text-[#64748B]">
                         <span className="font-medium text-[#172033]">Areas of Expertise: </span>
                         {profile.areasOfExpertise.length > 0 ? profile.areasOfExpertise.join(', ') : '—'}
                       </p>
                     </div>
 
-                    <div className="p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
+                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
                         <FiAward className="w-4 h-4 text-[#F97316]" />
                         Skills
                       </h3>
                       {profile.user?.userSkills && profile.user.userSkills.length > 0 ? (
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2 sm:gap-3">
                           {profile.user.userSkills.map((us: UserSkill) => (
                             <span
                               key={us.id}
-                              className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/20 px-5 py-2.5 rounded-full text-base font-medium hover:bg-[#F97316] hover:text-white hover:border-[#F97316] transition-all duration-200 cursor-default"
+                              className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/20 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium hover:bg-[#F97316] hover:text-white hover:border-[#F97316] transition-all duration-200 cursor-default"
                             >
                               {us.skill.name} · {us.level}
                             </span>
@@ -824,33 +868,41 @@ export default function MentorDashboardPage() {
                       )}
                     </div>
 
-                    <div className="p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
+                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
                         <FiClock className="w-4 h-4 text-[#F97316]" />
                         Availability
                       </h3>
-                      <p className="text-base text-[#64748B] mb-3">
+                      <p className="text-sm sm:text-base text-[#64748B] mb-3">
                         Timezone:{' '}
                         <span className="text-[#172033] font-semibold">
-                          {String(profile.availability?.timezone || '—')}
+                          {profile.availability?.timezone ? String(profile.availability.timezone) : '—'}
                         </span>
                       </p>
                       {Array.isArray(profile.availability?.slots) &&
-                      (profile.availability?.slots as Array<{ day: string; startTime: string; endTime: string }>)
+                      (profile.availability?.slots as Array<{ day?: string; startTime?: string; endTime?: string }>)
                         .length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {(profile.availability?.slots as Array<{
-                            day: string;
-                            startTime: string;
-                            endTime: string;
-                          }>).map((slot, i) => (
-                            <span
-                              key={i}
-                              className="bg-[#F8FAFC] border border-[#E5E7EB] px-4 py-2 rounded-lg text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
-                            >
-                              {getDayLabel(String(slot.day))} {slot.startTime}–{slot.endTime}
-                            </span>
-                          ))}
+                            day?: string;
+                            startTime?: string;
+                            endTime?: string;
+                          }>).map((slot, i) => {
+                            const day = String(slot.day ?? '—');
+                            const start = String(slot.startTime ?? '—');
+                            const end = String(slot.endTime ?? '—');
+                            if (day === '—' && start === '—' && end === '—') {
+                              return null;
+                            }
+                            return (
+                              <span
+                                key={i}
+                                className="bg-[#F8FAFC] border border-[#E5E7EB] px-3.5 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
+                              >
+                                {getDayLabel(day)} {start}–{end}
+                              </span>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-[#64748B]">No availability slots set</p>
@@ -859,7 +911,7 @@ export default function MentorDashboardPage() {
                   </div>
 
                   {/* Edit Button */}
-                  <div className="flex justify-end border-t border-[#E5E7EB] pt-10">
+                  <div className="flex justify-end border-t border-[#E5E7EB] pt-8 sm:pt-10">
                     <button
                       onClick={() => setIsEditing(true)}
                       className={`w-full sm:w-auto ${primaryBtnClass}`}
