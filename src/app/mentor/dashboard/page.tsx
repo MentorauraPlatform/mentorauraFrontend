@@ -214,11 +214,15 @@ export default function MentorDashboardPage() {
 
   const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
     const previousProfile = profile;
-    if (profile) {
+    if (profile && profile.user) {
       setProfile({
         ...profile,
         user: {
           ...profile.user,
+          id: profile.user.id || '',
+          email: profile.user.email || '',
+          role: profile.user.role || '',
+          isActive: profile.user.isActive ?? true,
           userSkills: profile.user.userSkills.map((us) =>
             us.id === skillId ? { ...us, level } : us
           ),

@@ -117,6 +117,7 @@ export default function MentorOnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [rawAreas, setRawAreas] = useState('');
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [submitFailed, setSubmitFailed] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -343,6 +344,7 @@ export default function MentorOnboardingPage() {
     try {
       setLoading(true);
       setError(null);
+      setSubmitFailed(false);
       if (!profile) {
         await mentorApi.createProfile({
           fullName: data.fullName,
@@ -369,10 +371,16 @@ export default function MentorOnboardingPage() {
       setCurrentStep(7);
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to submit onboarding');
+      const message = apiError.message || 'Failed to submit onboarding';
+      setError(message);
+      setSubmitFailed(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const retrySubmit = async () => {
+    await handleSubmit();
   };
 
   const visibleSteps = STEPS.filter((s) => s.id <= 6);
@@ -1023,6 +1031,15 @@ export default function MentorOnboardingPage() {
               <div className="mb-8 bg-red-50/80 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex items-center gap-4 text-base">
                 <AlertCircle className="w-6 h-6 flex-shrink-0 text-red-500" />
                 {error}
+                {submitFailed && currentStep === 6 && (
+                  <button
+                    onClick={retrySubmit}
+                    disabled={loading}
+                    className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-bold text-sm transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             )}
 
