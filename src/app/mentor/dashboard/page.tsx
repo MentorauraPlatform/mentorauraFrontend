@@ -114,16 +114,19 @@ export default function MentorDashboardPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await mentorApi.getMyProfile();
-        setProfile(res.data);
+        const [profileRes, skillsRes] = await Promise.all([
+          mentorApi.getMyProfile(),
+          apiClient.get<Skill[]>('/mentor/applications/skills').catch(() => ({ data: [] })),
+        ]);
+        setProfile(profileRes.data);
         setEditData({
-          title: res.data.title,
-          company: res.data.company || '',
-          bio: res.data.bio || '',
-          experience: res.data.experience || '',
-          areasOfExpertise: res.data.areasOfExpertise || [],
+          title: profileRes.data.title,
+          company: profileRes.data.company || '',
+          bio: profileRes.data.bio || '',
+          experience: profileRes.data.experience || '',
+          areasOfExpertise: profileRes.data.areasOfExpertise || [],
         });
-        const rawAvailability = res.data.availability as
+        const rawAvailability = profileRes.data.availability as
           | { timezone?: string; slots?: Array<{ day?: string; startTime?: string; endTime?: string }> }
           | null
           | undefined;
@@ -137,15 +140,7 @@ export default function MentorDashboardPage() {
           })),
         });
 
-        try {
-          setLoadingSkills(true);
-          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills');
-          setSkills(skillsRes.data);
-        } catch {
-          // ignore skills loading failure
-        } finally {
-          setLoadingSkills(false);
-        }
+        setSkills(skillsRes.data);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load profile');

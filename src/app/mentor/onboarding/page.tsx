@@ -129,14 +129,11 @@ export default function MentorOnboardingPage() {
     void (async () => {
       try {
         setLoading(true);
-        const profileRes = await mentorApi.getMyProfile().catch(() => null);
-        let skillsData: Skill[] = [];
-        try {
-          const skillsRes = await apiClient.get<Skill[]>('/mentor/applications/skills');
-          skillsData = skillsRes.data;
-        } catch {
-          // skills loading failed, use empty array
-        }
+        const [profileRes, skillsRes] = await Promise.all([
+          mentorApi.getMyProfile().catch(() => null),
+          apiClient.get<Skill[]>('/mentor/applications/skills').catch(() => ({ data: [] })),
+        ]);
+        const skillsData = skillsRes.data;
 
         if (profileRes) {
           const existing = profileRes.data;
