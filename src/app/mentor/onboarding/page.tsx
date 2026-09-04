@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import type { MentorProfile, Skill, SkillLevel, UserSkill } from '@/lib/types';
@@ -32,14 +33,24 @@ import {
 } from 'lucide-react';
 
 const STEPS = [
-  { id: 1, title: 'Introduction', description: 'Welcome to mentor onboarding' },
-  { id: 2, title: 'Professional Information', description: 'Tell us about yourself' },
-  { id: 3, title: 'Skills & Expertise', description: 'What can you teach?' },
-  { id: 4, title: 'Experience', description: 'Your background' },
-  { id: 5, title: 'Availability', description: 'When are you available?' },
-  { id: 6, title: 'Review', description: 'Review your information' },
-  { id: 7, title: 'Complete', description: 'Onboarding complete' },
+  { id: 1, title: 'steps.intro.title', description: 'steps.intro.description' },
+  { id: 2, title: 'steps.professional.title', description: 'steps.professional.description' },
+  { id: 3, title: 'steps.skills.title', description: 'steps.skills.description' },
+  { id: 4, title: 'steps.experience.title', description: 'steps.experience.description' },
+  { id: 5, title: 'steps.availability.title', description: 'steps.availability.description' },
+  { id: 6, title: 'steps.review.title', description: 'steps.review.description' },
+  { id: 7, title: 'complete.heading', description: 'complete.description' },
 ];
+
+const STEP_KEYS: Record<number, string> = {
+  1: 'steps.intro',
+  2: 'steps.professional',
+  3: 'steps.skills',
+  4: 'steps.experience',
+  5: 'steps.availability',
+  6: 'steps.review',
+  7: 'complete',
+};
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -106,6 +117,7 @@ const LEVEL_COLORS: Record<SkillLevel, string> = {
 export default function MentorOnboardingPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const t = useTranslations('onboarding');
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [data, setData] = useState<OnboardingData>(initialData);
   const [profile, setProfile] = useState<MentorProfile | null>(null);
@@ -187,7 +199,7 @@ export default function MentorOnboardingPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-lg text-[#64748B] font-medium">Loading your profile…</span>
+          <span className="text-lg text-[#64748B] font-medium">{t('loading.loadingProfile')}</span>
         </div>
       </div>
     );
@@ -225,19 +237,19 @@ export default function MentorOnboardingPage() {
     setError(null);
     if (currentStep === 2) {
       if (!data.fullName.trim() || !data.title.trim()) {
-        setError('Please fill in your full name and professional title');
+        setError(t('errors.nameAndTitleRequired'));
         return;
       }
     }
     if (currentStep === 3) {
       if (data.skills.length === 0) {
-        setError('Please add at least one skill before proceeding');
+        setError(t('errors.skillRequired'));
         return;
       }
     }
     if (currentStep === 4) {
       if (!data.experience.trim()) {
-        setError('Please describe your professional experience');
+        setError(t('errors.experienceRequired'));
         return;
       }
     }
@@ -273,7 +285,7 @@ export default function MentorOnboardingPage() {
       });
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to add skill');
+      setError(apiError.message || t('errors.failedToAddSkill'));
     } finally {
       setSaving(false);
     }
@@ -293,7 +305,7 @@ export default function MentorOnboardingPage() {
       });
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to remove skill');
+      setError(apiError.message || t('errors.failedToRemoveSkill'));
     } finally {
       setSaving(false);
     }
@@ -314,7 +326,7 @@ export default function MentorOnboardingPage() {
       });
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to update skill level');
+      setError(apiError.message || t('errors.failedToUpdateSkillLevel'));
       setData((prev) => ({
         ...prev,
         skills: previous,
@@ -334,7 +346,7 @@ export default function MentorOnboardingPage() {
       });
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to update availability');
+      setError(apiError.message || t('errors.failedToUpdateAvailability'));
     } finally {
       setSaving(false);
     }
@@ -371,7 +383,7 @@ export default function MentorOnboardingPage() {
       setCurrentStep(7);
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      const message = apiError.message || 'Failed to submit onboarding';
+      const message = apiError.message || t('errors.failedToSubmitOnboarding');
       setError(message);
       setSubmitFailed(true);
     } finally {
@@ -401,14 +413,13 @@ export default function MentorOnboardingPage() {
                 <Sparkles className="w-10 h-10 text-[#F97316]" />
               </div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                Before you begin
+                {t('beforeYouBegin')}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight leading-tight">
-                Welcome to <span className="text-[#F97316]">MentorAura</span>
+                {t('welcomeTitle')} <span className="text-[#F97316]">MentorAura</span>
               </h2>
               <p className="mt-4 text-xl text-[#475569] leading-relaxed max-w-2xl mx-auto">
-                Thank you for choosing to become a mentor. This process builds the profile
-                mentees will see when they look for someone to learn from.
+                {t('welcomeDescription')}
               </p>
             </div>
             <div className="bg-[#FFF7ED] border border-[#F97316]/20 rounded-2xl overflow-hidden">
@@ -424,15 +435,15 @@ export default function MentorOnboardingPage() {
                     <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#F97316] text-white text-sm font-bold flex items-center justify-center">
                       {step.id - 1}
                     </span>
-                    <span className="text-lg font-bold text-[#172033]">{step.title}</span>
+                    <span className="text-lg font-bold text-[#172033]">{t(step.title)}</span>
                     <span className="ml-auto text-base text-[#64748B] hidden sm:block">
-                      {step.description}
+                      {t(step.description)}
                     </span>
                   </div>
                 ))}
             </div>
             <p className="text-center text-base text-[#64748B]">
-              Takes about 5–10 minutes. Your progress is saved automatically.
+              {t('takesAbout')}
             </p>
           </div>
         );
@@ -442,16 +453,16 @@ export default function MentorOnboardingPage() {
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-4">
-                Step 2 of 6
+                {t('buttons.stepOf6', { step: 2 })}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-                Professional Information
+                {t('professional.heading')}
               </h2>
-              <p className="mt-3 text-xl text-[#475569]">Tell mentees who you are and what you do.</p>
+              <p className="mt-3 text-xl text-[#475569]">{t('professional.subheading')}</p>
             </div>
             <div className="space-y-6">
               <div>
-                <label className={labelClass}>Full Name <span className="text-red-500">*</span></label>
+                <label className={labelClass}>{t('professional.fullNameRequired')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <User className="w-6 h-6 text-[#94A3B8]" />
@@ -462,12 +473,12 @@ export default function MentorOnboardingPage() {
                     onChange={(e) => updateData({ fullName: e.target.value })}
                     required
                     className={`${inputClass} pl-14`}
-                    placeholder="e.g. Jane Doe"
+                    placeholder={t('professional.fullNamePlaceholder')}
                   />
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Professional Title <span className="text-red-500">*</span></label>
+                <label className={labelClass}>{t('professional.titleRequired')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <Briefcase className="w-6 h-6 text-[#94A3B8]" />
@@ -478,12 +489,12 @@ export default function MentorOnboardingPage() {
                     onChange={(e) => updateData({ title: e.target.value })}
                     required
                     className={`${inputClass} pl-14`}
-                    placeholder="e.g. Senior Software Engineer"
+                    placeholder={t('professional.titlePlaceholder')}
                   />
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Company</label>
+                <label className={labelClass}>{t('professional.company')}</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <Building2 className="w-6 h-6 text-[#94A3B8]" />
@@ -493,18 +504,18 @@ export default function MentorOnboardingPage() {
                     value={data.company}
                     onChange={(e) => updateData({ company: e.target.value })}
                     className={`${inputClass} pl-14`}
-                    placeholder="e.g. Acme Corp"
+                    placeholder={t('professional.companyPlaceholder')}
                   />
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Bio</label>
+                <label className={labelClass}>{t('professional.bio')}</label>
                 <textarea
                   value={data.bio}
                   onChange={(e) => updateData({ bio: e.target.value })}
                   rows={6}
                   className={textareaClass}
-                  placeholder="Tell us about yourself, your background, and what drives you..."
+                  placeholder={t('professional.bioPlaceholder')}
                 />
               </div>
             </div>
@@ -516,19 +527,19 @@ export default function MentorOnboardingPage() {
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                Step 3 of 6
+                {t('buttons.stepOf6', { step: 3 })}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-                Skills & Expertise
+                {t('skills.heading')}
               </h2>
               <p className="mt-3 text-xl text-[#475569]">
-                Add the skills you can mentor others in, and rate your proficiency in each.
+                {t('skills.subheading')}
               </p>
               {data.skills.length === 0 && (
                 <div className="mt-4 p-5 bg-[#FFF7ED] border border-[#F97316]/30 rounded-xl">
                   <p className="text-base text-[#F97316] font-medium flex items-center gap-3">
                     <AlertCircle className="w-5 h-5" />
-                    Please add at least one skill to continue.
+                    {t('skills.pleaseAddAtLeastOneSkill')}
                   </p>
                 </div>
               )}
@@ -552,10 +563,10 @@ export default function MentorOnboardingPage() {
                       onChange={(e) => handleUpdateSkillLevel(skill.id, e.target.value as SkillLevel)}
                       className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316]"
                     >
-                      <option value="BEGINNER">Beginner</option>
-                      <option value="INTERMEDIATE">Intermediate</option>
-                      <option value="ADVANCED">Advanced</option>
-                      <option value="EXPERT">Expert</option>
+                      <option value="BEGINNER">{t('skills.beginner')}</option>
+                      <option value="INTERMEDIATE">{t('skills.intermediate')}</option>
+                      <option value="ADVANCED">{t('skills.advanced')}</option>
+                      <option value="EXPERT">{t('skills.expert')}</option>
                     </select>
                     <button
                       onClick={() => handleRemoveSkill(skill.id)}
@@ -569,20 +580,20 @@ export default function MentorOnboardingPage() {
               {data.skills.length === 0 && (
                 <div className="text-center py-16 border-2 border-dashed border-[#E5E7EB] rounded-2xl">
                   <Award className="w-16 h-16 text-[#94A3B8] mx-auto mb-4 opacity-50" />
-                  <p className="text-lg text-[#64748B]">No skills added yet. Add your first skill below.</p>
+                  <p className="text-lg text-[#64748B]">{t('skills.noSkillsAddedYet')}</p>
                 </div>
               )}
             </div>
 
             <div className="border-t border-[#E5E7EB] pt-8">
-              <label className={labelClass}>Add a skill</label>
+              <label className={labelClass}>{t('skills.addASkill')}</label>
               <div className="flex flex-col sm:flex-row gap-4">
                 <select
                   value={selectedSkillId}
                   onChange={(e) => setSelectedSkillId(e.target.value)}
                   className="flex-1 h-14 text-base border border-[#E5E7EB] rounded-xl px-5 text-[#172033] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316]"
                 >
-                  <option value="">Select a skill...</option>
+                  <option value="">{t('skills.selectSkillPlaceholder')}</option>
                   {skills
                     .filter((s) => !data.skills.some((sk) => sk.id === s.id))
                     .map((skill) => (
@@ -596,10 +607,10 @@ export default function MentorOnboardingPage() {
                   onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
                   className="h-14 text-base border border-[#E5E7EB] rounded-xl px-5 bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316]"
                 >
-                  <option value="BEGINNER">Beginner</option>
-                  <option value="INTERMEDIATE">Intermediate</option>
-                  <option value="ADVANCED">Advanced</option>
-                  <option value="EXPERT">Expert</option>
+                  <option value="BEGINNER">{t('skills.beginner')}</option>
+                  <option value="INTERMEDIATE">{t('skills.intermediate')}</option>
+                  <option value="ADVANCED">{t('skills.advanced')}</option>
+                  <option value="EXPERT">{t('skills.expert')}</option>
                 </select>
                 <button
                   onClick={handleAddSkill}
@@ -607,13 +618,13 @@ export default function MentorOnboardingPage() {
                   className="bg-[#F97316] text-white px-8 py-3.5 rounded-xl hover:bg-[#ea580c] disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
-                  {saving ? 'Adding…' : 'Add Skill'}
+                  {saving ? t('skills.adding') : t('skills.addSkill')}
                 </button>
               </div>
               {selectedSkillId && (
-                <p className="mt-3 text-base text-emerald-600 font-medium">
-                  ✓ Selected: {skills.find((s) => s.id === selectedSkillId)?.name}
-                </p>
+                  <p className="mt-3 text-base text-emerald-600 font-medium">
+                    {t('skills.selected', { name: skills.find((s) => s.id === selectedSkillId)?.name })}
+                  </p>
               )}
             </div>
           </div>
@@ -624,24 +635,24 @@ export default function MentorOnboardingPage() {
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-4">
-                Step 4 of 6
+                {t('buttons.stepOf6', { step: 4 })}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-                Experience
+                {t('experience.heading')}
               </h2>
-              <p className="mt-3 text-xl text-[#475569]">Share your professional experience and areas of expertise.</p>
+              <p className="mt-3 text-xl text-[#475569]">{t('experience.subheading')}</p>
               {!data.experience.trim() && (
                 <div className="mt-4 p-5 bg-[#FFF7ED] border border-[#F97316]/30 rounded-xl">
                   <p className="text-base text-[#F97316] font-medium flex items-center gap-3">
                     <AlertCircle className="w-5 h-5" />
-                    Please describe your professional experience to continue.
+                    {t('experience.experienceRequiredMessage')}
                   </p>
                 </div>
               )}
             </div>
             <div className="space-y-6">
               <div>
-                <label className={labelClass}>Professional Experience <span className="text-red-500">*</span></label>
+                <label className={labelClass}>{t('experience.experienceRequired')} <span className="text-red-500">*</span></label>
                 <textarea
                   value={data.experience}
                   onChange={(e) => updateData({ experience: e.target.value })}
@@ -649,15 +660,15 @@ export default function MentorOnboardingPage() {
                   className={`${textareaClass} ${
                     !data.experience.trim() ? 'border-[#F97316]' : 'border-[#E5E7EB]'
                   }`}
-                  placeholder="Describe your professional experience, achievements, and background. Include relevant work history, projects, and accomplishments..."
+                  placeholder={t('experience.experiencePlaceholder')}
                 />
                 <div className="mt-3 flex justify-between text-sm text-[#64748B]">
                   <span>{data.experience.length} characters</span>
-                  <span>Minimum 10 characters recommended</span>
+                  <span>{t('experience.experienceHint')}</span>
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Areas of Expertise</label>
+                <label className={labelClass}>{t('experience.areasOfExpertise')}</label>
                 <input
                   type="text"
                   value={rawAreas}
@@ -670,9 +681,9 @@ export default function MentorOnboardingPage() {
                     }
                   }}
                   className={inputClass}
-                  placeholder="e.g. Software Engineering, Leadership, Career Growth"
+                  placeholder={t('experience.areasPlaceholder')}
                 />
-                <p className="mt-2 text-sm text-[#64748B]">Separate multiple areas with commas.</p>
+                <p className="mt-2 text-sm text-[#64748B]">{t('experience.areasHint')}</p>
                 {data.areasOfExpertise.length > 0 && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {data.areasOfExpertise.map((area) => (
@@ -695,16 +706,16 @@ export default function MentorOnboardingPage() {
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                Step 5 of 6
+                {t('buttons.stepOf6', { step: 5 })}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-                Availability
+                {t('availability.heading')}
               </h2>
-              <p className="mt-3 text-xl text-[#475569]">Specify when you're available for mentorship sessions.</p>
+              <p className="mt-3 text-xl text-[#475569]">{t('availability.subheading')}</p>
             </div>
             <div className="space-y-6">
               <div className="max-w-sm">
-                <label className={labelClass}>Timezone <span className="text-red-500">*</span></label>
+                <label className={labelClass}>{t('availability.timezoneRequired')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <Globe className="w-6 h-6 text-[#94A3B8]" />
@@ -731,7 +742,7 @@ export default function MentorOnboardingPage() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Time slots</label>
+                <label className={labelClass}>{t('availability.timeSlots')}</label>
                 {Array.isArray(data.availability.slots) && (
                   <div className="space-y-4">
                     {(data.availability.slots as Array<{ day: string; startTime: string; endTime: string }>).map(
@@ -802,7 +813,7 @@ export default function MentorOnboardingPage() {
                   className="mt-4 text-[#F97316] hover:text-[#ea580c] font-bold text-base flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-5 h-5" />
-                  Add time slot
+                  {t('availability.addTimeSlot')}
                 </button>
               </div>
               <button
@@ -811,7 +822,7 @@ export default function MentorOnboardingPage() {
                 className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50 font-bold text-base transition-colors flex items-center gap-3"
               >
                 <Clock className="w-5 h-5" />
-                {saving ? 'Saving…' : 'Save Availability'}
+                {saving ? t('availability.saving') : t('availability.saveAvailability')}
               </button>
             </div>
           </div>
@@ -822,50 +833,50 @@ export default function MentorOnboardingPage() {
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
               <span className="inline-block text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-4">
-                Step 6 of 6
+                {t('buttons.stepOf6', { step: 6 })}
               </span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-                Review Your Profile
+                {t('review.heading')}
               </h2>
-              <p className="mt-3 text-xl text-[#475569]">Take one more look before you submit for approval.</p>
+              <p className="mt-3 text-xl text-[#475569]">{t('review.subheading')}</p>
             </div>
             <div className="border border-[#E5E7EB] rounded-2xl divide-y divide-[#E5E7EB]">
               <div className="p-8">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4">
-                  Professional Information
+                  {t('review.professionalInformation')}
                 </h3>
                 <dl className="space-y-3 text-base">
                   <div className="flex flex-wrap gap-x-4">
-                    <dt className="w-40 text-[#64748B] font-medium">Full Name</dt>
+                    <dt className="w-40 text-[#64748B] font-medium">{t('review.fullNameLabel')}</dt>
                     <dd className="text-[#172033] font-semibold">{data.fullName || '—'}</dd>
                   </div>
                   <div className="flex flex-wrap gap-x-4">
-                    <dt className="w-40 text-[#64748B] font-medium">Title</dt>
+                    <dt className="w-40 text-[#64748B] font-medium">{t('review.titleLabel')}</dt>
                     <dd className="text-[#172033]">{data.title || '—'}</dd>
                   </div>
                   <div className="flex flex-wrap gap-x-4">
-                    <dt className="w-40 text-[#64748B] font-medium">Company</dt>
+                    <dt className="w-40 text-[#64748B] font-medium">{t('review.companyLabel')}</dt>
                     <dd className="text-[#172033]">{data.company || '—'}</dd>
                   </div>
                   <div className="flex flex-wrap gap-x-4">
-                    <dt className="w-40 text-[#64748B] font-medium">Bio</dt>
+                    <dt className="w-40 text-[#64748B] font-medium">{t('review.bioLabel')}</dt>
                     <dd className="text-[#172033]">{data.bio || '—'}</dd>
                   </div>
                 </dl>
               </div>
               <div className="p-8">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4">
-                  Experience
+                  {t('review.experienceLabel')}
                 </h3>
                 <p className="text-[#172033] whitespace-pre-wrap">{data.experience || '—'}</p>
                 <p className="mt-4 text-base text-[#64748B]">
-                  <span className="font-medium text-[#172033]">Areas of Expertise: </span>
+                  <span className="font-medium text-[#172033]">{t('review.areasOfExpertiseLabel')}</span>
                   {data.areasOfExpertise.join(', ') || '—'}
                 </p>
               </div>
               <div className="p-8">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4">
-                  Skills
+                  {t('review.skillsSection')}
                 </h3>
                 {data.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-3">
@@ -879,15 +890,15 @@ export default function MentorOnboardingPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[#64748B]">No skills added</p>
+                  <p className="text-[#64748B]">{t('skills.noSkillsAdded')}</p>
                 )}
               </div>
               <div className="p-8">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4">
-                  Availability
+                  {t('review.availabilitySection')}
                 </h3>
                 <p className="text-base text-[#64748B] mb-3">
-                  Timezone: <span className="text-[#172033] font-semibold">{String(data.availability.timezone)}</span>
+                  {t('review.timezoneLabel')} <span className="text-[#172033] font-semibold">{String(data.availability.timezone)}</span>
                 </p>
                 {Array.isArray(data.availability.slots) && data.availability.slots.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -903,7 +914,7 @@ export default function MentorOnboardingPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-[#64748B]">No availability slots set</p>
+                  <p className="text-[#64748B]">{t('review.noAvailabilitySlotsSet')}</p>
                 )}
               </div>
             </div>
@@ -917,11 +928,10 @@ export default function MentorOnboardingPage() {
               <CheckCircle2 className="w-14 h-14 text-emerald-600" />
             </div>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-[#172033] tracking-tight">
-              Onboarding Complete! 🎉
+              {t('complete.heading')}
             </h2>
             <p className="text-xl text-[#475569] leading-relaxed">
-              Your mentor profile has been submitted for review. We'll notify you once it's
-              approved. In the meantime, you can access your mentor dashboard.
+              {t('complete.description')}
             </p>
             <button
               onClick={() => {
@@ -929,7 +939,7 @@ export default function MentorOnboardingPage() {
               }}
               className="bg-[#F97316] text-white px-10 py-4 rounded-xl hover:bg-[#ea580c] font-bold text-lg transition-colors flex items-center gap-3 mx-auto"
             >
-              Go to Mentor Dashboard
+              {t('complete.goToDashboard')}
               <ArrowRight className="w-6 h-6" />
             </button>
           </div>
@@ -945,7 +955,7 @@ export default function MentorOnboardingPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-lg text-[#64748B] font-medium">Loading your profile…</span>
+          <span className="text-lg text-[#64748B] font-medium">{t('loading.loadingProfile')}</span>
         </div>
       </div>
     );
@@ -1037,7 +1047,7 @@ export default function MentorOnboardingPage() {
                     disabled={loading}
                     className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-bold text-sm transition-colors"
                   >
-                    Retry
+                    {t('errors.retry')}
                   </button>
                 )}
               </div>
@@ -1053,7 +1063,7 @@ export default function MentorOnboardingPage() {
                   className="w-full sm:w-auto px-8 py-4 border border-[#E5E7EB] rounded-xl hover:bg-[#FFFCF9] font-bold text-base transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[#172033] flex items-center justify-center gap-3"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  Previous
+                  {t('buttons.previous')}
                 </button>
                 {currentStep === 6 ? (
                   <button
@@ -1061,7 +1071,7 @@ export default function MentorOnboardingPage() {
                     disabled={loading}
                     className="w-full sm:w-auto px-10 py-4 bg-[#F97316] text-white rounded-xl hover:bg-[#ea580c] disabled:opacity-50 font-bold text-base transition-colors flex items-center justify-center gap-3"
                   >
-                    {loading ? 'Submitting…' : 'Submit Onboarding'}
+                    {loading ? t('buttons.submitting') : t('buttons.submitOnboarding')}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 ) : (
@@ -1074,7 +1084,7 @@ export default function MentorOnboardingPage() {
                         : 'bg-[#F97316] text-white hover:bg-[#ea580c]'
                     }`}
                   >
-                    Next
+                    {t('buttons.next')}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 )}

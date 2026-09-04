@@ -1,127 +1,154 @@
 {
-  "nav": {
-    "findMentor": "Find a Mentor",
-    "allMentors": "All Mentors",
-    "browseMentors": "Browse 500+ Mentors",
-    "engineeringTech": "Engineering & Tech",
-    "productDesign": "Product & UX Design",
-    "aiDataScience": "AI & Data Science",
-    "categories": "Categories",
-    "howItWorks": "How It Works",
-    "forTeams": "For Teams",
-    "pricing": "Pricing",
-    "login": "Log In",
-    "signup": "Get Started",
-    "dashboard": "Dashboard",
-    "logout": "Log Out"
+  "onboarding": {
+    "title": "Mentor Onboarding",
+    "stepCounter": "Step {step} of 6: {title}",
+    "beforeYouBegin": "Before you begin",
+    "welcomeTitle": "Welcome to",
+    "welcomeDescription": "Thank you for choosing to become a mentor. This process builds the profile mentees will see when they look for someone to learn from.",
+    "takesAbout": "Takes about 5–10 minutes. Your progress is saved automatically.",
+    "steps": {
+      "intro": {
+        "title": "Introduction",
+        "description": "Welcome to mentor onboarding"
+      },
+      "professional": {
+        "title": "Professional Information",
+        "description": "Tell us about yourself"
+      },
+      "skills": {
+        "title": "Skills & Expertise",
+        "description": "What can you teach?"
+      },
+      "experience": {
+        "title": "Experience",
+        "description": "Your background"
+      },
+      "availability": {
+        "title": "Availability",
+        "description": "When are you available?"
+      },
+      "review": {
+        "title": "Review",
+        "description": "Review your information"
+      }
+    },
+    "professional": {
+      "heading": "Professional Information",
+      "subheading": "Tell mentees who you are and what you do.",
+      "fullName": "Full Name",
+      "fullNameRequired": "Full Name",
+      "fullNamePlaceholder": "e.g. Jane Doe",
+      "title": "Professional Title",
+      "titleRequired": "Professional Title",
+      "titlePlaceholder": "e.g. Senior Software Engineer",
+      "company": "Company",
+      "companyPlaceholder": "e.g. Acme Corp",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself, your background, and what drives you..."
+    },
+    "skills": {
+      "heading": "Skills & Expertise",
+      "subheading": "Add the skills you can mentor others in, and rate your proficiency in each.",
+      "addSkill": "Add Skill",
+      "adding": "Adding…",
+      "noSkillsAddedYet": "No skills added yet. Add your first skill below.",
+      "pleaseAddAtLeastOneSkill": "Please add at least one skill to continue.",
+      "addASkill": "Add a skill",
+      "selectSkillPlaceholder": "Select a skill...",
+      "selected": "✓ Selected: {name}",
+      "noSkillsAdded": "No skills added",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "experience": {
+      "heading": "Experience",
+      "subheading": "Share your professional experience and areas of expertise.",
+      "professionalExperience": "Professional Experience",
+      "experienceRequired": "Professional Experience",
+      "experienceRequiredMessage": "Please describe your professional experience to continue.",
+      "experiencePlaceholder": "Describe your professional experience, achievements, and background. Include relevant work history, projects, and accomplishments...",
+      "experienceHint": "Minimum 10 characters recommended",
+      "areasOfExpertise": "Areas of Expertise",
+      "areasPlaceholder": "e.g. Software Engineering, Leadership, Career Growth",
+      "areasHint": "Separate multiple areas with commas."
+    },
+    "availability": {
+      "heading": "Availability",
+      "subheading": "Specify when you're available for mentorship sessions.",
+      "timezone": "Timezone",
+      "timezoneRequired": "Timezone",
+      "timeSlots": "Time slots",
+      "addTimeSlot": "Add time slot",
+      "saveAvailability": "Save Availability",
+      "saving": "Saving…"
+    },
+    "review": {
+      "heading": "Review Your Profile",
+      "subheading": "Take one more look before you submit for approval.",
+      "professionalInformation": "Professional Information",
+      "fullNameLabel": "Full Name",
+      "titleLabel": "Title",
+      "companyLabel": "Company",
+      "bioLabel": "Bio",
+      "experienceLabel": "Experience",
+      "areasOfExpertiseLabel": "Areas of Expertise: ",
+      "skillsSection": "Skills",
+      "availabilitySection": "Availability",
+      "timezoneLabel": "Timezone:",
+      "noAvailabilitySlotsSet": "No availability slots set"
+    },
+    "complete": {
+      "heading": "Onboarding Complete! 🎉",
+      "description": "Your mentor profile has been submitted for review. We'll notify you once it's approved. In the meantime, you can access your mentor dashboard.",
+      "goToDashboard": "Go to Mentor Dashboard"
+    },
+    "errors": {
+      "nameAndTitleRequired": "Please fill in your full name and professional title",
+      "skillRequired": "Please add at least one skill before proceeding",
+      "experienceRequired": "Please describe your professional experience",
+      "failedToAddSkill": "Failed to add skill",
+      "failedToRemoveSkill": "Failed to remove skill",
+      "failedToUpdateSkillLevel": "Failed to update skill level",
+      "failedToUpdateAvailability": "Failed to update availability",
+      "failedToSubmitOnboarding": "Failed to submit onboarding",
+      "retry": "Retry"
+    },
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "submitOnboarding": "Submit Onboarding",
+      "submitting": "Submitting…",
+      "stepOf6": "Step {step} of 6"
+    },
+    "loading": {
+      "loadingProfile": "Loading your profile…"
+    }
   },
-  "hero": {
-    "badge": "World-Class 1-on-1 Mentorship Platform",
-    "titlePart1": "Reach your career goals with a ",
-    "titleHighlight": "dedicated mentor",
-    "subtitle": "Get ongoing 1-on-1 guidance, portfolio reviews, career strategy calls, and weekly accountability from handpicked industry leaders.",
-    "searchPlaceholder": "Search by skill, title, or company (e.g. React, Product Manager)",
-    "findMentorBtn": "Find My Mentor",
-    "vettedMentors": "Vetted 1% Mentors",
-    "flexibleSubscriptions": "Flexible Subscriptions",
-    "riskFreeTrial": "Risk-Free Trial",
-    "activeMentors": "Active Mentors",
-    "sessionsCompleted": "Sessions Completed",
-    "satisfactionRate": "Satisfaction Rate"
-  },
-  "mentorCard": {
-    "featuredBadge": "FEATURED MENTOR",
-    "availableNow": "Available Now",
-    "mentorshipSessions": "mentorship sessions",
-    "includesNote": "Includes 1-on-1 video calls, unlimited chat messaging & code reviews.",
-    "startingFrom": "Starting from",
-    "perMonth": "/ month",
-    "bookSession": "Book Session"
-  },
-  "categories": {
-    "badge": "Explore Disciplines",
-    "title": "Find mentors by category",
-    "subtitle": "Connect with experts across technical, product, and leadership domains.",
-    "viewAll": "View all categories",
-    "softwareEngineering": "Software Engineering",
-    "productManagement": "Product Management",
-    "uxDesign": "UI/UX Design",
-    "dataScience": "Data Science & AI",
-    "startups": "Startups & Growth",
-    "leadership": "Career Leadership",
-    "activeMentorsCount": "active mentors"
-  },
-  "featuredSection": {
-    "badge": "Top Rated Mentors",
-    "title": "Learn from industry leading mentors",
-    "subtitle": "Get personalized guidance from experienced senior engineers, product leaders, and design executives.",
-    "monthlyPlan": "Monthly Plan",
-    "applyNow": "Apply Now",
-    "reviews": "reviews"
-  },
-  "howItWorks": {
-    "badge": "Simple Workflow",
-    "title": "How 1-on-1 Mentorship Works",
-    "subtitle": "Three simple steps to connect with your dedicated mentor and unlock your potential.",
-    "step1Title": "1. Filter & Choose",
-    "step1Desc": "Browse through vetted industry experts based on tech stack, experience level, availability, and monthly pricing.",
-    "step2Title": "2. Apply & Connect",
-    "step2Desc": "Send an application introducing your background and goals. Start with a free intro call or risk-free trial period.",
-    "step3Title": "3. Achieve Acceleration",
-    "step3Desc": "Receive structured 1:1 video calls, daily chat support, code & resume reviews to reach your target career milestone."
-  },
-  "teams": {
-    "badge": "MentorAura Enterprise",
-    "title": "Upskill your engineering & product teams with top mentors",
-    "subtitle": "Empower your employees with external senior leadership guidance, tailored 1-on-1 coaching, and specialized technical skill building.",
-    "demoBtn": "Schedule Team Demo"
-  },
-  "auth": {
-    "welcomeBack": "Welcome back",
-    "loginSubtitle": "Enter your credentials to access your mentorship portal.",
-    "createAccount": "Create your account",
-    "signupSubtitle": "Join MentorAura to start learning or teaching.",
-    "continueGoogle": "Continue with Google",
-    "or": "or",
-    "emailLabel": "Email Address",
-    "emailPlaceholder": "you@example.com",
-    "passwordLabel": "Password",
-    "confirmPasswordLabel": "Confirm Password",
-    "fullNameLabel": "Full Name",
-    "joiningAs": "I am joining as a:",
-    "mentee": "Mentee",
-    "mentor": "Mentor",
-    "forgotPassword": "Forgot password?",
-    "signInBtn": "Sign In",
-    "signUpBtn": "Create Account",
-    "alreadyRegistered": "Already registered?",
-    "loginHere": "Log in here",
-    "noAccount": "Don't have an account?",
-    "signUpFree": "Sign up free",
-    "agreeTerms": "I agree to MentorAura's",
-    "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy",
-    "checkEmailTitle": "Check your email!",
-    "checkEmailSub": "We sent a verification link to",
-    "checkEmailNote": "You must verify your email before logging in. If you don't see it, check your spam or junk folder.",
-    "resendEmailBtn": "Resend Verification Email",
-    "proceedLoginBtn": "Proceed to Login",
-    "passRequirementsTitle": "Password must contain:",
-    "passMinChar": "At least 8 characters",
-    "passUpper": "1 Uppercase letter (A-Z)",
-    "passLower": "1 Lowercase letter (a-z)",
-    "passNumberSymbol": "1 Number or symbol",
-    "passMatch": "Passwords match"
-  },
-  "notFound": {
-    "badge": "Lost in Navigation",
-    "oops": "Oops! Page not found.",
-    "description": "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.",
-    "backHome": "Back to Home",
-    "goDashboard": "Go to Dashboard",
-    "lookingSpecific": "Looking for something specific?"
-  },
-  "footer": {
-    "rights": "All rights reserved."
+  "dashboard": {
+    "title": "Mentor Dashboard",
+    "profileInformation": "Profile Information",
+    "skillsSection": "Skills",
+    "availabilitySection": "Availability",
+    "noSkillsAddedYet": "No skills added yet.",
+    "noAvailabilitySlotsSet": "No availability slots set",
+    "addSkill": "Add Skill",
+    "adding": "Adding…",
+    "saveAvailability": "Save Availability",
+    "savingAvailability": "Saving…",
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes",
+    "saving": "Saving…",
+    "continueOnboarding": "Continue Onboarding",
+    "timezone": "Timezone",
+    "timeSlots": "Time slots",
+    "addTimeSlot": "Add time slot",
+    "failedToLoadProfile": "Failed to load profile",
+    "failedToUpdateProfile": "Failed to update profile",
+    "failedToAddSkill": "Failed to add skill",
+    "failedToRemoveSkill": "Failed to remove skill",
+    "failedToUpdateSkillLevel": "Failed to update skill level",
+    "failedToUpdateAvailability": "Failed to update availability"
   }
 }

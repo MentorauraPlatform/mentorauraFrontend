@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import type { MentorProfile, UserSkill, Skill, SkillLevel } from '@/lib/types';
@@ -57,6 +58,7 @@ type Availability = {
 
 export default function MentorDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const t = useTranslations('dashboard');
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -366,7 +368,7 @@ export default function MentorDashboardPage() {
                     <FiUser className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight">Mentor Dashboard</h1>
+                    <h1 className="text-2xl font-extrabold text-white tracking-tight">{t('title')}</h1>
                     <div className="flex flex-wrap items-center gap-3 mt-1">
                       <span className="text-sm text-white/70 font-medium">{profile.fullName}</span>
                       <span className="w-1 h-1 rounded-full bg-white/30" />
