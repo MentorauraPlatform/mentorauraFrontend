@@ -153,7 +153,14 @@ export interface UpdateSkillPayload {
 }
 
 export interface UpdateAvailabilityPayload {
-  availability: Record<string, unknown>;
+  availability: {
+    timezone: string;
+    slots: Array<{
+      day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+      startTime: string;
+      endTime: string;
+    }>;
+  };
 }
 
 export interface SubmitOnboardingPayload {

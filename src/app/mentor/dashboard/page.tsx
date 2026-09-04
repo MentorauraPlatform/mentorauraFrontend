@@ -35,6 +35,26 @@ import {
   FiMoreHorizontal
 } from 'react-icons/fi';
 
+type AvailabilityDay =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
+
+type AvailabilitySlot = {
+  day: AvailabilityDay;
+  startTime: string;
+  endTime: string;
+};
+
+type Availability = {
+  timezone: string;
+  slots: AvailabilitySlot[];
+};
+
 export default function MentorDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState<MentorProfile | null>(null);
@@ -51,16 +71,24 @@ export default function MentorDashboardPage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSkillId, setSelectedSkillId] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel>('BEGINNER');
-  const [availability, setAvailability] = useState<Record<string, unknown>>({
+  const [availability, setAvailability] = useState<Availability>({
     timezone: 'Africa/Douala',
-    slots: [] as Array<{ day: string; startTime: string; endTime: string }>,
+    slots: [],
   });
   const [savingSkills, setSavingSkills] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [loadingSkills, setLoadingSkills] = useState(false);
 
-  const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-  const DAY_LABELS: Record<string, string> = {
+  const DAYS: AvailabilityDay[] = [
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+  ];
+  const DAY_LABELS: Record<AvailabilityDay, string> = {
     MONDAY: 'Mon',
     TUESDAY: 'Tue',
     WEDNESDAY: 'Wed',
@@ -91,9 +119,18 @@ export default function MentorDashboardPage() {
           experience: res.data.experience || '',
           areasOfExpertise: res.data.areasOfExpertise || [],
         });
-        setAvailability((res.data.availability as Record<string, unknown>) || {
-          timezone: 'Africa/Douala',
-          slots: [],
+        const rawAvailability = res.data.availability as
+          | { timezone?: string; slots?: Array<{ day?: string; startTime?: string; endTime?: string }> }
+          | null
+          | undefined;
+
+        setAvailability({
+          timezone: rawAvailability?.timezone || 'Africa/Douala',
+          slots: (rawAvailability?.slots || []).map((slot) => ({
+            day: (slot.day as AvailabilityDay) || 'MONDAY',
+            startTime: slot.startTime || '09:00',
+            endTime: slot.endTime || '17:00',
+          })),
         });
 
         try {

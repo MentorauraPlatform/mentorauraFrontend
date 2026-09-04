@@ -91,6 +91,45 @@ export interface MeResponse {
 export type OnboardingStatus = 'INCOMPLETE' | 'PENDING' | 'COMPLETE';
 export type MentorStatus = 'draft' | 'active' | 'suspended' | 'deactivated';
 
+export interface TimeSlot {
+  day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  startTime: string;
+  endTime: string;
+}
+
+export interface Availability {
+  timezone: string;
+  slots: TimeSlot[];
+}
+
+export interface UserSkillSummary {
+  id: string;
+  userId: string;
+  skillId: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  menteeProfile: MenteeProfile | null;
+  mentorProfile: MentorProfileSummary | null;
+  userSkills: UserSkillSummary[];
+}
+
+// ── Mentor ────────────────────────────────────────────────────────────────────
+export type OnboardingStatus = 'INCOMPLETE' | 'PENDING' | 'COMPLETE';
+export type MentorStatus = 'draft' | 'active' | 'suspended' | 'deactivated';
+
 export interface UserSkill {
   id: string;
   userId: string;
@@ -113,7 +152,7 @@ export interface MentorProfile {
   bio?: string;
   experience?: string;
   areasOfExpertise: string[];
-  availability?: Record<string, unknown>;
+  availability?: Availability;
   onboardingStatus: OnboardingStatus;
   isVerified: boolean;
   createdAt: string;

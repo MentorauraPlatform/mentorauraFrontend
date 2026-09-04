@@ -51,7 +51,14 @@ interface OnboardingData {
   experience: string;
   areasOfExpertise: string[];
   skills: Array<{ id: string; name: string; level: SkillLevel }>;
-  availability: Record<string, unknown>;
+  availability: {
+    timezone: string;
+    slots: Array<{
+      day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+      startTime: string;
+      endTime: string;
+    }>;
+  };
 }
 
 const initialData: OnboardingData = {
@@ -146,7 +153,7 @@ export default function MentorOnboardingPage() {
               name: us.skill.name,
               level: us.level,
             })),
-            availability: (existing.availability as Record<string, unknown>) || initialData.availability,
+            availability: (existing.availability as { timezone: string; slots: Array<{ day: string; startTime: string; endTime: string }> }) || initialData.availability,
           });
           setRawAreas((existing.areasOfExpertise || []).join(', '));
           if (existing.onboardingStatus === 'COMPLETE' || existing.onboardingStatus === 'PENDING') {
