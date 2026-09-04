@@ -291,7 +291,7 @@ export default function MentorDashboardPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] px-4">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-base sm:text-lg text-[#64748B] font-medium">Loading your profile…</span>
+          <span className="text-base sm:text-lg text-[#64748B] font-medium">{t('loadingProfile')}</span>
         </div>
       </div>
     );
@@ -319,20 +319,19 @@ export default function MentorDashboardPage() {
                 <FiUser className="w-8 h-8 sm:w-10 sm:h-10 text-[#F97316]" />
               </div>
               <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                No profile yet
+                {t('noProfileYet')}
               </span>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#172033] tracking-tight leading-tight">
-                No Mentor Profile
+                {t('noMentorProfile')}
               </h1>
               <p className="mt-4 text-base sm:text-xl text-[#475569] leading-relaxed max-w-xl mx-auto">
-                You haven&apos;t created a mentor profile yet. Start your journey to become a
-                mentor today.
+                {t('noProfileDescription')}
               </p>
               <Link
                 href="/mentor/onboarding"
                 className={`${primaryBtnClass} mt-8 inline-flex w-full sm:w-auto`}
               >
-                Start Onboarding
+                {t('startOnboarding')}
                 <FiArrowRight className="w-5 h-5" />
               </Link>
             </div>
@@ -404,7 +403,7 @@ export default function MentorDashboardPage() {
                     className="bg-[#F97316] text-white px-5 sm:px-6 py-3 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 font-bold text-sm transition-all duration-200 flex items-center gap-2 w-full sm:w-auto justify-center flex-shrink-0"
                   >
                     <FiAlertCircle className="w-4 h-4" />
-                    Continue Onboarding
+                    {t('continueOnboarding')}
                   </Link>
                 )}
               </div>
@@ -425,10 +424,10 @@ export default function MentorDashboardPage() {
                   <div className="flex items-start sm:items-center justify-between gap-4">
                     <div>
                       <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-3 sm:mb-4">
-                        Editing profile
+                        {t('editingProfile')}
                       </span>
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#172033] tracking-tight">
-                        Edit Profile
+                        {t('editProfile')}
                       </h2>
                     </div>
                     <button
@@ -443,7 +442,7 @@ export default function MentorDashboardPage() {
                   <div className="space-y-6">
                     <div>
                       <label className={labelClass}>
-                        Professional Title <span className="text-red-500">*</span>
+                        {t('professionalTitle')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
@@ -454,12 +453,12 @@ export default function MentorDashboardPage() {
                           value={editData.title}
                           onChange={(e) => setEditData({ ...editData, title: e.target.value })}
                           className={`${inputClass} pl-12 sm:pl-14`}
-                          placeholder="e.g. Senior Software Engineer"
+                          placeholder={t('titlePlaceholder')}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className={labelClass}>Company</label>
+                      <label className={labelClass}>{t('company')}</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
                           <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
@@ -469,12 +468,12 @@ export default function MentorDashboardPage() {
                           value={editData.company}
                           onChange={(e) => setEditData({ ...editData, company: e.target.value })}
                           className={`${inputClass} pl-12 sm:pl-14`}
-                          placeholder="e.g. Acme Corp"
+                          placeholder={t('companyPlaceholder')}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className={labelClass}>Bio</label>
+                      <label className={labelClass}>{t('bio')}</label>
                       <textarea
                         value={editData.bio}
                         onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
@@ -868,45 +867,58 @@ export default function MentorDashboardPage() {
                       )}
                     </div>
 
+                    {/* ✅ Fixed Availability Section - View Mode */}
                     <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
                         <FiClock className="w-4 h-4 text-[#F97316]" />
-                        Availability
+                        {t('availabilityHeading')}
                       </h3>
                       <p className="text-sm sm:text-base text-[#64748B] mb-3">
-                        Timezone:{' '}
+                        {t('timezoneLabel')}{' '}
                         <span className="text-[#172033] font-semibold">
                           {profile.availability?.timezone ? String(profile.availability.timezone) : '—'}
                         </span>
                       </p>
-                      {Array.isArray(profile.availability?.slots) &&
-                      (profile.availability?.slots as Array<{ day?: string; startTime?: string; endTime?: string }>)
-                        .length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {(profile.availability?.slots as Array<{
-                            day?: string;
-                            startTime?: string;
-                            endTime?: string;
-                          }>).map((slot, i) => {
-                            const day = String(slot.day ?? '—');
-                            const start = String(slot.startTime ?? '—');
-                            const end = String(slot.endTime ?? '—');
-                            if (day === '—' && start === '—' && end === '—') {
-                              return null;
+                      
+                      {(() => {
+                        // ✅ Get slots from profile.availability
+                        let slots: AvailabilitySlot[] = [];
+                        if (profile.availability) {
+                          if (typeof profile.availability === 'object' && 'slots' in profile.availability) {
+                            slots = Array.isArray(profile.availability.slots) ? profile.availability.slots : [];
+                          } else if (typeof profile.availability === 'string') {
+                            try {
+                              const parsed = JSON.parse(profile.availability);
+                              slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
+                            } catch {
+                              slots = [];
                             }
-                            return (
-                              <span
-                                key={i}
-                                className="bg-[#F8FAFC] border border-[#E5E7EB] px-3.5 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
-                              >
-                                {getDayLabel(day)} {start}–{end}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-[#64748B]">No availability slots set</p>
-                      )}
+                          }
+                        }
+                        
+                        if (slots.length > 0) {
+                          return (
+                            <div className="flex flex-wrap gap-2">
+                              {slots.map((slot: AvailabilitySlot, i: number) => {
+                                const day = String(slot.day || '');
+                                const start = String(slot.startTime || '');
+                                const end = String(slot.endTime || '');
+                                if (!day || !start || !end) return null;
+                                return (
+                                  <span
+                                    key={i}
+                                    className="bg-[#F8FAFC] border border-[#E5E7EB] px-3.5 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
+                                  >
+                                    {getDayLabel(day)} {start}–{end}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          );
+                        } else {
+                          return <p className="text-[#64748B]">{t('noAvailabilitySlots')}</p>;
+                        }
+                      })()}
                     </div>
                   </div>
 
