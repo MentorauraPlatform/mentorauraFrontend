@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       statusCode: 200,
       message: 'Login successful',
       data: data.data || data,
+      tokens: { accessToken, refreshToken },
     });
 
     // Set HttpOnly Cookies for Security

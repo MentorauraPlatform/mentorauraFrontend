@@ -13,9 +13,9 @@ export default function SitemapPage() {
     { name: 'How Mentorship Works', path: '/#how-it-works' },
     { name: 'Pricing & Plans', path: '/#pricing' },
     { name: 'MentorAura for Teams', path: '/#teams' },
-    { name: 'Become a Mentor', path: '/register?role=mentor' },
-    { name: 'Log In', path: '/login' },
-    { name: 'Get Started', path: '/register' },
+    { name: 'Become a Mentor', path: '/auth?mode=register&role=mentor' },
+    { name: 'Log In', path: '/auth?mode=login' },
+    { name: 'Get Started', path: '/auth?mode=register' },
   ];
 
   const categories = [

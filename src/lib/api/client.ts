@@ -1,169 +1,206 @@
 /**
- * Industry-Standard API Client for MentorAura.
- * Features:
- * 1. Automatic Authorization Token Injection (from localStorage)
- * 2. Automatic JWT Token Refresh on 401 Unauthorized errors
- * 3. Unified Error Formatting & Type-Safe Responses
- * 4. Request Timeout Abort Controllers
+ * Centralized API client for Mentoraura frontend.
+ *
+ * All API calls go through this file.
+ * The frontend NEVER makes business decisions — it sends data
+ * to the NestJS API and renders what comes back.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import type { MentorProfile, UserSkill } from '../types';
+import type {
+  RegisterResponse,
+  LoginResponse,
+  RefreshTokenResponse,
+  MeResponse,
+} from '../types';
 
-export interface ApiResponse<T = any> {
-  statusCode: number;
-  message?: string | string[];
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+
+export type ApiResponse<T> = {
   data: T;
-}
-
-export class ApiError extends Error {
-  statusCode: number;
-  error?: string;
-  messages: string[];
-
-  constructor(statusCode: number, message: string | string[], error?: string) {
-    const primaryMessage = Array.isArray(message) ? message.join(', ') : message;
-    super(primaryMessage);
-    this.name = 'ApiError';
-    this.statusCode = statusCode;
-    this.error = error;
-    this.messages = Array.isArray(message) ? message : [message];
-  }
-}
-
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value: unknown) => void;
-  reject: (reason?: any) => void;
-}> = [];
-
-const processQueue = (error: any = null) => {
-  failedQueue.forEach((promise) => {
-    if (error) {
-      promise.reject(error);
-    } else {
-      promise.resolve(null);
-    }
-  });
-  failedQueue = [];
+  message?: string;
 };
 
-async function refreshToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
+export type ApiError = {
+  statusCode: number;
+  message: string | string[];
+  error?: string;
+};
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
+// ── Core request functions ─────────────────────────────────────────────────────
 
-    if (!res.ok) {
-      throw new Error('Refresh token invalid');
-    }
-
-    const data = await res.json();
-    const newAccessToken = data.tokens?.accessToken || data.accessToken;
-    const newRefreshToken = data.tokens?.refreshToken || data.refreshToken;
-
-    if (newAccessToken) {
-      localStorage.setItem('accessToken', newAccessToken);
-      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-      return newAccessToken;
-    }
-    return null;
-  } catch (err) {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('auth:logout'));
-    }
-    return null;
-  }
-}
-
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {},
-  isRetry = false
-): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-
+async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include', // ✅ Cookies are sent automatically
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    // Handle Token Expiration (401)
-    if (response.status === 401 && !isRetry && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(() => request<T>(endpoint, options, true));
-      }
-
-      isRefreshing = true;
-      const newPathToken = await refreshToken();
-      isRefreshing = false;
-
-      if (newPathToken) {
-        processQueue(null);
-        return request<T>(endpoint, options, true);
-      } else {
-        processQueue(new ApiError(401, 'Session expired. Please log in again.'));
-      }
-    }
-
-    const responseData = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new ApiError(
-        response.status,
-        responseData.message || response.statusText || 'An error occurred',
-        responseData.error
-      );
-    }
-
-    // Unwrap NestJS Standard API Wrapper ({ statusCode, data, message })
-    return (responseData.data !== undefined ? responseData.data : responseData) as T;
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new ApiError(408, 'Request timeout. Please check your network connection.');
-    }
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    throw new ApiError(500, error.message || 'Network error occurred');
+  if (!res.ok) {
+    const err: ApiError = await res.json().catch(() => ({
+      statusCode: res.status,
+      message: res.statusText,
+    }));
+    throw err;
   }
+
+  return res.json() as Promise<ApiResponse<T>>;
 }
 
+async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include', // ✅ Cookies are sent automatically
+  });
+
+  if (!res.ok) {
+    const err: ApiError = await res.json().catch(() => ({
+      statusCode: res.status,
+      message: res.statusText,
+    }));
+    throw err;
+  }
+
+  return res.json() as Promise<T>;
+}
+
+// ── Convenience wrappers ──────────────────────────────────────────────────────
+
 export const apiClient = {
-  get: <T>(endpoint: string, options?: RequestInit) =>
-    request<T>(endpoint, { method: 'GET', ...options }),
+  get: <T>(path: string) =>
+    request<T>(path, { method: 'GET' }),
 
-  post: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-    request<T>(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
+  post: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
 
-  put: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-    request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body), ...options }),
+  patch: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
 
-  patch: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-    request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body), ...options }),
+  put: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
 
-  delete: <T>(endpoint: string, options?: RequestInit) =>
-    request<T>(endpoint, { method: 'DELETE', ...options }),
+  delete: <T>(path: string) =>
+    request<T>(path, { method: 'DELETE' }),
+};
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  fullName: string;
+  role?: 'MENTEE' | 'MENTOR';
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RefreshTokenPayload {
+  refreshToken: string;
+}
+
+export const authApi = {
+  register: (data: RegisterPayload) =>
+    rawRequest<RegisterResponse>('/auth/register', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+
+  login: (data: LoginPayload) =>
+    rawRequest<LoginResponse>('/auth/login', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+
+  refreshToken: (data: RefreshTokenPayload) =>
+    rawRequest<RefreshTokenResponse>('/auth/refresh', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+
+  getMe: () =>
+    request<MeResponse>('/auth/me', { method: 'GET' }),
+};
+
+// ── Mentor Onboarding ─────────────────────────────────────────────────────────
+
+export interface CreateMentorProfilePayload {
+  fullName: string;
+  title: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise?: string[];
+}
+
+export interface UpdateMentorProfilePayload {
+  title?: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise?: string[];
+}
+
+export interface AddSkillPayload {
+  skillId: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+}
+
+export interface UpdateSkillPayload {
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+}
+
+export interface UpdateAvailabilityPayload {
+  availability: {
+    timezone: string;
+    slots: Array<{
+      day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+      startTime: string;
+      endTime: string;
+    }>;
+  };
+}
+
+export interface SubmitOnboardingPayload {
+  confirmed: boolean;
+}
+
+// ✅ Mentor API - All requests use credentials: 'include' via apiClient
+export const mentorApi = {
+  createProfile: (data: CreateMentorProfilePayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications', data),
+
+  getMyProfile: () =>
+    apiClient.get<MentorProfile>('/mentor/applications/me'),
+
+  updateProfile: (data: UpdateMentorProfilePayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me', data),
+
+  addSkill: (data: AddSkillPayload) =>
+    apiClient.post<UserSkill>('/mentor/applications/me/skills', data),
+
+  updateSkill: (skillId: string, data: UpdateSkillPayload) =>
+    apiClient.patch<UserSkill>(`/mentor/applications/me/skills/${skillId}`, data),
+
+  removeSkill: (skillId: string) =>
+    apiClient.delete<{ message: string }>(`/mentor/applications/me/skills/${skillId}`),
+
+  updateAvailability: (data: UpdateAvailabilityPayload) =>
+    apiClient.patch<MentorProfile>('/mentor/applications/me/availability', data),
+
+  submitOnboarding: (data: SubmitOnboardingPayload) =>
+    apiClient.post<MentorProfile>('/mentor/applications/me/submit', data),
 };

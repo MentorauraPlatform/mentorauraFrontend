@@ -31,6 +31,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { authService } from '@/services/auth.service';
+import { mentorApi } from '@/lib/api/client';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -40,7 +41,10 @@ export default function AuthPage() {
   const { showToast } = useToast();
 
   // Mode state: 'register' or 'login'
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const [mode, setMode] = useState<'login' | 'register'>(() => {
+    const modeParam = searchParams.get('mode');
+    return modeParam === 'login' ? 'login' : 'register';
+  });
 
   // Password visibility state
   const [showPassword, setShowPassword] = useState(false);
@@ -109,9 +113,11 @@ export default function AuthPage() {
   useEffect(() => {
     const modeParam = searchParams.get('mode');
     if (modeParam === 'register') {
-      setMode('register');
+      // Defer state update to avoid synchronous setState inside effect which can
+      // cause cascading renders. Use a microtask to schedule the update.
+      Promise.resolve().then(() => setMode('register'));
     } else if (modeParam === 'login') {
-      setMode('login');
+      Promise.resolve().then(() => setMode('login'));
     }
   }, [searchParams]);
 
@@ -122,10 +128,21 @@ export default function AuthPage() {
     setError(null);
 
     try {
-      await authService.login({ email, password });
+      const res = await authService.login({ email, password });
       await refetchUser();
       showToast('Logged in successfully!', 'success');
-      router.push('/dashboard');
+
+      if (res.user?.isMentor) {
+        const mentorRes = await mentorApi.getMyProfile().catch(() => null);
+        const status = mentorRes?.data?.onboardingStatus;
+        if (status === 'COMPLETE' || status === 'PENDING') {
+          router.push('/mentor/dashboard');
+        } else {
+          router.push('/mentor/onboarding');
+        }
+      } else {
+        router.push('/mentee/dashboard');
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
@@ -163,9 +180,8 @@ export default function AuthPage() {
         role,
       });
 
-      // Show success message telling user to check email
-      setIsSuccess(true);
-      showToast('Account created! Please check your email.', 'success');
+      showToast('Account created!', 'success');
+      router.push('/verify-email');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {

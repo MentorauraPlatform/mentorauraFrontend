@@ -6,19 +6,19 @@ import { useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Mail } from 'lucide-react';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'pending'>('loading');
   const [message, setMessage] = useState<string>('');
 
   useEffect(() => {
     if (!token) {
-      setStatus('error');
-      setMessage('No verification token provided. Please check the link sent to your email.');
+      setStatus('pending');
+      setMessage('Please check your email inbox for the verification link to activate your account.');
       return;
     }
 
@@ -64,7 +64,25 @@ function VerifyEmailContent() {
           <h2 className="text-3xl font-extrabold text-[#172033]">Account Activated!</h2>
           <p className="text-base text-[#64748B] leading-relaxed">{message}</p>
           <div className="pt-4">
-            <Link href="/login">
+            <Link href="/auth?mode=login">
+              <Button variant="primary" size="lg" className="w-full py-3.5 text-base font-bold shadow-md" rightIcon={<ArrowRight className="w-5 h-5" />}>
+                Continue to Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {status === 'pending' && (
+        <div className="space-y-4 py-4">
+          <div className="w-16 h-16 rounded-full bg-[#FFF7ED] text-[#F97316] flex items-center justify-center mx-auto">
+            <Mail className="w-8 h-8" />
+          </div>
+          <Badge variant="orange" size="md" className="mx-auto">Check Your Email</Badge>
+          <h2 className="text-3xl font-extrabold text-[#172033]">Verify Your Account</h2>
+          <p className="text-base text-[#64748B] leading-relaxed">{message}</p>
+          <div className="pt-4">
+            <Link href="/auth?mode=login">
               <Button variant="primary" size="lg" className="w-full py-3.5 text-base font-bold shadow-md" rightIcon={<ArrowRight className="w-5 h-5" />}>
                 Continue to Login
               </Button>

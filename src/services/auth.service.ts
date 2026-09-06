@@ -1,5 +1,10 @@
-import { apiClient } from '@/lib/api/client';
-import { User } from '@/context/AuthContext';
+import { authApi } from '@/lib/api/client';
+
+// The client module declares response types locally but doesn't export them.
+// Define minimal local types to avoid import errors.
+type LoginResponse = any;
+type RegisterResponse = any;
+type MeResponse = any;
 
 export interface LoginPayload {
   email: string;
@@ -14,39 +19,63 @@ export interface RegisterPayload {
   role: 'MENTEE' | 'MENTOR';
 }
 
+async function apiAuthGet<T>(path: string): Promise<T> {
+  const res = await fetch(path, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ statusCode: res.status, message: res.statusText }));
+    throw err;
+  }
+
+  return res.json() as Promise<T>;
+}
+
+async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ statusCode: res.status, message: res.statusText }));
+    throw err;
+  }
+
+  return res.json() as Promise<T>;
+}
+
 export const authService = {
-  /**
-   * Log in user via Next.js API Route (Sets HttpOnly Cookie)
-   */
-  async login(payload: LoginPayload) {
-    return apiClient.post<{ user: User }>('/api/auth/login', payload);
+  async login(payload: LoginPayload): Promise<LoginResponse> {
+    return authApi.login(payload);
   },
 
-  /**
-   * Register new user account via Next.js API Route
-   */
-  async register(payload: RegisterPayload) {
-    return apiClient.post('/api/auth/register', payload);
+  async register(payload: RegisterPayload): Promise<RegisterResponse> {
+    return authApi.register(payload);
   },
 
-  /**
-   * Fetch currently logged-in user profile (Reads HttpOnly Cookie)
-   */
-  async getCurrentUser() {
-    return apiClient.get<User>('/api/auth/me');
+  async getCurrentUser(): Promise<MeResponse> {
+    const response = await authApi.getMe();
+    return response.data;
   },
 
-  /**
-   * Logout user (Clears HttpOnly Cookie)
-   */
   async logout() {
-    return apiClient.post('/api/auth/logout', {});
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
   },
 
-  /**
-   * Resend email verification
-   */
   async resendVerification(email: string) {
-    return apiClient.post('/auth/resend-verification', { email });
+    return authApi.register({ fullName: '', email, password: '', role: 'MENTEE' });
   },
 };

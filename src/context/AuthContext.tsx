@@ -3,56 +3,31 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
-import { ApiError } from '@/lib/api/client';
-
-export interface User {
-  id: string;
-  email: string;
-  isMentor: boolean;
-  isActive: boolean;
-  createdAt: string;
-  menteeProfile?: {
-    id: string;
-    fullName: string;
-    avatarUrl?: string | null;
-    headline?: string;
-    goals?: string[];
-    interests?: string[];
-  } | null;
-  mentorProfile?: {
-    id: string;
-    fullName: string;
-    avatarUrl?: string | null;
-    title?: string;
-    company?: string;
-    bio?: string;
-    isVerified?: boolean;
-  } | null;
-}
+import type { MeResponse } from '@/lib/types';
 
 interface AuthContextType {
-  user: User | null;
+  user: MeResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  setUser: React.Dispatch<React.SetStateAction<MeResponse | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<MeResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // Fetch current user details via authService (reads HttpOnly Cookie)
   const fetchMe = useCallback(async () => {
     try {
       const userData = await authService.getCurrentUser();
       setUser(userData);
-    } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
+    } catch (err: unknown) {
+      const apiError = err as { statusCode?: number; message?: string };
+      if (apiError.statusCode === 401) {
         setUser(null);
       } else {
         console.error('Failed to fetch user session:', err);
@@ -62,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Logout handler
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -74,12 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [router]);
 
-  // Initial load effect
   useEffect(() => {
-    fetchMe();
+    const timeoutId = setTimeout(() => {
+      void fetchMe();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [fetchMe]);
 
-  // Refetch helper
   const refetchUser = async () => {
     await fetchMe();
   };

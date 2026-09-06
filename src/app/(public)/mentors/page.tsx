@@ -126,7 +126,7 @@ export default function MentorsPage() {
                   <span className="text-[10px] uppercase tracking-wider text-gray-400 block font-semibold">Monthly Plan</span>
                   <span className="text-lg font-black text-[#172033]">{m.price}</span>
                 </div>
-                <Link href="/register">
+                <Link href="/auth?mode=register">
                   <Button variant="primary" size="sm" className="font-bold">
                     Book Mentor
                   </Button>

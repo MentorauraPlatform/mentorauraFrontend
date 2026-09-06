@@ -6,9 +6,8 @@ export async function POST() {
     message: 'Logged out successfully',
   });
 
-  // Clear HttpOnly cookies
-  response.cookies.delete('accessToken');
-  response.cookies.delete('refreshToken');
+  response.cookies.delete('access_token');
+  response.cookies.delete('refresh_token');
 
   return response;
 }

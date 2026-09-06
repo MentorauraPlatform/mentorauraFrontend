@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -77,6 +78,7 @@ export default async function RootLayout({
             </AuthProvider>
           </ToastProvider>
         </NextIntlClientProvider>
+        <Toaster position="bottom-right" closeButton />
       </body>
     </html>
   );

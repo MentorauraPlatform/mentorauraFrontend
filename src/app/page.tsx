@@ -196,7 +196,7 @@ export default function Home() {
                       <span className="text-xs text-gray-500 block">{tMentor('startingFrom')}</span>
                       <span className="text-xl font-black text-[#172033]">$120 <span className="text-xs font-normal text-gray-500">{tMentor('perMonth')}</span></span>
                     </div>
-                    <Link href="/register">
+                    <Link href="/auth?mode=register">
                       <Button variant="primary" size="md" className="shadow-sm font-bold">
                         {tMentor('bookSession')}
                       </Button>
@@ -297,7 +297,7 @@ export default function Home() {
                       <span className="text-[10px] uppercase tracking-wider text-gray-400 block font-semibold">{tFeatured('monthlyPlan')}</span>
                       <span className="text-lg font-black text-[#172033]">{m.price}</span>
                     </div>
-                    <Link href="/register">
+                    <Link href="/auth?mode=register">
                       <Button variant="outline" size="sm" className="font-bold">
                         {tFeatured('applyNow')}
                       </Button>
@@ -372,7 +372,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                <Link href="/register">
+                <Link href="/auth?mode=register">
                   <Button variant="primary" size="lg" className="shadow-lg font-bold px-8 py-4 text-base">
                     {tTeams('demoBtn')}
                   </Button>
