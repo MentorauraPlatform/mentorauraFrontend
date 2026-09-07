@@ -6,7 +6,7 @@
  * to the NestJS API and renders what comes back.
  */
 
-import type { MentorProfile, UserSkill, PlanSummary, MentorshipApplication, Mentorship } from '../types';
+import type { MentorProfile, UserSkill, PlanSummary, MentorshipApplication, Mentorship, MentorshipSession } from '../types';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -284,4 +284,9 @@ export const mentorshipsApi = {
 
   resume: (id: string) =>
     apiClient.post<Mentorship>(`/mentorships/${id}/resume`, {}),
+};
+
+export const sessionsApi = {
+  list: (mentorshipId: string) =>
+    apiClient.get<{ data: MentorshipSession[] }>(`/mentorships/${mentorshipId}/sessions`),
 };

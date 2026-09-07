@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { mentorshipsApi } from '@/lib/api/client';
-import type { Mentorship } from '@/lib/types';
+import { mentorshipsApi, sessionsApi } from '@/lib/api/client';
+import type { Mentorship, MentorshipSession } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
 export default function MentorshipDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [mentorship, setMentorship] = useState<Mentorship | null>(null);
+  const [sessions, setSessions] = useState<MentorshipSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +24,12 @@ export default function MentorshipDetailPage({ params }: { params: { id: string 
     void (async () => {
       try {
         setLoading(true);
-        const data = await mentorshipsApi.getMentorship(params.id);
-        setMentorship(data.data);
+        const [mentorshipRes, sessionsRes] = await Promise.all([
+          mentorshipsApi.getMentorship(params.id),
+          sessionsApi.list(params.id),
+        ]);
+        setMentorship(mentorshipRes.data);
+        setSessions(sessionsRes.data.data);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load mentorship');
@@ -114,6 +119,43 @@ export default function MentorshipDetailPage({ params }: { params: { id: string 
                 </p>
               </div>
             )}
+
+            <div className="pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                Session History
+              </h3>
+              {sessions.length === 0 ? (
+                <p className="text-sm text-gray-500">No sessions scheduled yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between rounded-xl border border-gray-200 p-4"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(session.scheduledAt).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {session.durationMinutes} min • {session.status}
+                        </p>
+                      </div>
+                      {session.meetingLink && (
+                        <a
+                          href={session.meetingLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                        >
+                          Join
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="pt-6 border-t border-gray-200">
               <button

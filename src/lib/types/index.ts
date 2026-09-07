@@ -228,6 +228,18 @@ export interface Mentorship {
   };
 }
 
+// ── Mentorship Sessions ────────────────────────────────────────────────────────
+export type SessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export interface MentorshipSession {
+  id: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: SessionStatus;
+  meetingLink?: string;
+  createdAt: string;
+}
+
 // ── Payments ──────────────────────────────────────────────────────────────────
 export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'refunded';
 export type PaymentMethod = 'mtn_momo' | 'orange_money' | 'card' | 'bank';
