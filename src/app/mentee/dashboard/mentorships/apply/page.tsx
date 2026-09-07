@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { applicationsApi } from '@/lib/api/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { applicationsApi, plansApi } from '@/lib/api/client';
+import type { PlanSummary } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ApplyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
-  const [planId, setPlanId] = useState('');
+  const [planId, setPlanId] = useState(searchParams.get('planId') || '');
   const [message, setMessage] = useState('');
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +23,30 @@ export default function ApplyPage() {
       router.replace('/auth?mode=login');
     }
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    const paramPlanId = searchParams.get('planId');
+    if (paramPlanId) {
+      setPlanId(paramPlanId);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    void (async () => {
+      try {
+        setLoadingPlans(true);
+        const response = await plansApi.list();
+        setPlans(response.data.data);
+      } catch (err: unknown) {
+        const apiError = err as { message?: string };
+        setError(apiError.message || 'Failed to load plans');
+      } finally {
+        setLoadingPlans(false);
+      }
+    })();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +71,7 @@ export default function ApplyPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Mentorship</h1>
           <p className="text-gray-600 mb-8">
-            Submit your application to start the mentorship process.
+            Select a plan and submit your application to start the mentorship process.
           </p>
 
           {error && (
@@ -55,16 +83,33 @@ export default function ApplyPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Plan ID <span className="text-red-500">*</span>
+                Plan <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={planId}
                 onChange={(e) => setPlanId(e.target.value)}
                 required
-                className="w-full h-14 px-5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500"
-                placeholder="Enter plan ID"
-              />
+                className="w-full h-14 px-5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 bg-white"
+              >
+                <option value="">
+                  {loadingPlans ? 'Loading plans...' : 'Select a plan'}
+                </option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.title} — {plan.priceAmount} {plan.currency}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Don’t see a plan?{' '}
+                <button
+                  type="button"
+                  onClick={() => router.push('/mentee/dashboard/mentorships/plans')}
+                  className="text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  Browse all plans
+                </button>
+              </p>
             </div>
 
             <div>

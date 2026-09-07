@@ -105,6 +105,14 @@ export default function MenteeMentorshipsPage() {
           </div>
 
           <div className="p-6">
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => router.push('/mentee/dashboard/mentorships/plans')}
+                className="bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 font-medium transition-colors"
+              >
+                Browse Plans
+              </button>
+            </div>
             {tab === 'applications' && (
               <div className="space-y-4">
                 {applications.length === 0 ? (
