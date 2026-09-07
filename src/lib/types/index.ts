@@ -200,17 +200,32 @@ export interface Category {
 }
 
 // ── Mentorship ────────────────────────────────────────────────────────────────
-export type MentorshipStatus = 'pending' | 'active' | 'paused' | 'completed' | 'cancelled';
+export type MentorshipStatus = 'INTRO' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
 export interface Mentorship {
   id: string;
   menteeId: string;
   mentorId: string;
-  planId?: string;
+  planId: string;
   status: MentorshipStatus;
   startedAt?: string;
-  endsAt?: string;
+  endedAt?: string;
   createdAt: string;
+  mentee?: {
+    id: string;
+    email: string;
+  };
+  mentor?: {
+    id: string;
+    fullName: string;
+    title?: string;
+  };
+  plan?: {
+    id: string;
+    title: string;
+    priceAmount: number;
+    currency: string;
+  };
 }
 
 // ── Payments ──────────────────────────────────────────────────────────────────
@@ -277,6 +292,46 @@ export interface Review {
   rating: number;          // 1–5
   comment?: string;
   createdAt: string;
+}
+
+// ── Mentorship Applications ────────────────────────────────────────────────────
+export type MentorshipApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+
+export interface MentorshipApplication {
+  id: string;
+  menteeId: string;
+  mentorId: string;
+  planId: string;
+  message?: string;
+  status: MentorshipApplicationStatus;
+  createdAt: string;
+  mentee?: {
+    id: string;
+    email: string;
+  };
+  mentor?: {
+    id: string;
+    fullName: string;
+    title?: string;
+    company?: string;
+  };
+  plan?: {
+    id: string;
+    title: string;
+    priceAmount: number;
+    currency: string;
+  };
+}
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+export interface PlanSummary {
+  id: string;
+  title: string;
+  description?: string;
+  priceAmount: number;
+  currency: string;
+  isActive: boolean;
+  mentorId: string;
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
