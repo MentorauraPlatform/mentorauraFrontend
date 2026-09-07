@@ -77,7 +77,10 @@ export function useMentorOnboarding() {
       return;
     }
 
-    if (user.role !== 'mentor') {
+    const normalizedRole = String(user.role ?? '').trim().toLowerCase();
+    console.log('Onboarding access check:', { role: user.role, normalizedRole });
+
+    if (normalizedRole !== 'mentor') {
       router.replace('/');
       return;
     }

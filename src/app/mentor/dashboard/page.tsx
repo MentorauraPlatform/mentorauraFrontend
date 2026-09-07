@@ -107,7 +107,10 @@ export default function MentorDashboardPage() {
       return;
     }
 
-    if (user.role !== 'mentor') {
+    const normalizedRole = String(user.role ?? '').trim().toLowerCase();
+    console.log('Dashboard access check:', { role: user.role, normalizedRole });
+
+    if (normalizedRole !== 'mentor') {
       window.location.href = '/';
       return;
     }
