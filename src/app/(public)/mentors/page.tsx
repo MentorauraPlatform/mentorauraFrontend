@@ -1,64 +1,72 @@
-import React from 'react';
-import Link from 'next/link';
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Star, Search, Filter, ShieldCheck } from 'lucide-react';
-
-export const metadata = {
-  title: 'Find Mentors & Industry Experts | MentorAura',
-  description: 'Browse 500+ top software engineers, product managers, and UI/UX designers for 1-on-1 mentorship.',
-};
+import { MentorCard } from '@/components/mentor/MentorCard';
+import { Search, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import {
+  marketplaceService,
+  MentorCardData,
+  CategoryItem,
+} from '@/services/marketplace.service';
 
 export default function MentorsPage() {
-  const mentors = [
-    {
-      name: 'Amina Mansoor',
-      title: 'Senior Staff Engineer',
-      company: 'TechCorp',
-      category: 'engineering',
-      rating: '4.9',
-      reviews: 124,
-      skills: ['System Architecture', 'Career Transition', 'Tech Leadership'],
-      avatar: 'AM',
-      price: '$120/mo',
-    },
-    {
-      name: 'David Okafor',
-      title: 'Principal PM',
-      company: 'Global Scale',
-      category: 'product',
-      rating: '5.0',
-      reviews: 98,
-      skills: ['Product Strategy', 'Roadmapping', 'Executive Management'],
-      avatar: 'DO',
-      price: '$150/mo',
-    },
-    {
-      name: 'Elena Rostova',
-      title: 'Head of UX & Product Design',
-      company: 'Studio Design',
-      category: 'design',
-      rating: '4.95',
-      reviews: 86,
-      skills: ['UI/UX Systems', 'Portfolio Reviews', 'Figma Mastery'],
-      avatar: 'ER',
-      price: '$110/mo',
-    },
-    {
-      name: 'Marcus Vance',
-      title: 'VP of AI & ML',
-      company: 'DataScale Labs',
-      category: 'ai',
-      rating: '4.98',
-      reviews: 104,
-      skills: ['Machine Learning', 'LLMs & AI', 'Python Systems'],
-      avatar: 'MV',
-      price: '$160/mo',
-    },
-  ];
+  const t = useTranslations('marketplace');
+
+  const [mentors, setMentors] = useState<MentorCardData[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+
+  const fetchMentors = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await marketplaceService.searchMentors({
+        q: searchTerm,
+        category: selectedCategory,
+        page,
+        limit: 12,
+      });
+      setMentors(res?.items ?? []);
+      setTotalPages(res?.meta?.totalPages ?? 1);
+      setTotal(res?.meta?.total ?? 0);
+    } catch (err: unknown) {
+      console.error('Failed to search mentors:', err);
+      const e = err as { message?: string };
+      setError(e?.message || 'Failed to load mentors');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, selectedCategory, page]);
+
+  useEffect(() => {
+    marketplaceService
+      .getCategories()
+      .then((cats) => setCategories(cats))
+      .catch((err) => console.error('Failed to load categories:', err));
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchMentors();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [fetchMentors]);
+
+  const handleCategorySelect = (slug: string) => {
+    setSelectedCategory((prev) => (prev === slug ? '' : slug));
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
@@ -66,75 +74,125 @@ export default function MentorsPage() {
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
         <div>
-          <Badge variant="orange" size="md" className="mb-2">Mentor Directory</Badge>
+          <Badge variant="orange" size="md" className="mb-2">
+            {t('directoryBadge')}
+          </Badge>
           <h1 className="text-3xl sm:text-5xl font-black text-[#172033]">
-            Browse 1-on-1 Mentors
+            {t('directoryTitle')}
           </h1>
           <p className="text-[#64748B] text-base mt-2 max-w-2xl">
-            Filter by technical domain, expertise, and company to find your dedicated mentor.
+            {t('directorySubtitle')}
           </p>
         </div>
 
         {/* Filter bar */}
         <div className="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Search className="w-5 h-5 text-gray-400" />
+          <div className="flex items-center gap-2 w-full md:w-96 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all">
+            <Search className="w-5 h-5 text-gray-400 shrink-0" />
             <input
               type="text"
-              placeholder="Search mentors..."
-              className="w-full md:w-80 text-sm text-[#172033] bg-transparent focus:outline-none"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t('searchPlaceholder')}
+              className="w-full text-sm text-[#172033] bg-transparent focus:outline-none placeholder:text-slate-400"
             />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            <Badge variant="orange" size="md" className="cursor-pointer shrink-0">All Disciplines</Badge>
-            <Badge variant="slate" size="md" className="cursor-pointer shrink-0">Engineering</Badge>
-            <Badge variant="slate" size="md" className="cursor-pointer shrink-0">Product</Badge>
-            <Badge variant="slate" size="md" className="cursor-pointer shrink-0">Design</Badge>
-            <Badge variant="slate" size="md" className="cursor-pointer shrink-0">AI & Data</Badge>
+
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+            <Badge
+              variant={selectedCategory === '' ? 'orange' : 'slate'}
+              size="md"
+              className="cursor-pointer shrink-0 transition-all hover:scale-105"
+              onClick={() => handleCategorySelect('')}
+            >
+              {t('allCategories')}
+            </Badge>
+            {categories.map((cat) => (
+              <Badge
+                key={cat.id}
+                variant={selectedCategory === cat.slug ? 'orange' : 'slate'}
+                size="md"
+                className="cursor-pointer shrink-0 transition-all hover:scale-105"
+                onClick={() => handleCategorySelect(cat.slug)}
+              >
+                {cat.name}
+              </Badge>
+            ))}
           </div>
         </div>
 
         {/* Mentors Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mentors.map((m, idx) => (
-            <Card key={idx} variant="hoverable" padding="lg" className="p-6 bg-white space-y-4 border-[#E5E7EB] flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[#172033] text-[#F97316] font-extrabold text-xl flex items-center justify-center shrink-0">
-                    {m.avatar}
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-base text-[#172033]">{m.name}</h2>
-                    <p className="text-xs text-[#64748B]">{m.title} @ <span className="font-semibold text-gray-800">{m.company}</span></p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]" />
-                      <span className="text-xs font-bold">{m.rating}</span>
-                      <span className="text-xs text-gray-400">({m.reviews} reviews)</span>
-                    </div>
-                  </div>
-                </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+            <p className="text-sm font-medium text-slate-500">{t('searching')}</p>
+          </div>
+        ) : error ? (
+          <div className="p-6 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-700">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        ) : mentors.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">{t('noMentorsTitle')}</h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              {t('noMentorsDesc')}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('');
+              }}
+            >
+              {t('clearFilters')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-sm text-slate-500">
+              <span>{t('showingMentors', { count: mentors.length, total })}</span>
+            </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {m.skills.map((skill, sIdx) => (
-                    <Badge key={sIdx} variant="slate" size="sm">{skill}</Badge>
-                  ))}
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mentors.map((m) => (
+                <MentorCard key={m.id} mentor={m} />
+              ))}
+            </div>
 
-              <div className="pt-4 border-t border-gray-100 flex items-center justify-between mt-4">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-gray-400 block font-semibold">Monthly Plan</span>
-                  <span className="text-lg font-black text-[#172033]">{m.price}</span>
-                </div>
-                <Link href="/auth?mode=register">
-                  <Button variant="primary" size="sm" className="font-bold">
-                    Book Mentor
-                  </Button>
-                </Link>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  {t('previous')}
+                </Button>
+                <span className="text-xs font-semibold text-slate-600 px-3">
+                  {t('pageOf', { page, total: totalPages })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  {t('next')}
+                </Button>
               </div>
-            </Card>
-          ))}
-        </div>
+            )}
+          </>
+        )}
       </main>
 
       <Footer />

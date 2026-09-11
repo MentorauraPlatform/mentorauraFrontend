@@ -132,7 +132,8 @@ export default function AuthPage() {
       await refetchUser();
       showToast('Logged in successfully!', 'success');
 
-      if (res.user?.isMentor) {
+      const userObj = res as { user?: { isMentor?: boolean } };
+      if (userObj.user?.isMentor) {
         const mentorRes = await mentorApi.getMyProfile().catch(() => null);
         const status = mentorRes?.data?.onboardingStatus;
         if (status === 'COMPLETE' || status === 'PENDING') {
@@ -144,7 +145,11 @@ export default function AuthPage() {
         router.push('/mentee/dashboard');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      const apiErr = err as { message?: string | string[] };
+      const msg = Array.isArray(apiErr?.message)
+        ? apiErr.message.join(', ')
+        : apiErr?.message || (err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +188,11 @@ export default function AuthPage() {
       showToast('Account created!', 'success');
       router.push('/verify-email');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      const apiErr = err as { message?: string | string[] };
+      const msg = Array.isArray(apiErr?.message)
+        ? apiErr.message.join(', ')
+        : apiErr?.message || (err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -423,7 +432,7 @@ export default function AuthPage() {
                       />
                       <div className="flex justify-end pt-1">
                         <Link
-                          href="/forgot-password"
+                          href="/auth/forgot-password"
                           className="text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#F97316] transition-colors"
                         >
                           Forgot password?

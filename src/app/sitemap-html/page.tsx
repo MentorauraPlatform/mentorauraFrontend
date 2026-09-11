@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Sitemap | MentorAura',
@@ -42,9 +43,9 @@ export default function SitemapPage() {
           <ul className="space-y-2.5">
             {routes.map((route) => (
               <li key={route.path}>
-                <a href={route.path} className="text-[#F97316] font-medium hover:underline">
+                <Link href={route.path} className="text-[#F97316] font-medium hover:underline">
                   {route.name}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -55,9 +56,9 @@ export default function SitemapPage() {
           <ul className="space-y-2.5">
             {categories.map((cat) => (
               <li key={cat}>
-                <a href="/mentors" className="text-[#172033] hover:text-[#F97316] font-medium">
+                <Link href="/mentors" className="text-[#172033] hover:text-[#F97316] font-medium">
                   {cat} Mentors
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

@@ -5,6 +5,7 @@ export interface BadgeProps {
   variant?: 'orange' | 'navy' | 'slate' | 'success' | 'warning' | 'error';
   size?: 'sm' | 'md';
   className?: string;
+  onClick?: () => void;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -12,6 +13,7 @@ export const Badge: React.FC<BadgeProps> = ({
   variant = 'orange',
   size = 'md',
   className = '',
+  onClick,
 }) => {
   const sizeStyles = size === 'sm' ? 'px-2 py-0.5 text-xs font-medium' : 'px-2.5 py-1 text-xs font-semibold';
 
@@ -26,6 +28,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
+      onClick={onClick}
       className={`inline-flex items-center rounded-full transition-colors ${sizeStyles} ${variantStyles[variant]} ${className}`}
     >
       {children}

@@ -1,10 +1,5 @@
 import { authApi } from '@/lib/api/client';
-
-// The client module declares response types locally but doesn't export them.
-// Define minimal local types to avoid import errors.
-type LoginResponse = any;
-type RegisterResponse = any;
-type MeResponse = any;
+import type { LoginResponse, RegisterResponse, MeResponse } from '@/lib/types';
 
 export interface LoginPayload {
   email: string;
@@ -77,5 +72,17 @@ export const authService = {
 
   async resendVerification(email: string) {
     return authApi.register({ fullName: '', email, password: '', role: 'MENTEE' });
+  },
+
+  async requestForgotPasswordOtp(email: string) {
+    return authApi.requestForgotPasswordOtp(email);
+  },
+
+  async verifyOtp(email: string, otp: string) {
+    return authApi.verifyOtp(email, otp);
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string) {
+    return authApi.resetPassword(email, otp, newPassword);
   },
 };
