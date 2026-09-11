@@ -18,26 +18,150 @@ export interface AuthUser {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  tokenType: string;
+  expiresIn: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    isMentor: boolean;
+  };
+  tokens: AuthTokens;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    isMentor: boolean;
+    fullName: string;
+    avatarUrl: string | null;
+  };
+  tokens: AuthTokens;
+}
+
+export interface RefreshTokenResponse {
+  message: string;
+  tokens: AuthTokens;
+}
+
+export interface MenteeProfile {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  headline: string | null;
+  goals: string | null;
+  interests: string[];
+}
+
+export interface MentorProfileSummary {
+  id: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  title: string;
+  company: string | null;
+  bio: string | null;
+  isVerified: boolean;
+}
+
+export interface UserSkillSummary {
+  id: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  menteeProfile: MenteeProfile | null;
+  mentorProfile: MentorProfileSummary | null;
+  userSkills: UserSkillSummary[];
 }
 
 // ── Mentor ────────────────────────────────────────────────────────────────────
-export type ApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
+export type OnboardingStatus = 'INCOMPLETE' | 'PENDING' | 'COMPLETE';
 export type MentorStatus = 'draft' | 'active' | 'suspended' | 'deactivated';
 
-export interface MentorProfile {
+export interface TimeSlot {
+  day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  startTime: string;
+  endTime: string;
+}
+
+export interface Availability {
+  timezone: string;
+  slots: TimeSlot[];
+}
+
+export interface UserSkillSummary {
   id: string;
   userId: string;
-  displayName: string;
-  headline: string;
-  bio: string;
-  avatarUrl: string;
-  categories: Category[];
-  skills: Skill[];
-  languages: Language[];
-  status: MentorStatus;
-  averageRating: number;
-  totalReviews: number;
+  skillId: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSkill {
+  id: string;
+  userId: string;
+  skillId: string;
+  level: SkillLevel;
+  skill: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MentorProfile {
+  totalMenteesServed: number;
+  avgRating: number | string | null;
+  id: string;
+  userId: string;
+  fullName: string;
+  title: string;
+  company?: string;
+  bio?: string;
+  experience?: string;
+  areasOfExpertise: string[];
+  availability?: Availability;
+  onboardingStatus: OnboardingStatus;
+  isVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    userSkills: UserSkill[];
+  };
+}
+
+// ── Skills ────────────────────────────────────────────────────────────────────
+export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+
+export interface Skill {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ── Marketplace ───────────────────────────────────────────────────────────────
@@ -62,17 +186,6 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-}
-
-export interface Language {
-  id: string;
-  name: string;
-  code: string;
 }
 
 // ── Mentorship ────────────────────────────────────────────────────────────────

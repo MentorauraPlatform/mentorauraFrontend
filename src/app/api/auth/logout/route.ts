@@ -1,0 +1,13 @@
+import { NextResponse } from 'next/server';
+
+export async function POST() {
+  const response = NextResponse.json({
+    statusCode: 200,
+    message: 'Logged out successfully',
+  });
+
+  response.cookies.delete('access_token');
+  response.cookies.delete('refresh_token');
+
+  return response;
+}
