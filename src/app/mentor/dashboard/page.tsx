@@ -1,35 +1,35 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
-import type { MentorProfile, UserSkill, Skill, SkillLevel } from '@/lib/types';
-import Link from 'next/link';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import { useAuth } from '@/context/AuthContext';
+import type { MentorProfile, Skill, SkillLevel } from '@/lib/types';
+import { MentorSidebar, MentorTab } from '@/components/mentor/MentorSidebar';
+import { MentorHeader } from '@/components/mentor/MentorHeader';
+import { LoadingState } from '@/components/ui/LoadingState';
 import {
-  FiUser,
-  FiBriefcase,
-  FiAward,
-  FiClock,
-  FiEdit2,
-  FiSave,
-  FiX,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiTrendingUp,
-  FiStar,
-  FiShield,
-  FiUsers,
-  FiArrowRight,
-  FiCalendar,
-  FiPlus,
-  FiTrash2,
-  FiGlobe,
-  FiZap,
-} from 'react-icons/fi';
+  Calendar,
+  Clock,
+  Video,
+  Users,
+  Award,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  DollarSign,
+  Star,
+  Save,
+  Globe,
+  Package,
+  SlidersHorizontal,
+  ChevronRight,
+  TrendingUp,
+  User,
+} from 'lucide-react';
 
 type AvailabilityDay =
   | 'MONDAY'
@@ -52,12 +52,15 @@ type Availability = {
 };
 
 export default function MentorDashboardPage() {
-  const { user, isLoading: authLoading } = useAuth();
-  const t = useTranslations('dashboard');
+  const { user, isLoading: authLoading, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<MentorTab>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+
+  // Profile Edit State
   const [editData, setEditData] = useState({
     title: '',
     company: '',
@@ -65,16 +68,20 @@ export default function MentorDashboardPage() {
     experience: '',
     areasOfExpertise: [] as string[],
   });
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Skills State
+  const [skillsList, setSkillsList] = useState<Skill[]>([]);
   const [selectedSkillId, setSelectedSkillId] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel>('BEGINNER');
+  const [savingSkill, setSavingSkill] = useState(false);
+
+  // Availability State
   const [availability, setAvailability] = useState<Availability>({
     timezone: 'Africa/Douala',
     slots: [],
   });
-  const [savingSkills, setSavingSkills] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
-  const [loadingSkills, setLoadingSkills] = useState(false);
 
   const DAYS: AvailabilityDay[] = [
     'MONDAY',
@@ -85,866 +92,638 @@ export default function MentorDashboardPage() {
     'SATURDAY',
     'SUNDAY',
   ];
-  const DAY_LABELS: Record<AvailabilityDay, string> = {
-    MONDAY: 'Mon',
-    TUESDAY: 'Tue',
-    WEDNESDAY: 'Wed',
-    THURSDAY: 'Thu',
-    FRIDAY: 'Fri',
-    SATURDAY: 'Sat',
-    SUNDAY: 'Sun',
-  };
 
-  const getDayLabel = (day: string): string => {
-    return DAY_LABELS[day as AvailabilityDay] ?? day;
-  };
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      window.location.href = '/auth?mode=login';
-      return;
-    }
-
-    if (user.role !== 'mentor') {
-      window.location.href = '/';
-      return;
-    }
-
-    void (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [profileRes, skillsRes] = await Promise.all([
-          mentorApi.getMyProfile(),
-          apiClient.get<Skill[]>('/mentor/applications/skills').catch(() => ({ data: [] })),
-        ]);
-        setProfile(profileRes.data);
-        setEditData({
-          title: profileRes.data.title,
-          company: profileRes.data.company || '',
-          bio: profileRes.data.bio || '',
-          experience: profileRes.data.experience || '',
-          areasOfExpertise: profileRes.data.areasOfExpertise || [],
-        });
-        const rawAvailability = profileRes.data.availability as
-          | { timezone?: string; slots?: Array<{ day?: string; startTime?: string; endTime?: string }> }
-          | null
-          | undefined;
-
-        setAvailability({
-          timezone: rawAvailability?.timezone || 'Africa/Douala',
-          slots: (rawAvailability?.slots || []).map((slot) => ({
-            day: (slot.day as AvailabilityDay) || 'MONDAY',
-            startTime: slot.startTime || '09:00',
-            endTime: slot.endTime || '17:00',
-          })),
-        });
-
-        setSkills(skillsRes.data);
-      } catch (err: unknown) {
-        const apiError = err as { message?: string };
-        setError(apiError.message || 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user, authLoading]);
-
-  const handleUpdate = async () => {
+  const fetchProfileAndSkills = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await mentorApi.updateProfile(editData);
-      setProfile(res.data);
-      setIsEditing(false);
-      toast.success('Profile updated successfully', {
-        className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+      const [profileRes, skillsRes] = await Promise.all([
+        mentorApi.getMyProfile(),
+        apiClient.get<Skill[]>('/mentor/applications/skills').catch(() => ({ data: [] })),
+      ]);
+
+      setProfile(profileRes.data);
+      setSkillsList(skillsRes.data || []);
+
+      setEditData({
+        title: profileRes.data.title || '',
+        company: profileRes.data.company || '',
+        bio: profileRes.data.bio || '',
+        experience: profileRes.data.experience || '',
+        areasOfExpertise: profileRes.data.areasOfExpertise || [],
       });
-    } catch (err: unknown) {
-      const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to update profile');
-      toast.error('Failed to update profile');
+
+      const rawAvailability = profileRes.data.availability as
+        | { timezone?: string; slots?: Array<{ day?: string; startTime?: string; endTime?: string }> }
+        | null
+        | undefined;
+
+      setAvailability({
+        timezone: rawAvailability?.timezone || 'Africa/Douala',
+        slots: (rawAvailability?.slots || []).map((slot) => ({
+          day: (slot.day as AvailabilityDay) || 'MONDAY',
+          startTime: slot.startTime || '09:00',
+          endTime: slot.endTime || '17:00',
+        })),
+      });
+    } catch (err) {
+      console.error('Failed to load mentor profile', err);
+      setError('Failed to load mentor profile.');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      if (typeof window !== 'undefined') window.location.href = '/auth?mode=login';
+      return;
+    }
+
+    const isUserMentor = Boolean(
+      (user as unknown as { isMentor?: boolean }).isMentor ||
+        user.role === 'mentor' ||
+        user.role === 'MENTOR'
+    );
+
+    if (!isUserMentor) {
+      if (typeof window !== 'undefined') window.location.href = '/';
+      return;
+    }
+
+    void fetchProfileAndSkills();
+  }, [authLoading, user, fetchProfileAndSkills]);
+
+  // Handle Save Profile
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      const updated = await mentorApi.updateProfile(editData);
+      setProfile(updated.data);
+      toast.success('Mentor profile updated successfully!');
+    } catch (err) {
+      toast.error('Failed to update profile.');
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
+  // Handle Add Skill
   const handleAddSkill = async () => {
     if (!selectedSkillId) return;
+    setSavingSkill(true);
     try {
-      setSavingSkills(true);
-      setError(null);
-      await mentorApi.addSkill({
-        skillId: selectedSkillId,
-        level: selectedLevel,
-      });
-      const updated = await mentorApi.getMyProfile();
-      setProfile(updated.data);
+      await mentorApi.addSkill({ skillId: selectedSkillId, level: selectedLevel });
+      toast.success('Skill added successfully!');
       setSelectedSkillId('');
-      toast.success('Skill added successfully', {
-        className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-      });
-    } catch (err: unknown) {
-      const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to add skill');
-      toast.error('Failed to add skill');
+      void fetchProfileAndSkills();
+    } catch (err) {
+      toast.error('Failed to add skill.');
     } finally {
-      setSavingSkills(false);
+      setSavingSkill(false);
     }
   };
 
+  // Handle Remove Skill
   const handleRemoveSkill = async (skillId: string) => {
     try {
-      setSavingSkills(true);
-      setError(null);
       await mentorApi.removeSkill(skillId);
-      const updated = await mentorApi.getMyProfile();
-      setProfile(updated.data);
-      toast.success('Skill removed', {
-        className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-      });
-    } catch (err: unknown) {
-      const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to remove skill');
-      toast.error('Failed to remove skill');
-    } finally {
-      setSavingSkills(false);
+      toast.success('Skill removed.');
+      void fetchProfileAndSkills();
+    } catch (err) {
+      toast.error('Failed to remove skill.');
     }
   };
 
-  const handleUpdateSkillLevel = async (skillId: string, level: SkillLevel) => {
-    const previousProfile = profile;
-    if (profile && profile.user) {
-      setProfile({
-        ...profile,
-        user: {
-          ...profile.user,
-          id: profile.user.id || '',
-          email: profile.user.email || '',
-          role: profile.user.role || '',
-          isActive: profile.user.isActive ?? true,
-          userSkills: profile.user.userSkills.map((us) =>
-            us.id === skillId ? { ...us, level } : us
-          ),
-        },
-      });
-    }
-    try {
-      setSavingSkills(true);
-      setError(null);
-      await mentorApi.updateSkill(skillId, { level });
-      const updated = await mentorApi.getMyProfile();
-      setProfile(updated.data);
-      toast.success('Skill level updated', {
-        className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-      });
-    } catch (err: unknown) {
-      const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to update skill level');
-      toast.error('Failed to update skill level');
-      setProfile(previousProfile);
-    } finally {
-      setSavingSkills(false);
-    }
+  // Availability Helpers
+  const handleAddSlot = (day: AvailabilityDay) => {
+    setAvailability((prev) => ({
+      ...prev,
+      slots: [...prev.slots, { day, startTime: '09:00', endTime: '17:00' }],
+    }));
+  };
+
+  const handleRemoveSlot = (index: number) => {
+    setAvailability((prev) => ({
+      ...prev,
+      slots: prev.slots.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSaveAvailability = async () => {
+    setSavingAvailability(true);
     try {
-      setSavingAvailability(true);
-      setError(null);
-      const updated = await mentorApi.updateAvailability({
-        availability,
-      });
+      const updated = await mentorApi.updateAvailability({ availability });
       setProfile(updated.data);
-      toast.success('Availability saved', {
-        className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-      });
-    } catch (err: unknown) {
-      const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to update availability');
-      toast.error('Failed to save availability');
+      toast.success('Availability schedule saved!');
+    } catch (err) {
+      toast.error('Failed to save availability.');
     } finally {
       setSavingAvailability(false);
     }
   };
 
-  // ── Style Tokens ─────────────────────────────────────────────────────────
-  const inputClass =
-    'w-full h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30';
-  const textareaClass =
-    'w-full text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 py-4 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 resize-none hover:border-[#F97316]/30';
-  const labelClass = 'block text-sm font-bold uppercase tracking-wider text-[#64748B] mb-2';
-  const sectionLabelClass =
-    'text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2';
-  const primaryBtnClass =
-    'bg-[#F97316] text-white px-6 sm:px-8 py-3.5 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2';
-  const secondaryBtnClass =
-    'border border-[#E5E7EB] rounded-xl hover:bg-[#FFFCF9] hover:border-[#F97316]/30 font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[#172033] flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5';
-
-  const initials = (name?: string) =>
-    (name || '')
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((n) => n[0]?.toUpperCase())
-      .join('') || '—';
-
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] px-4">
-        <div className="flex items-center gap-4">
-          <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-base sm:text-lg text-[#64748B] font-medium">{t('loadingProfile')}</span>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading Mentor Portal..." />;
   }
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-[#FFFCF9] font-sans text-[#172033] flex flex-col">
-        <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800;900&display=swap');
-          .font-serif {
-            font-family: 'Fraunces', ui-serif, Georgia, serif;
-          }
-          body {
-            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-          }
-        `}</style>
-
-        <Navbar />
-
-        <main className="flex-1 flex items-center">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 w-full">
-            <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] p-8 sm:p-14 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] border border-[#F97316]/20 mb-6">
-                <FiUser className="w-8 h-8 sm:w-10 sm:h-10 text-[#F97316]" />
-              </div>
-              <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                {t('noProfileYet')}
-              </span>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#172033] tracking-tight leading-tight">
-                {t('noMentorProfile')}
-              </h1>
-              <p className="mt-4 text-base sm:text-xl text-[#475569] leading-relaxed max-w-xl mx-auto">
-                {t('noProfileDescription')}
-              </p>
-              <Link
-                href="/mentor/onboarding"
-                className={`${primaryBtnClass} mt-8 inline-flex w-full sm:w-auto`}
-              >
-                {t('startOnboarding')}
-                <FiArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-          </div>
-        </main>
-
-        <Footer />
-      </div>
-    );
-  }
-
-  const isOnboarded = profile.onboardingStatus === 'COMPLETE' || profile.onboardingStatus === 'PENDING';
-  const profileMetrics = profile as MentorProfile & {
-    avgRating?: number | null;
-    totalMenteesServed?: number | null;
+  const tabTitles: Record<MentorTab, string> = {
+    overview: 'Mentor Dashboard',
+    profile: 'Profile & Bio Settings',
+    skills: 'Skills & Technical Expertise',
+    availability: 'Weekly Availability Schedule',
+    plans: 'Mentorship Plans & Packages',
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans overflow-x-hidden text-[#172033]">
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800;900&display=swap');
-        .font-serif {
-          font-family: 'Fraunces', ui-serif, Georgia, serif;
-        }
-        body {
-          font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-        }
-      `}</style>
+    <div className="min-h-screen bg-[#FFFCF9] font-sans antialiased text-[#172033]">
+      {/* Responsive Desktop & Mobile Sidebar */}
+      <MentorSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        profile={profile}
+        onLogout={logout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <Navbar />
+      {/* Main Content Area */}
+      <div className="lg:pl-64 flex flex-col min-h-screen transition-all">
+        <MentorHeader
+          user={user}
+          profile={profile}
+          onToggleSidebar={() => setSidebarOpen(true)}
+          activeTabTitle={tabTitles[activeTab]}
+        />
 
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-12 lg:py-16">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-[#E5E7EB] overflow-hidden">
-            {/* Header */}
-            <div className="bg-[#172033] px-5 sm:px-10 py-7 sm:py-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316]/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#F97316]/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6">
-                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#F97316] to-[#ea580c] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#F97316]/30">
-                    <span className="text-white font-extrabold text-base sm:text-lg">
-                      {initials(profile.fullName)}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              {/* Stat Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Monthly Earnings
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">$450</h2>
+                    <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1 inline-block">
+                      +15% vs last month
                     </span>
                   </div>
-                  <div className="min-w-0">
-                    <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight truncate">
-                      {t('title')}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1">
-                      <span className="text-sm text-white/70 font-medium truncate max-w-[220px] sm:max-w-none">
-                        {profile.fullName}
-                      </span>
-                      <span
-                        className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
-                          isOnboarded
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
-                            : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/20'
-                        }`}
-                      >
-                        {profile.onboardingStatus}
-                      </span>
-                    </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                    <DollarSign className="w-6 h-6" />
                   </div>
                 </div>
-                {!isOnboarded && (
-                  <Link
-                    href="/mentor/onboarding"
-                    className="bg-[#F97316] text-white px-5 sm:px-6 py-3 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 font-bold text-sm transition-all duration-200 flex items-center gap-2 w-full sm:w-auto justify-center flex-shrink-0"
-                  >
-                    <FiAlertCircle className="w-4 h-4" />
-                    {t('continueOnboarding')}
-                  </Link>
-                )}
-              </div>
-            </div>
 
-            {/* Content */}
-            <div className="p-5 sm:p-10 lg:p-12">
-              {error && (
-                <div className="mb-8 bg-red-50/80 border border-red-200 text-red-700 px-5 sm:px-6 py-4 rounded-xl flex items-start sm:items-center gap-3 sm:gap-4 text-sm sm:text-base">
-                  <FiAlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-red-500 mt-0.5 sm:mt-0" />
-                  <span>{error}</span>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Active Mentees
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">4 Mentees</h2>
+                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block">
+                      2 Pro Plans, 2 Standard
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <Users className="w-6 h-6" />
+                  </div>
                 </div>
-              )}
 
-              {isEditing ? (
-                /* ── Edit Mode ─────────────────────────────────────────── */
-                <div className="space-y-8 max-w-3xl mx-auto">
-                  <div className="flex items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#172033] bg-[#E5E7EB] px-4 py-1.5 rounded-full mb-3 sm:mb-4">
-                        {t('editingProfile')}
-                      </span>
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#172033] tracking-tight">
-                        {t('editProfile')}
-                      </h2>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Completed Calls
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">18 Calls</h2>
+                    <span className="text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-1 inline-block">
+                      22.5 total hours
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                    <Video className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Average Rating
+                    </span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <h2 className="text-2xl sm:text-3xl font-black text-[#172033]">5.0</h2>
+                      <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
                     </div>
+                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md mt-1 inline-block">
+                      Based on 12 reviews
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                    <Star className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Next Scheduled Call Hero Spotlight */}
+              <div className="p-6 bg-gradient-to-br from-[#172033] to-slate-900 text-white rounded-3xl shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#FF6B00]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full text-xs font-bold flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                        Next Upcoming Call
+                      </span>
+                      <span className="text-xs text-slate-400">Tomorrow, 3:00 PM GMT+1</span>
+                    </div>
+
+                    <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                      System Architecture & Code Review Session
+                    </h2>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
+                        AS
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Alex Smith</p>
+                        <p className="text-xs text-slate-400">Mentee • Pro Mentorship Plan</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                     <button
-                      onClick={() => setIsEditing(false)}
-                      className="text-[#94A3B8] hover:text-[#64748B] transition-colors p-2 hover:bg-[#FFFCF9] rounded-lg flex-shrink-0"
-                      aria-label="Close editing"
+                      onClick={() => toast.info('Video room opening...')}
+                      className="px-5 py-3 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 hover:opacity-95 transition-all flex items-center justify-center gap-2"
                     >
-                      <FiX className="w-6 h-6" />
+                      <Video className="w-4 h-4" />
+                      Start Meeting
                     </button>
                   </div>
+                </div>
+              </div>
 
-                  <div className="space-y-6">
+              {/* Grid: Active Mentees & Quick Setup */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left 2 columns: Active Mentees List */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <label className={labelClass}>
-                        {t('professionalTitle')} <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
-                          <FiBriefcase className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
-                        </div>
-                        <input
-                          type="text"
-                          value={editData.title}
-                          onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                          className={`${inputClass} pl-12 sm:pl-14`}
-                          placeholder={t('titlePlaceholder')}
-                        />
-                      </div>
+                      <h3 className="text-lg font-bold text-[#172033]">Your Active Mentees</h3>
+                      <p className="text-xs text-slate-500">Mentees subscribed to your 1-on-1 mentorship plans</p>
                     </div>
-                    <div>
-                      <label className={labelClass}>{t('company')}</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
-                          <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
-                        </div>
-                        <input
-                          type="text"
-                          value={editData.company}
-                          onChange={(e) => setEditData({ ...editData, company: e.target.value })}
-                          className={`${inputClass} pl-12 sm:pl-14`}
-                          placeholder={t('companyPlaceholder')}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelClass}>{t('bio')}</label>
-                      <textarea
-                        value={editData.bio}
-                        onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                        rows={6}
-                        className={textareaClass}
-                        placeholder="Tell us about yourself, your background, and what drives you..."
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Professional Experience</label>
-                      <textarea
-                        value={editData.experience}
-                        onChange={(e) => setEditData({ ...editData, experience: e.target.value })}
-                        rows={6}
-                        className={textareaClass}
-                        placeholder="Describe your professional experience, achievements, and background..."
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Areas of Expertise</label>
-                      <input
-                        type="text"
-                        value={editData.areasOfExpertise.join(', ')}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            areasOfExpertise: e.target.value
-                              .split(',')
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          })
-                        }
-                        className={inputClass}
-                        placeholder="e.g. Software Engineering, Leadership, Career Growth"
-                      />
-                      <p className="mt-2 text-sm text-[#64748B]">Separate multiple areas with commas.</p>
-                    </div>
+                  </div>
 
-                    {/* Skills Section */}
-                    <div className="border-t border-[#E5E7EB] pt-8">
-                      <h3 className={sectionLabelClass}>
-                        <FiAward className="w-4 h-4 text-[#F97316]" />
-                        Skills
-                      </h3>
-                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
-                        <select
-                          value={selectedSkillId}
-                          onChange={(e) => setSelectedSkillId(e.target.value)}
-                          className="flex-1 h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 text-[#172033] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                        >
-                          <option value="">Select a skill</option>
-                          {skills.map((skill) => (
-                            <option key={skill.id} value={skill.id}>
-                              {skill.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="flex gap-3 sm:gap-4">
-                          <select
-                            value={selectedLevel}
-                            onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
-                            className="flex-1 sm:flex-none sm:w-48 h-12 sm:h-14 text-base border border-[#E5E7EB] rounded-xl px-4 sm:px-5 bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                          >
-                            <option value="BEGINNER">Beginner</option>
-                            <option value="INTERMEDIATE">Intermediate</option>
-                            <option value="ADVANCED">Advanced</option>
-                            <option value="EXPERT">Expert</option>
-                          </select>
-                          <button
-                            onClick={handleAddSkill}
-                            disabled={!selectedSkillId || savingSkills}
-                            className="flex-shrink-0 bg-[#F97316] text-white px-5 sm:px-8 h-12 sm:h-14 rounded-xl hover:bg-[#ea580c] hover:shadow-lg hover:shadow-[#F97316]/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-base transition-all duration-200 flex items-center justify-center gap-2"
-                          >
-                            <FiPlus className="w-5 h-5" />
-                            <span className="hidden sm:inline">{savingSkills ? 'Adding…' : 'Add Skill'}</span>
-                          </button>
-                        </div>
-                      </div>
-                      {profile.user?.userSkills && profile.user.userSkills.length > 0 ? (
-                        <div className="space-y-3">
-                          {profile.user.userSkills.map((us: UserSkill) => (
-                            <div
-                              key={us.id}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-[#FFFCF9] to-white rounded-xl px-4 sm:px-6 py-4 sm:py-5 border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200 gap-4"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
-                                  <FiAward className="w-5 h-5 text-[#F97316]" />
-                                </div>
-                                <span className="font-bold text-[#172033] text-base sm:text-lg truncate">
-                                  {us.skill.name}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <select
-                                  value={us.level}
-                                  onChange={(e) => handleUpdateSkillLevel(us.id, e.target.value as SkillLevel)}
-                                  className="flex-1 sm:flex-none border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                                >
-                                  <option value="BEGINNER">Beginner</option>
-                                  <option value="INTERMEDIATE">Intermediate</option>
-                                  <option value="ADVANCED">Advanced</option>
-                                  <option value="EXPERT">Expert</option>
-                                </select>
-                                <button
-                                  onClick={() => handleRemoveSkill(us.id)}
-                                  className="text-red-500 hover:text-red-700 p-2.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                                  aria-label={`Remove ${us.skill.name}`}
-                                >
-                                  <FiTrash2 className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-10 sm:py-12 border-2 border-dashed border-[#E5E7EB] rounded-2xl">
-                          <FiAward className="w-10 h-10 sm:w-12 sm:h-12 text-[#94A3B8] mx-auto mb-4 opacity-50" />
-                          <p className="text-base text-[#64748B]">No skills added yet.</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Availability Section */}
-                    <div className="border-t border-[#E5E7EB] pt-8">
-                      <h3 className={sectionLabelClass}>
-                        <FiClock className="w-4 h-4 text-[#F97316]" />
-                        Availability
-                      </h3>
-                      <div className="space-y-6">
-                        <div className="max-w-sm">
-                          <label className={labelClass}>Timezone</label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 sm:pl-5 flex items-center pointer-events-none">
-                              <FiGlobe className="w-5 h-5 sm:w-6 sm:h-6 text-[#94A3B8]" />
-                            </div>
-                            <select
-                              value={(availability.timezone as string) || 'Africa/Douala'}
-                              onChange={(e) =>
-                                setAvailability({ ...availability, timezone: e.target.value })
-                              }
-                              className={`${inputClass} pl-12 sm:pl-14 appearance-none`}
-                            >
-                              <option value="Africa/Douala">Africa/Douala</option>
-                              <option value="Africa/Lagos">Africa/Lagos</option>
-                              <option value="Africa/Nairobi">Africa/Nairobi</option>
-                              <option value="America/New_York">America/New_York</option>
-                              <option value="America/Los_Angeles">America/Los_Angeles</option>
-                              <option value="Europe/London">Europe/London</option>
-                              <option value="Europe/Paris">Europe/Paris</option>
-                              <option value="Asia/Tokyo">Asia/Tokyo</option>
-                              <option value="Asia/Shanghai">Asia/Shanghai</option>
-                            </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                            AS
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-sm">Alex Smith</h4>
+                            <p className="text-xs text-slate-500">Frontend Engineer</p>
                           </div>
                         </div>
-                        {Array.isArray(availability.slots) && (
-                          <div className="space-y-3">
-                            {(availability.slots as AvailabilitySlot[]).map((slot, index) => (
-                              <div
-                                key={index}
-                                className="bg-gradient-to-r from-[#F8FAFC] to-white p-4 sm:p-5 rounded-xl border border-[#E5E7EB] hover:border-[#F97316]/30 transition-all duration-200"
-                              >
-                                <div className="flex items-center justify-between mb-3 sm:hidden">
-                                  <span className="w-9 h-9 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-xs font-bold flex items-center justify-center shadow-sm">
-                                    {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      const newSlots: AvailabilitySlot[] = availability.slots.filter(
-                                        (_, i) => i !== index
-                                      );
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                    aria-label="Remove time slot"
-                                  >
-                                    <FiTrash2 className="w-5 h-5" />
-                                  </button>
-                                </div>
-                                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
-                                  <span className="hidden sm:flex flex-shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#F97316] to-[#ea580c] text-white text-sm font-bold items-center justify-center shadow-sm">
-                                    {DAY_LABELS[slot.day as AvailabilityDay] || (slot.day as string).slice(0, 3)}
-                                  </span>
-                                  <select
-                                    value={slot.day}
-                                    onChange={(e) => {
-                                      const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                      newSlots[index] = {
-                                        ...newSlots[index],
-                                        day: e.target.value as AvailabilityDay,
-                                      };
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="flex-1 sm:flex-none min-w-[120px] border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30"
-                                  >
-                                    {DAYS.map((day) => (
-                                      <option key={day} value={day}>
-                                        {day}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                                    <input
-                                      type="time"
-                                      value={slot.startTime}
-                                      onChange={(e) => {
-                                        const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                        newSlots[index] = { ...newSlots[index], startTime: e.target.value };
-                                        setAvailability({ ...availability, slots: newSlots });
-                                      }}
-                                      className="flex-1 sm:flex-none border border-[#E5E7EB] rounded-lg px-3 sm:px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 sm:w-32"
-                                    />
-                                    <span className="text-[#64748B] font-medium text-sm flex-shrink-0">to</span>
-                                    <input
-                                      type="time"
-                                      value={slot.endTime}
-                                      onChange={(e) => {
-                                        const newSlots: AvailabilitySlot[] = [...availability.slots];
-                                        newSlots[index] = { ...newSlots[index], endTime: e.target.value };
-                                        setAvailability({ ...availability, slots: newSlots });
-                                      }}
-                                      className="flex-1 sm:flex-none border border-[#E5E7EB] rounded-lg px-3 sm:px-4 py-2.5 text-base bg-white text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 hover:border-[#F97316]/30 sm:w-32"
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const newSlots: AvailabilitySlot[] = availability.slots.filter(
-                                        (_, i) => i !== index
-                                      );
-                                      setAvailability({ ...availability, slots: newSlots });
-                                    }}
-                                    className="hidden sm:flex ml-auto text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                                    aria-label="Remove time slot"
-                                  >
-                                    <FiTrash2 className="w-6 h-6" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => {
-                            const newSlots: AvailabilitySlot[] = [
-                              ...(Array.isArray(availability.slots) ? availability.slots : []),
-                              { day: 'MONDAY', startTime: '09:00', endTime: '12:00' },
-                            ];
-                            setAvailability({ ...availability, slots: newSlots });
-                          }}
-                          className="text-[#F97316] hover:text-[#ea580c] font-bold text-base flex items-center gap-2 transition-colors"
-                        >
-                          <FiCalendar className="w-5 h-5" />
-                          Add time slot
-                        </button>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
+                          Active
+                        </span>
                       </div>
+                      <div className="p-2.5 bg-slate-50 rounded-xl text-xs flex justify-between text-slate-600">
+                        <span>Plan: Pro Mentorship</span>
+                        <span className="font-bold text-orange-600">2 calls left</span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
+                            MK
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-sm">Marie Keller</h4>
+                            <p className="text-xs text-slate-500">Product Designer</p>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
+                          Active
+                        </span>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-xl text-xs flex justify-between text-slate-600">
+                        <span>Plan: Standard Growth</span>
+                        <span className="font-bold text-orange-600">1 call left</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right column: Availability & Pricing Checklist */}
+                <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    Profile Optimizations
+                  </h3>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">Weekly Availability</span>
                       <button
-                        onClick={handleSaveAvailability}
-                        disabled={savingAvailability}
-                        className="mt-6 w-full sm:w-auto bg-emerald-600 text-white px-8 py-3.5 rounded-xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 disabled:opacity-50 font-bold text-base transition-all duration-200 flex items-center justify-center gap-3"
+                        onClick={() => setActiveTab('availability')}
+                        className="text-orange-600 font-bold hover:underline"
                       >
-                        <FiSave className="w-5 h-5" />
-                        {savingAvailability ? 'Saving…' : 'Save Availability'}
+                        Set Slots
+                      </button>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">Mentorship Plans</span>
+                      <Link href="/mentor/plans" className="text-orange-600 font-bold hover:underline">
+                        Manage Plans
+                      </Link>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">Tagged Skills</span>
+                      <button
+                        onClick={() => setActiveTab('skills')}
+                        className="text-orange-600 font-bold hover:underline"
+                      >
+                        Add Skills
                       </button>
                     </div>
                   </div>
-
-                  <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 border-t border-[#E5E7EB] pt-8 sm:pt-10">
-                    <button onClick={() => setIsEditing(false)} className={`w-full sm:w-auto ${secondaryBtnClass}`}>
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleUpdate}
-                      disabled={loading}
-                      className={`w-full sm:w-auto ${primaryBtnClass}`}
-                    >
-                      <FiSave className="w-5 h-5" />
-                      {loading ? 'Saving…' : 'Save Changes'}
-                    </button>
-                  </div>
                 </div>
-              ) : (
-                /* ── View Mode ─────────────────────────────────────────── */
-                <div className="space-y-8 sm:space-y-10 max-w-3xl mx-auto">
-                  <div>
-                    <span className="inline-block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F97316] bg-[#FFF7ED] px-4 py-1.5 rounded-full mb-4">
-                      Your profile
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#172033] tracking-tight">
-                      {profile.fullName}
-                    </h2>
-                    <p className="mt-2 sm:mt-3 text-lg sm:text-xl text-[#475569]">{profile.title}</p>
-                  </div>
+              </div>
+            </div>
+          )}
 
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="bg-gradient-to-br from-[#FFF7ED] to-white border border-[#F97316]/20 rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                        <FiStar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F97316]" />
-                        Rating
-                      </div>
-                      <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#172033]">
-                        {profile.avgRating ? profile.avgRating.toFixed(1) : '—'}
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                        <FiUsers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#172033]" />
-                        Mentees
-                      </div>
-                      <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#172033]">
-                        {profile.totalMenteesServed || 0}
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                        <FiCheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
-                        Status
-                      </div>
-                      <p className="mt-2 text-sm sm:text-lg font-extrabold text-[#172033]">
-                        {isOnboarded ? 'Active' : 'In Progress'}
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-[#F8FAFC] to-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 text-center hover:shadow-lg hover:shadow-[#F97316]/10 transition-all duration-200">
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#64748B] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                        <FiShield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
-                        Verified
-                      </div>
-                      <p className="mt-2 text-sm sm:text-lg font-extrabold text-[#172033]">
-                        {profile.isVerified ? 'Yes' : 'Pending'}
-                      </p>
-                    </div>
-                  </div>
+          {/* TAB 2: PROFILE & BIO */}
+          {activeTab === 'profile' && (
+            <form onSubmit={handleSaveProfile} className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-2xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#172033]">Public Mentor Profile</h2>
+                <p className="text-xs text-slate-500">This information will be visible to mentees on the directory.</p>
+              </div>
 
-                  {/* Detail Sections */}
-                  <div className="border border-[#E5E7EB] rounded-2xl divide-y divide-[#E5E7EB] overflow-hidden">
-                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
-                        <FiUser className="w-4 h-4 text-[#F97316]" />
-                        Profile Information
-                      </h3>
-                      <dl className="space-y-3 text-base">
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
-                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Full Name</dt>
-                          <dd className="text-[#172033] font-semibold">{profile.fullName}</dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
-                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Title</dt>
-                          <dd className="text-[#172033]">{profile.title}</dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
-                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Company</dt>
-                          <dd className="text-[#172033]">{profile.company || '—'}</dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-0.5 py-1.5">
-                          <dt className="sm:w-40 text-[#64748B] font-medium text-sm sm:text-base">Bio</dt>
-                          <dd className="text-[#172033]">{profile.bio || '—'}</dd>
-                        </div>
-                      </dl>
-                    </div>
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Professional Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={editData.title}
+                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                    placeholder="e.g. Senior Staff Engineer / Head of Product"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  />
+                </div>
 
-                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
-                        <FiTrendingUp className="w-4 h-4 text-[#F97316]" />
-                        Experience
-                      </h3>
-                      <p className="text-[#172033] whitespace-pre-wrap leading-relaxed">{profile.experience || '—'}</p>
-                      <p className="mt-4 text-sm sm:text-base text-[#64748B]">
-                        <span className="font-medium text-[#172033]">Areas of Expertise: </span>
-                        {profile.areasOfExpertise.length > 0 ? profile.areasOfExpertise.join(', ') : '—'}
-                      </p>
-                    </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Company / Organization</label>
+                  <input
+                    type="text"
+                    value={editData.company}
+                    onChange={(e) => setEditData({ ...editData, company: e.target.value })}
+                    placeholder="e.g. TechCorp / Google / Stripe"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  />
+                </div>
 
-                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
-                        <FiAward className="w-4 h-4 text-[#F97316]" />
-                        Skills
-                      </h3>
-                      {profile.user?.userSkills && profile.user.userSkills.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                          {profile.user.userSkills.map((us: UserSkill) => (
-                            <span
-                              key={us.id}
-                              className="bg-[#FFF7ED] text-[#F97316] border border-[#F97316]/20 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium hover:bg-[#F97316] hover:text-white hover:border-[#F97316] transition-all duration-200 cursor-default"
-                            >
-                              {us.skill.name} · {us.level}
-                            </span>
-                          ))}
-                        </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Biography</label>
+                  <textarea
+                    rows={4}
+                    value={editData.bio}
+                    onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                    placeholder="Share your background, achievements, and mentorship style..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Experience Summary</label>
+                  <input
+                    type="text"
+                    value={editData.experience}
+                    onChange={(e) => setEditData({ ...editData, experience: e.target.value })}
+                    placeholder="e.g. 10+ years leading engineering teams..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {savingProfile ? 'Saving...' : 'Save Profile Changes'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 3: SKILLS */}
+          {activeTab === 'skills' && (
+            <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-2xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#172033]">Skills & Expertise</h2>
+                <p className="text-xs text-slate-500">Manage technical skills displayed on your mentor card</p>
+              </div>
+
+              {/* Add Skill Form */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <h3 className="font-bold text-xs text-slate-800">Add New Skill</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={selectedSkillId}
+                    onChange={(e) => setSelectedSkillId(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
+                  >
+                    <option value="">Select a skill...</option>
+                    {skillsList.map((sk) => (
+                      <option key={sk.id} value={sk.id}>
+                        {sk.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedLevel}
+                    onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
+                    className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
+                  >
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE">Intermediate</option>
+                    <option value="ADVANCED">Advanced</option>
+                    <option value="EXPERT">Expert</option>
+                  </select>
+
+                  <button
+                    onClick={handleAddSkill}
+                    disabled={!selectedSkillId || savingSkill}
+                    className="px-4 py-2 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-xs transition-all disabled:opacity-50"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Active User Skills */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-xs text-slate-800">Tagged Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile?.user?.userSkills?.map((us) => (
+                    <div
+                      key={us.id}
+                      className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center gap-2"
+                    >
+                      <span>{us.skill.name}</span>
+                      <span className="text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded font-bold">
+                        {us.level}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveSkill(us.skillId || us.id)}
+                        className="text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: AVAILABILITY */}
+          {activeTab === 'availability' && (
+            <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-3xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#172033]">Weekly Availability Schedule</h2>
+                <p className="text-xs text-slate-500">Configure your recurring 1-on-1 meeting timeslots</p>
+              </div>
+
+              {/* Timezone Selector */}
+              <div className="flex items-center gap-3">
+                <Globe className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-bold text-slate-700">Timezone:</label>
+                <select
+                  value={availability.timezone}
+                  onChange={(e) => setAvailability({ ...availability, timezone: e.target.value })}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
+                >
+                  <option value="Africa/Douala">Africa/Douala (GMT+1)</option>
+                  <option value="UTC">UTC (GMT+0)</option>
+                  <option value="Europe/London">Europe/London (GMT+1)</option>
+                  <option value="America/New_York">America/New_York (EST)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                </select>
+              </div>
+
+              {/* Days Availability Builder */}
+              <div className="space-y-4">
+                {DAYS.map((day) => {
+                  const daySlots = availability.slots.filter((s) => s.day === day);
+                  return (
+                    <div key={day} className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900">{day}</span>
+                        <button
+                          onClick={() => handleAddSlot(day)}
+                          className="text-xs font-bold text-orange-600 hover:underline flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Slot
+                        </button>
+                      </div>
+
+                      {daySlots.length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic">No available timeslots set</p>
                       ) : (
-                        <p className="text-[#64748B]">No skills added</p>
+                        <div className="space-y-2">
+                          {daySlots.map((slot, index) => {
+                            const globalIndex = availability.slots.findIndex((s) => s === slot);
+                            return (
+                              <div key={index} className="flex items-center gap-3">
+                                <input
+                                  type="time"
+                                  value={slot.startTime}
+                                  onChange={(e) => {
+                                    const updated = [...availability.slots];
+                                    updated[globalIndex].startTime = e.target.value;
+                                    setAvailability({ ...availability, slots: updated });
+                                  }}
+                                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                                />
+                                <span className="text-xs text-slate-400">to</span>
+                                <input
+                                  type="time"
+                                  value={slot.endTime}
+                                  onChange={(e) => {
+                                    const updated = [...availability.slots];
+                                    updated[globalIndex].endTime = e.target.value;
+                                    setAvailability({ ...availability, slots: updated });
+                                  }}
+                                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                                />
+                                <button
+                                  onClick={() => handleRemoveSlot(globalIndex)}
+                                  className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* ✅ Fixed Availability Section - View Mode */}
-                    <div className="p-5 sm:p-8 hover:bg-[#FFFCF9]/50 transition-colors duration-200">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#64748B] mb-4 flex items-center gap-2">
-                        <FiClock className="w-4 h-4 text-[#F97316]" />
-                        {t('availabilityHeading')}
-                      </h3>
-                      <p className="text-sm sm:text-base text-[#64748B] mb-3">
-                        {t('timezoneLabel')}{' '}
-                        <span className="text-[#172033] font-semibold">
-                          {profile.availability?.timezone ? String(profile.availability.timezone) : '—'}
-                        </span>
-                      </p>
-                      
-                      {(() => {
-                        // ✅ Get slots from profile.availability
-                        let slots: AvailabilitySlot[] = [];
-                        if (profile.availability) {
-                          if (typeof profile.availability === 'object' && 'slots' in profile.availability) {
-                            slots = Array.isArray(profile.availability.slots) ? profile.availability.slots : [];
-                          } else if (typeof profile.availability === 'string') {
-                            try {
-                              const parsed = JSON.parse(profile.availability);
-                              slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
-                            } catch {
-                              slots = [];
-                            }
-                          }
-                        }
-                        
-                        if (slots.length > 0) {
-                          return (
-                            <div className="flex flex-wrap gap-2">
-                              {slots.map((slot: AvailabilitySlot, i: number) => {
-                                const day = String(slot.day || '');
-                                const start = String(slot.startTime || '');
-                                const end = String(slot.endTime || '');
-                                if (!day || !start || !end) return null;
-                                return (
-                                  <span
-                                    key={i}
-                                    className="bg-[#F8FAFC] border border-[#E5E7EB] px-3.5 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-[#172033] hover:border-[#F97316]/30 hover:bg-[#FFF7ED] transition-all duration-200"
-                                  >
-                                    {getDayLabel(day)} {start}–{end}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          );
-                        } else {
-                          return <p className="text-[#64748B]">{t('noAvailabilitySlots')}</p>;
-                        }
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Edit Button */}
-                  <div className="flex justify-end border-t border-[#E5E7EB] pt-8 sm:pt-10">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className={`w-full sm:w-auto ${primaryBtnClass}`}
-                    >
-                      <FiEdit2 className="w-5 h-5" />
-                      Edit Profile
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="pt-2">
+                <button
+                  onClick={handleSaveAvailability}
+                  disabled={savingAvailability}
+                  className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingAvailability ? 'Saving Schedule...' : 'Save Availability Schedule'}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      </main>
+          )}
 
-      <Footer />
+          {/* TAB 5: PLANS */}
+          {activeTab === 'plans' && (
+            <div className="p-8 bg-white rounded-3xl border border-slate-200/80 text-center space-y-4 max-w-xl mx-auto">
+              <Package className="w-12 h-12 text-orange-500 mx-auto" />
+              <h2 className="text-xl font-bold text-[#172033]">Mentorship Pricing Plans</h2>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Configure your monthly recurring packages, session allowances, and pricing structure for mentees.
+              </p>
+              <Link
+                href="/mentor/plans"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all"
+              >
+                Go to Plans Manager
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

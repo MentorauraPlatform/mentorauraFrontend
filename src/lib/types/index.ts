@@ -61,6 +61,7 @@ export interface MenteeProfile {
 export interface MentorProfileSummary {
   id: string;
   fullName: string;
+  avatarUrl?: string | null;
   title: string;
   company: string | null;
   bio: string | null;
@@ -115,18 +116,6 @@ export interface UserSkillSummary {
   updatedAt: string;
 }
 
-export interface MeResponse {
-  id: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  menteeProfile: MenteeProfile | null;
-  mentorProfile: MentorProfileSummary | null;
-  userSkills: UserSkillSummary[];
-}
-
-// ── Mentor ────────────────────────────────────────────────────────────────────
 export interface UserSkill {
   id: string;
   userId: string;
@@ -142,7 +131,7 @@ export interface UserSkill {
 
 export interface MentorProfile {
   totalMenteesServed: number;
-  avgRating: any;
+  avgRating: number | string | null;
   id: string;
   userId: string;
   fullName: string;

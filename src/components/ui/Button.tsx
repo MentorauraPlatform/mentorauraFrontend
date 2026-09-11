@@ -24,7 +24,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     // Base styles
-    let baseStyles =
+    const baseStyles =
       'inline-flex items-center justify-center font-medium rounded-xl btn-transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed select-none';
 
     // Size variations

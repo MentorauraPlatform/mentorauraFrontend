@@ -29,7 +29,24 @@ export type ApiError = {
 
 // ── Core request functions ─────────────────────────────────────────────────────
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+async function attemptTokenRefresh(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  isRetry = false
+): Promise<ApiResponse<T>> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -40,6 +57,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
     headers,
     credentials: 'include', // ✅ Cookies are sent automatically
   });
+
+  if (res.status === 401 && !isRetry && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {
+    const refreshed = await attemptTokenRefresh();
+    if (refreshed) {
+      return request<T>(path, options, true);
+    }
+  }
 
   if (!res.ok) {
     const err: ApiError = await res.json().catch(() => ({
@@ -52,7 +76,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
   return res.json() as Promise<ApiResponse<T>>;
 }
 
-async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function rawRequest<T>(
+  path: string,
+  options: RequestInit = {},
+  isRetry = false
+): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -63,6 +91,13 @@ async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T
     headers,
     credentials: 'include', // ✅ Cookies are sent automatically
   });
+
+  if (res.status === 401 && !isRetry && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {
+    const refreshed = await attemptTokenRefresh();
+    if (refreshed) {
+      return rawRequest<T>(path, options, true);
+    }
+  }
 
   if (!res.ok) {
     const err: ApiError = await res.json().catch(() => ({
@@ -133,6 +168,24 @@ export const authApi = {
 
   getMe: () =>
     request<MeResponse>('/auth/me', { method: 'GET' }),
+
+  requestForgotPasswordOtp: (email: string) =>
+    rawRequest<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  verifyOtp: (email: string, otp: string) =>
+    rawRequest<{ message: string; valid: boolean }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    }),
+
+  resetPassword: (email: string, otp: string, newPassword: string) =>
+    rawRequest<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp, newPassword }),
+    }),
 };
 
 // ── Mentor Onboarding ─────────────────────────────────────────────────────────

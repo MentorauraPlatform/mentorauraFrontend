@@ -77,7 +77,13 @@ export function useMentorOnboarding() {
       return;
     }
 
-    if (user.role !== 'mentor') {
+    const isUserMentor = Boolean(
+      (user as unknown as { isMentor?: boolean }).isMentor ||
+        user.role === 'mentor' ||
+        user.role === 'MENTOR'
+    );
+
+    if (!isUserMentor) {
       router.replace('/');
       return;
     }

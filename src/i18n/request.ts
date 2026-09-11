@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import en from '../../messages/en.json';
 import fr from '../../messages/fr.json';
 
-const dictionaries: Record<string, any> = { en, fr };
+const dictionaries: Record<string, Record<string, unknown>> = { en, fr };
 
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;

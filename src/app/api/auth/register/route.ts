@@ -15,9 +15,10 @@ export async function POST(request: NextRequest) {
     const data = await backendRes.json();
 
     return NextResponse.json(data, { status: backendRes.status });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as { message?: string };
     return NextResponse.json(
-      { statusCode: 500, message: err.message || 'Internal server error' },
+      { statusCode: 500, message: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

@@ -26,9 +26,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as { message?: string };
     return NextResponse.json(
-      { statusCode: 500, message: err.message || 'Internal server error' },
+      { statusCode: 500, message: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
