@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
@@ -52,9 +53,19 @@ type Availability = {
 };
 
 export default function MentorDashboardPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MentorTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      const isMentor = user.isMentor ?? (user.role === 'mentor' || user.role === 'MENTOR' || !!user.mentorProfile);
+      if (!isMentor) {
+        router.push('/mentee/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
 
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);

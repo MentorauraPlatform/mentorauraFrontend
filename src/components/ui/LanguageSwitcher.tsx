@@ -13,8 +13,8 @@ export const LanguageSwitcher: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const languages = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'en', label: 'English' },
+    { code: 'fr', label: 'Français' },
   ];
 
   const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
@@ -42,8 +42,7 @@ export const LanguageSwitcher: React.FC = () => {
         aria-label="Switch Language"
       >
         <Globe className="w-3.5 h-3.5 text-[#F97316]" />
-        <span>{currentLanguage.flag}</span>
-        <span className="uppercase tracking-wider">{currentLanguage.code}</span>
+        <span className="uppercase tracking-wider font-extrabold text-[11px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md">{currentLanguage.code}</span>
         <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -63,7 +62,7 @@ export const LanguageSwitcher: React.FC = () => {
               }`}
             >
               <div className="flex items-center gap-2">
-                <span>{lang.flag}</span>
+                <span className="uppercase tracking-wider font-bold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{lang.code}</span>
                 <span>{lang.label}</span>
               </div>
             </button>
