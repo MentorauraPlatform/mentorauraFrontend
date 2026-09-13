@@ -4,7 +4,9 @@ const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_A
 
 export async function GET(request: NextRequest) {
   try {
-    const accessToken = request.cookies.get('access_token')?.value;
+    const accessToken =
+      request.cookies.get('accessToken')?.value ||
+      request.cookies.get('access_token')?.value;
 
     if (!accessToken) {
       return NextResponse.json(
