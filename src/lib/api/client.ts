@@ -14,8 +14,6 @@ import type {
   MeResponse,
 } from '../types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-
 export type ApiResponse<T> = {
   data: T;
   message?: string;
@@ -27,11 +25,21 @@ export type ApiError = {
   error?: string;
 };
 
-// ── Core request functions ─────────────────────────────────────────────────────
+function getEndpointUrl(path: string): string {
+  if (typeof window !== 'undefined') {
+    // In browser, route requests through Next.js API routes (BFF pattern)
+    if (path.startsWith('/auth/')) {
+      return `/api${path}`;
+    }
+    return `/api/proxy${path}`;
+  }
+  const baseUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  return `${baseUrl}${path}`;
+}
 
 async function attemptTokenRefresh(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+    const res = await fetch(getEndpointUrl('/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -52,10 +60,10 @@ async function request<T>(
     ...options.headers,
   };
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(getEndpointUrl(path), {
     ...options,
     headers,
-    credentials: 'include', // ✅ Cookies are sent automatically
+    credentials: 'include', // ✅ Same-site cookies sent automatically to Next.js API routes
   });
 
   if (res.status === 401 && !isRetry && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {
@@ -86,10 +94,10 @@ async function rawRequest<T>(
     ...options.headers,
   };
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(getEndpointUrl(path), {
     ...options,
     headers,
-    credentials: 'include', // ✅ Cookies are sent automatically
+    credentials: 'include', // ✅ Same-site cookies sent automatically to Next.js API routes
   });
 
   if (res.status === 401 && !isRetry && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {

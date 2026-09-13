@@ -28,12 +28,23 @@ import {
   UserCheck,
   ShieldCheck,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { marketplaceService, MentorCardData } from '@/services/marketplace.service';
 
 export default function MenteeDashboardPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MenteeTab>('overview');
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      const isMentor = user.isMentor ?? (user.role === 'mentor' || user.role === 'MENTOR' || !!user.mentorProfile);
+      if (isMentor) {
+        router.push('/mentor/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [recommendedMentors, setRecommendedMentors] = useState<MentorCardData[]>([]);
   const [loadingMentors, setLoadingMentors] = useState(false);
@@ -404,8 +415,9 @@ export default function MenteeDashboardPage() {
                         <p className="text-xs text-slate-500">
                           Mentor: <span className="font-semibold text-slate-700">John Doe</span> (Staff Engineer at TechCorp)
                         </p>
-                        <p className="text-xs text-slate-500">
-                          🗓️ Wednesday, Sept 9, 2026 • 4:00 PM - 5:00 PM GMT+1
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          Wednesday, Sept 9, 2026 • 4:00 PM - 5:00 PM GMT+1
                         </p>
                       </div>
                     </div>
@@ -440,8 +452,9 @@ export default function MenteeDashboardPage() {
                         <p className="text-xs text-slate-500">
                           Mentor: <span className="font-semibold text-slate-700">Sarah Jenkins</span> (Lead PM)
                         </p>
-                        <p className="text-xs text-slate-500">
-                          🗓️ Friday, Sept 18, 2026 • 2:00 PM - 3:00 PM GMT+1
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          Friday, Sept 18, 2026 • 2:00 PM - 3:00 PM GMT+1
                         </p>
                       </div>
                     </div>

@@ -132,8 +132,13 @@ export default function AuthPage() {
       await refetchUser();
       showToast('Logged in successfully!', 'success');
 
-      const userObj = res as { user?: { isMentor?: boolean } };
-      if (userObj.user?.isMentor) {
+      const userObj = res as { user?: { isMentor?: boolean }; data?: { user?: { isMentor?: boolean } } };
+      const isMentor =
+        userObj?.user?.isMentor ??
+        userObj?.data?.user?.isMentor ??
+        false;
+
+      if (isMentor) {
         const mentorRes = await mentorApi.getMyProfile().catch(() => null);
         const status = mentorRes?.data?.onboardingStatus;
         if (status === 'COMPLETE' || status === 'PENDING') {

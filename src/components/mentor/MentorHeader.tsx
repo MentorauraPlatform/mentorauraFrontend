@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Menu, Search, Bell, Sparkles, Plus, Package, CheckCircle2, AlertCircle } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import type { MeResponse, MentorProfile } from '@/lib/types';
 
 interface MentorHeaderProps {
@@ -56,13 +57,16 @@ export const MentorHeader: React.FC<MentorHeaderProps> = ({
             )}
           </div>
           <p className="text-xs text-slate-500 hidden sm:block">
-            Welcome back, <span className="font-semibold text-slate-800">{mentorName}</span> 👋
+            Welcome back, <span className="font-semibold text-slate-800">{mentorName}</span>
           </p>
         </div>
       </div>
 
-      {/* Right side: Search bar, notifications & Quick action CTA */}
+      {/* Right side: Search bar, Language Switcher, notifications & Quick action CTA */}
       <div className="flex items-center gap-3">
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         {/* Notifications Button */}
         <button className="relative p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-xs">
           <Bell className="w-4 h-4" />

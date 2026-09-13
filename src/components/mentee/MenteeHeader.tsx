@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Menu, Search, Bell, Sparkles, Plus, Compass } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import type { MeResponse } from '@/lib/types';
 
 interface MenteeHeaderProps {
@@ -35,12 +36,12 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
             {activeTabTitle}
           </h1>
           <p className="text-xs text-slate-500 hidden sm:block">
-            Welcome back, <span className="font-semibold text-slate-800">{menteeName}</span> 👋
+            Welcome back, <span className="font-semibold text-slate-800">{menteeName}</span>
           </p>
         </div>
       </div>
 
-      {/* Right side: Search bar, notifications & Quick action CTA */}
+      {/* Right side: Search bar, Language Switcher, notifications & Quick action CTA */}
       <div className="flex items-center gap-3">
         {/* Search bar */}
         <div className="hidden md:flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl w-64 shadow-xs focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all">
@@ -51,6 +52,9 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
             className="w-full text-xs text-slate-800 bg-transparent focus:outline-none placeholder:text-slate-400"
           />
         </div>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Notifications Button */}
         <button className="relative p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-xs">
