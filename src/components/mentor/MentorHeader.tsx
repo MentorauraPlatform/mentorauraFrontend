@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Menu, Search, Bell, Sparkles, Plus, Package, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Menu, Bell, Package, CheckCircle2, AlertCircle, User } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import type { MeResponse, MentorProfile } from '@/lib/types';
 
@@ -19,6 +20,7 @@ export const MentorHeader: React.FC<MentorHeaderProps> = ({
   onToggleSidebar,
   activeTabTitle,
 }) => {
+  const t = useTranslations('dashboardHeader');
   const mentorName =
     profile?.fullName ||
     user?.mentorProfile?.fullName ||
@@ -47,23 +49,33 @@ export const MentorHeader: React.FC<MentorHeaderProps> = ({
             {isVerified ? (
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Verified
+                {t('verified')}
               </span>
             ) : (
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-200">
                 <AlertCircle className="w-3.5 h-3.5" />
-                Pending Verification
+                {t('pendingVerification')}
               </span>
             )}
           </div>
           <p className="text-xs text-slate-500 hidden sm:block">
-            Welcome back, <span className="font-semibold text-slate-800">{mentorName}</span>
+            {t('welcomeBack')}, <span className="font-semibold text-slate-800">{mentorName}</span>
           </p>
         </div>
       </div>
 
       {/* Right side: Search bar, Language Switcher, notifications & Quick action CTA */}
       <div className="flex items-center gap-3">
+        {/* Switch to Mentee Mode Button */}
+        <Link
+          href="/mentee/dashboard"
+          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl transition-all border border-slate-200/80 shadow-2xs"
+          title={t('switchToMenteeMode')}
+        >
+          <User className="w-3.5 h-3.5 text-orange-500" />
+          <span className="hidden sm:inline">{t('switchToMenteeMode')}</span>
+        </Link>
+
         {/* Language Switcher */}
         <LanguageSwitcher />
 
@@ -79,7 +91,7 @@ export const MentorHeader: React.FC<MentorHeaderProps> = ({
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 hover:opacity-95 transition-all"
         >
           <Package className="w-4 h-4" />
-          <span className="hidden sm:inline">Manage Plans</span>
+          <span className="hidden sm:inline">{t('managePlans')}</span>
         </Link>
       </div>
     </header>

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Menu, Search, Bell, Sparkles, Plus, Compass } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Menu, Search, Bell, Compass, Briefcase } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import type { MeResponse } from '@/lib/types';
 
@@ -17,7 +18,9 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
   onToggleSidebar,
   activeTabTitle,
 }) => {
+  const t = useTranslations('dashboardHeader');
   const menteeName = user?.menteeProfile?.fullName || user?.email?.split('@')[0] || 'Mentee';
+  const isMentor = user?.isMentor ?? (user?.role === 'mentor' || user?.role === 'MENTOR' || !!user?.mentorProfile);
 
   return (
     <header className="sticky top-0 z-30 bg-[#FFFCF9]/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between transition-all">
@@ -36,19 +39,31 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
             {activeTabTitle}
           </h1>
           <p className="text-xs text-slate-500 hidden sm:block">
-            Welcome back, <span className="font-semibold text-slate-800">{menteeName}</span>
+            {t('welcomeBack')}, <span className="font-semibold text-slate-800">{menteeName}</span>
           </p>
         </div>
       </div>
 
       {/* Right side: Search bar, Language Switcher, notifications & Quick action CTA */}
       <div className="flex items-center gap-3">
+        {/* Switch to Mentor Mode Button (visible if user is also a mentor) */}
+        {isMentor && (
+          <Link
+            href="/mentor/dashboard"
+            className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-[#FF6B00] border border-orange-200/80 text-xs font-bold rounded-xl transition-all shadow-2xs"
+            title={t('switchToMentorMode')}
+          >
+            <Briefcase className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t('switchToMentorMode')}</span>
+          </Link>
+        )}
+
         {/* Search bar */}
         <div className="hidden md:flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl w-64 shadow-xs focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all">
           <Search className="w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search mentors or topics..."
+            placeholder={t('searchPlaceholder')}
             className="w-full text-xs text-slate-800 bg-transparent focus:outline-none placeholder:text-slate-400"
           />
         </div>
@@ -68,7 +83,7 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 hover:opacity-95 transition-all"
         >
           <Compass className="w-4 h-4" />
-          <span className="hidden sm:inline">Browse Mentors</span>
+          <span className="hidden sm:inline">{t('browseMentors')}</span>
         </Link>
       </div>
     </header>

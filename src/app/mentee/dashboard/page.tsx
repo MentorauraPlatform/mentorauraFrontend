@@ -37,14 +37,7 @@ export default function MenteeDashboardPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MenteeTab>('overview');
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      const isMentor = user.isMentor ?? (user.role === 'mentor' || user.role === 'MENTOR' || !!user.mentorProfile);
-      if (isMentor) {
-        router.push('/mentor/dashboard');
-      }
-    }
-  }, [user, authLoading, router]);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [recommendedMentors, setRecommendedMentors] = useState<MentorCardData[]>([]);
   const [loadingMentors, setLoadingMentors] = useState(false);
