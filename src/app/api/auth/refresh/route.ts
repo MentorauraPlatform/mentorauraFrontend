@@ -4,12 +4,26 @@ const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_A
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let refreshToken =
+      request.cookies.get('refreshToken')?.value ||
+      request.cookies.get('refresh_token')?.value;
 
-    const backendRes = await fetch(`${BACKEND_API_URL}/auth/login`, {
+    if (!refreshToken) {
+      const body = await request.json().catch(() => ({}));
+      refreshToken = body?.refreshToken;
+    }
+
+    if (!refreshToken) {
+      return NextResponse.json(
+        { statusCode: 401, message: 'Refresh token is required', error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const backendRes = await fetch(`${BACKEND_API_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ refreshToken }),
     });
 
     const data = await backendRes.json();
@@ -18,28 +32,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: backendRes.status });
     }
 
-    const accessToken = data.tokens?.accessToken || data.data?.tokens?.accessToken;
-    const refreshToken = data.tokens?.refreshToken || data.data?.tokens?.refreshToken;
+    const newAccessToken = data.tokens?.accessToken || data.data?.tokens?.accessToken;
+    const newRefreshToken = data.tokens?.refreshToken || data.data?.tokens?.refreshToken || refreshToken;
 
     const response = NextResponse.json({
       statusCode: 200,
-      message: 'Login successful',
+      message: 'Token refreshed successfully',
       data: data.data || data,
-      tokens: { accessToken, refreshToken },
+      tokens: { accessToken: newAccessToken, refreshToken: newRefreshToken },
     });
 
     const isProd = process.env.NODE_ENV === 'production';
 
-    // Set Same-Site cookies on the Next.js Frontend Domain
-    if (accessToken) {
-      response.cookies.set('accessToken', accessToken, {
+    if (newAccessToken) {
+      response.cookies.set('accessToken', newAccessToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 15, // 15 minutes
+        maxAge: 60 * 15,
       });
-      response.cookies.set('access_token', accessToken, {
+      response.cookies.set('access_token', newAccessToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
@@ -48,15 +61,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (refreshToken) {
-      response.cookies.set('refreshToken', refreshToken, {
+    if (newRefreshToken) {
+      response.cookies.set('refreshToken', newRefreshToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
       });
-      response.cookies.set('refresh_token', refreshToken, {
+      response.cookies.set('refresh_token', newRefreshToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
