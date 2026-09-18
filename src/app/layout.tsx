@@ -37,9 +37,13 @@ export const metadata: Metadata = {
   creator: "MentorAura",
   metadataBase: new URL("https://mentoraura.com"),
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
   },
   openGraph: {
     title: "MentorAura | 1-on-1 Mentorship & Career Coaching",
@@ -85,7 +89,9 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon.png" />
         <meta property="og:image" content="https://mentoraura.com/og-image.png" />
         <meta property="og:image:secure_url" content="https://mentoraura.com/og-image.png" />
         <meta property="og:image:type" content="image/png" />

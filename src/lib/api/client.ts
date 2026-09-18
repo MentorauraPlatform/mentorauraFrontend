@@ -168,6 +168,12 @@ export const authApi = {
       body: JSON.stringify(data) 
     }),
 
+  resendVerification: (email: string) =>
+    rawRequest<{ message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
   refreshToken: (data: RefreshTokenPayload) =>
     rawRequest<RefreshTokenResponse>('/auth/refresh', { 
       method: 'POST', 
