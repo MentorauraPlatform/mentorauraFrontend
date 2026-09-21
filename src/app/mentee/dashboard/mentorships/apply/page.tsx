@@ -39,7 +39,22 @@ export default function ApplyPage() {
       try {
         setLoadingPlans(true);
         const response = await plansApi.list();
-        setPlans(response.data.data);
+        const raw = response as unknown;
+        let plansList: PlanSummary[] = [];
+        if (Array.isArray(raw)) {
+          plansList = raw as PlanSummary[];
+        } else if (typeof raw === 'object' && raw !== null) {
+          const record = raw as Record<string, unknown>;
+          if (Array.isArray(record.data)) {
+            plansList = record.data as PlanSummary[];
+          } else if (typeof record.data === 'object' && record.data !== null) {
+            const nested = record.data as Record<string, unknown>;
+            if (Array.isArray(nested.data)) {
+              plansList = nested.data as PlanSummary[];
+            }
+          }
+        }
+        setPlans(plansList);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load plans');
@@ -100,7 +115,7 @@ export default function ApplyPage() {
                 <option value="">
                   {loadingPlans ? 'Loading plans...' : 'Select a plan'}
                 </option>
-                {plans.map((plan) => (
+                {(plans || []).map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.title} — {plan.priceAmount} {plan.currency}
                   </option>
