@@ -290,6 +290,8 @@ export interface PlanDetail {
 export const plansApi = {
   list: () =>
     apiClient.get<{ data: PlanSummary[] }>('/plans'),
+  getMentorPlans: (mentorId: string) =>
+    apiClient.get<{ data: PlanSummary[] }>(`/mentors/${mentorId}/plans`),
 };
 
 // ── Mentorship Applications ────────────────────────────────────────────────────
