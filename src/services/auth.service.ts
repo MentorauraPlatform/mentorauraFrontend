@@ -60,7 +60,7 @@ export const authService = {
 
   async getCurrentUser(): Promise<MeResponse> {
     const response = await authApi.getMe();
-    return response.data;
+    return (response as { data?: MeResponse })?.data ?? (response as unknown as MeResponse);
   },
 
   async logout() {
