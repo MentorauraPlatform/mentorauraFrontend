@@ -15,6 +15,7 @@ export default function ApplyPage() {
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,11 @@ export default function ApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!planId) return;
+
+    if (!agreedTerms) {
+      setError('You must agree to the Terms of Service to apply.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -127,10 +133,33 @@ export default function ApplyPage() {
               <p className="mt-1 text-sm text-gray-500">{message.length}/500 characters</p>
             </div>
 
+            <div className="flex items-start gap-3">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={agreedTerms}
+                onChange={(e) => setAgreedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                required
+              />
+              <label htmlFor="terms" className="text-sm text-gray-600">
+                I have read and agree to the{' '}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-orange-600 hover:text-orange-700 underline font-medium"
+                >
+                  Mentorship Terms of Service
+                </a>
+                .
+              </label>
+            </div>
+
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                disabled={loading || !planId}
+                disabled={loading || !planId || !agreedTerms}
                 className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 disabled:opacity-50 font-medium transition-colors"
               >
                 {loading ? 'Submitting...' : 'Submit Application'}

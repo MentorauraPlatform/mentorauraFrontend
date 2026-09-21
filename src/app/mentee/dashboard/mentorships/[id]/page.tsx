@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { mentorshipsApi, sessionsApi } from '@/lib/api/client';
 import type { Mentorship, MentorshipSession } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
-export default function MentorshipDetailPage({ params }: { params: { id: string } }) {
+export default function MentorshipDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [mentorship, setMentorship] = useState<Mentorship | null>(null);
@@ -25,8 +30,8 @@ export default function MentorshipDetailPage({ params }: { params: { id: string 
       try {
         setLoading(true);
         const [mentorshipRes, sessionsRes] = await Promise.all([
-          mentorshipsApi.getMentorship(params.id),
-          sessionsApi.list(params.id),
+          mentorshipsApi.getMentorship(id),
+          sessionsApi.list(id),
         ]);
         setMentorship(mentorshipRes.data);
         setSessions(sessionsRes.data.data);
@@ -37,7 +42,7 @@ export default function MentorshipDetailPage({ params }: { params: { id: string 
         setLoading(false);
       }
     })();
-  }, [user, authLoading, router, params.id]);
+  }, [user, authLoading, router, id]);
 
   if (loading) {
     return (

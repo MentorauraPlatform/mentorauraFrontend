@@ -337,8 +337,8 @@ export const mentorshipsApi = {
   complete: (id: string) =>
     apiClient.patch<Mentorship>(`/mentorships/${id}/complete`, {}),
 
-  cancel: (id: string) =>
-    apiClient.patch<Mentorship>(`/mentorships/${id}/cancel`, {}),
+  cancel: (id: string, reason?: string) =>
+    apiClient.patch<Mentorship>(`/mentorships/${id}/cancel`, { reason }),
 
   pause: (id: string) =>
     apiClient.patch<Mentorship>(`/mentorships/${id}/pause`, {}),

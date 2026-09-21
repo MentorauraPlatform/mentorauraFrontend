@@ -25,7 +25,11 @@ export default function MenteeMentorshipsPage() {
       return;
     }
 
-    if (user.role !== 'mentee') {
+    const isMentee =
+      String(user.role ?? '').trim().toLowerCase() === 'mentee' ||
+      !(user as unknown as { isMentor?: boolean })?.isMentor;
+
+    if (!isMentee) {
       router.replace('/');
       return;
     }
