@@ -79,8 +79,7 @@ export function useMentorOnboarding() {
 
     const isUserMentor = Boolean(
       (user as unknown as { isMentor?: boolean }).isMentor ||
-        user.role === 'mentor' ||
-        user.role === 'MENTOR'
+        String(user.role ?? '').trim().toLowerCase() === 'mentor'
     );
 
     if (!isUserMentor) {

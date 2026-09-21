@@ -6,7 +6,7 @@
  * to the NestJS API and renders what comes back.
  */
 
-import type { MentorProfile, UserSkill } from '../types';
+import type { MentorProfile, UserSkill, PlanSummary, MentorshipApplication, Mentorship, MentorshipSession } from '../types';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -240,6 +240,9 @@ export interface SubmitOnboardingPayload {
 }
 
 // ✅ Mentor API - All requests use credentials: 'include' via apiClient
+
+// ... existing code ...
+
 export const mentorApi = {
   createProfile: (data: CreateMentorProfilePayload) =>
     apiClient.post<MentorProfile>('/mentor/applications', data),
@@ -264,4 +267,87 @@ export const mentorApi = {
 
   submitOnboarding: (data: SubmitOnboardingPayload) =>
     apiClient.post<MentorProfile>('/mentor/applications/me/submit', data),
+};
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+
+export interface PlanDetail {
+  id: string;
+  mentorId: string;
+  title: string;
+  description?: string;
+  priceAmount: number;
+  currency: string;
+  isActive: boolean;
+  mentor?: {
+    id: string;
+    fullName: string;
+    title?: string;
+    company?: string;
+  };
+}
+
+export const plansApi = {
+  list: () =>
+    apiClient.get<{ data: PlanSummary[] }>('/plans'),
+};
+
+// ── Mentorship Applications ────────────────────────────────────────────────────
+
+export interface CreateApplicationPayload {
+  planId: string;
+  message?: string;
+}
+
+export const applicationsApi = {
+  apply: (data: CreateApplicationPayload) =>
+    apiClient.post<MentorshipApplication>('/mentorships/apply', data),
+
+  getMyApplications: () =>
+    apiClient.get<MentorshipApplication[]>('/mentorships/applications/mine'),
+
+  getMentorApplications: () =>
+    apiClient.get<MentorshipApplication[]>('/mentor/applications'),
+
+  accept: (id: string) =>
+    apiClient.patch<MentorshipApplication>(`/mentorships/applications/${id}/accept`, {}),
+
+  reject: (id: string) =>
+    apiClient.patch<MentorshipApplication>(`/mentorships/applications/${id}/reject`, {}),
+
+  withdraw: (id: string) =>
+    apiClient.delete<MentorshipApplication>(`/mentorships/applications/${id}`),
+};
+
+// ── Mentorship Lifecycle ───────────────────────────────────────────────────────
+
+export const mentorshipsApi = {
+  getMenteeMentorships: () =>
+    apiClient.get<Mentorship[]>('/mentorships/mine'),
+
+  getMentorMentorships: () =>
+    apiClient.get<Mentorship[]>('/mentor/mentorships'),
+
+  getMentorship: (id: string) =>
+    apiClient.get<Mentorship>(`/mentorships/${id}`),
+
+  activate: (id: string) =>
+    apiClient.patch<Mentorship>(`/mentorships/${id}/activate`, {}),
+
+  complete: (id: string) =>
+    apiClient.patch<Mentorship>(`/mentorships/${id}/complete`, {}),
+
+  cancel: (id: string, reason?: string) =>
+    apiClient.patch<Mentorship>(`/mentorships/${id}/cancel`, { reason }),
+
+  pause: (id: string) =>
+    apiClient.patch<Mentorship>(`/mentorships/${id}/pause`, {}),
+
+  resume: (id: string) =>
+    apiClient.post<Mentorship>(`/mentorships/${id}/resume`, {}),
+};
+
+export const sessionsApi = {
+  list: (mentorshipId: string) =>
+    apiClient.get<{ data: MentorshipSession[] }>(`/mentorships/${mentorshipId}/sessions`),
 };
