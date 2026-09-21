@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { applicationsApi, plansApi } from '@/lib/api/client';
+import { marketplaceService, MentorDetailData } from '@/services/marketplace.service';
 import type { PlanSummary } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -11,6 +12,8 @@ export default function ApplyPage() {
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
   const [planId, setPlanId] = useState(searchParams.get('planId') || '');
+  const [mentorId, setMentorId] = useState(searchParams.get('mentorId') || '');
+  const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [message, setMessage] = useState('');
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -26,10 +29,10 @@ export default function ApplyPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    const paramPlanId = searchParams.get('planId');
-    if (paramPlanId) {
-      setPlanId(paramPlanId);
-    }
+    const pPlanId = searchParams.get('planId');
+    const pMentorId = searchParams.get('mentorId');
+    if (pPlanId) setPlanId(pPlanId);
+    if (pMentorId) setMentorId(pMentorId);
   }, [searchParams]);
 
   useEffect(() => {
@@ -38,8 +41,87 @@ export default function ApplyPage() {
     void (async () => {
       try {
         setLoadingPlans(true);
+        const pMentorId = searchParams.get('mentorId');
+        const pPlanId = searchParams.get('planId');
+
+        // 1. If mentorId is available, load that specific mentor and their plans
+        if (pMentorId) {
+          const [mentorRes, plansRes] = await Promise.all([
+            marketplaceService.getMentorProfile(pMentorId).catch(() => null),
+            plansApi.getMentorPlans(pMentorId).catch(() => null),
+          ]);
+
+          if (mentorRes) {
+            setMentor(mentorRes);
+          }
+
+          let mentorPlansList: PlanSummary[] = [];
+          if (plansRes) {
+            const raw = plansRes as unknown;
+            if (Array.isArray(raw)) {
+              mentorPlansList = raw as PlanSummary[];
+            } else if (typeof raw === 'object' && raw !== null) {
+              const record = raw as Record<string, unknown>;
+              if (Array.isArray(record.data)) {
+                mentorPlansList = record.data as PlanSummary[];
+              } else if (typeof record.data === 'object' && record.data !== null) {
+                const nested = record.data as Record<string, unknown>;
+                if (Array.isArray(nested.data)) {
+                  mentorPlansList = nested.data as PlanSummary[];
+                }
+              }
+            }
+          }
+
+          // Fallback to mentor profile's embedded plans if endpoint returned empty
+          if (mentorPlansList.length === 0 && mentorRes?.plans?.length) {
+            mentorPlansList = mentorRes.plans.map((p) => ({
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              priceAmount: p.priceAmount,
+              currency: p.currency,
+              isActive: p.isActive,
+              mentorId: pMentorId,
+            }));
+          }
+
+          setPlans(mentorPlansList);
+          return;
+        }
+
+        // 2. If only planId is available, fetch all plans and filter to the selected plan's mentor
         const response = await plansApi.list();
-        setPlans(response.data.data);
+        const raw = response as unknown;
+        let allPlans: PlanSummary[] = [];
+        if (Array.isArray(raw)) {
+          allPlans = raw as PlanSummary[];
+        } else if (typeof raw === 'object' && raw !== null) {
+          const record = raw as Record<string, unknown>;
+          if (Array.isArray(record.data)) {
+            allPlans = record.data as PlanSummary[];
+          } else if (typeof record.data === 'object' && record.data !== null) {
+            const nested = record.data as Record<string, unknown>;
+            if (Array.isArray(nested.data)) {
+              allPlans = nested.data as PlanSummary[];
+            }
+          }
+        }
+
+        if (pPlanId) {
+          const targetPlan = allPlans.find((p) => p.id === pPlanId);
+          if (targetPlan?.mentorId) {
+            setMentorId(targetPlan.mentorId);
+            setPlans(allPlans.filter((p) => p.mentorId === targetPlan.mentorId));
+            void marketplaceService
+              .getMentorProfile(targetPlan.mentorId)
+              .then(setMentor)
+              .catch(() => null);
+            return;
+          }
+        }
+
+        setPlans(allPlans);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load plans');
@@ -47,7 +129,7 @@ export default function ApplyPage() {
         setLoadingPlans(false);
       }
     })();
-  }, [user]);
+  }, [user, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,10 +157,29 @@ export default function ApplyPage() {
     <div className="min-h-screen bg-[#FFFCF9] py-12">
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Mentorship</h1>
-          <p className="text-gray-600 mb-8">
-            Select a plan and submit your application to start the mentorship process.
-          </p>
+          {mentor ? (
+            <div className="mb-6 pb-6 border-b border-gray-100 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#172033] to-slate-800 text-white font-black text-xl flex items-center justify-center shrink-0 shadow-md">
+                {mentor.fullName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">
+                  Applying for Mentorship with
+                </span>
+                <h1 className="text-2xl font-bold text-gray-900 mt-0.5">{mentor.fullName}</h1>
+                <p className="text-xs text-gray-500">
+                  {mentor.title} {mentor.company ? `at ${mentor.company}` : ''}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Mentorship</h1>
+              <p className="text-gray-600">
+                Select a plan and submit your application to start the mentorship process.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
@@ -100,7 +201,7 @@ export default function ApplyPage() {
                 <option value="">
                   {loadingPlans ? 'Loading plans...' : 'Select a plan'}
                 </option>
-                {plans.map((plan) => (
+                {(plans || []).map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.title} — {plan.priceAmount} {plan.currency}
                   </option>

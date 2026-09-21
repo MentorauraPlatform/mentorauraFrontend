@@ -28,7 +28,22 @@ export default function BrowsePlansPage() {
         setLoading(true);
         setError(null);
         const response = await plansApi.list();
-        setPlans(response.data.data);
+        const raw = response as unknown;
+        let plansList: PlanSummary[] = [];
+        if (Array.isArray(raw)) {
+          plansList = raw as PlanSummary[];
+        } else if (typeof raw === 'object' && raw !== null) {
+          const record = raw as Record<string, unknown>;
+          if (Array.isArray(record.data)) {
+            plansList = record.data as PlanSummary[];
+          } else if (typeof record.data === 'object' && record.data !== null) {
+            const nested = record.data as Record<string, unknown>;
+            if (Array.isArray(nested.data)) {
+              plansList = nested.data as PlanSummary[];
+            }
+          }
+        }
+        setPlans(plansList);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load plans');
@@ -74,7 +89,7 @@ export default function BrowsePlansPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
+            {(plans || []).map((plan) => (
               <div
                 key={plan.id}
                 className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:border-orange-300 transition-colors"
