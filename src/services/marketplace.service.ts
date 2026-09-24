@@ -22,6 +22,13 @@ export interface CategoryItem {
   name: string;
   slug: string;
   description?: string;
+  mentorCount?: number;
+}
+
+export interface PlatformStats {
+  activeMentors: number;
+  completedSessions: number;
+  satisfactionRate: number;
 }
 
 export interface MentorCardData {
@@ -133,6 +140,11 @@ export const marketplaceService = {
 
   async getFeaturedMentors(): Promise<MentorCardData[]> {
     const res = await apiClient.get<MentorCardData[]>('/discovery/featured');
+    return res.data;
+  },
+
+  async getPlatformStats(): Promise<PlatformStats> {
+    const res = await apiClient.get<PlatformStats>('/discovery/stats');
     return res.data;
   },
 
