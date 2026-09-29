@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import type { MeResponse, MentorProfile } from '@/lib/types';
 
-export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans';
+export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings';
 
 interface MentorSidebarProps {
   activeTab: MentorTab;
@@ -79,6 +79,12 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
       label: 'Mentorship Plans',
       icon: Package,
       badge: 'Manage',
+    },
+    {
+      id: 'bookings' as MentorTab,
+      label: 'Calendar & Sessions',
+      icon: Calendar,
+      badge: undefined,
     },
   ];
 
