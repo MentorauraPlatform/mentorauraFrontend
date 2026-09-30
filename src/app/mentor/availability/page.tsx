@@ -40,17 +40,15 @@ export default function MentorAvailabilityPage() {
     void (async () => {
       try {
         setLoading(true);
-        const [availRes, blackoutsRes] = await Promise.all([
-          schedulingApi.getAvailability(),
-          schedulingApi.listBlackouts(),
-        ]);
+        const availRes = await schedulingApi.getAvailability();
+        const blackoutsRes = await schedulingApi.listBlackouts();
         const avail = (availRes.data as Record<string, unknown>) || {};
         setAvailability(
           Object.fromEntries(
             DAYS.map((day) => [day, Array.isArray((avail as Record<string, unknown>)[day]) ? (avail as Record<string, unknown>)[day] as Array<{ start: string; end: string }> : []]),
           ) as Record<string, Array<{ start: string; end: string }>>,
         );
-        setBlackouts((blackoutsRes.data.data ?? []).map((b) => ({ id: b.id, date: b.date, reason: b.reason })));
+        setBlackouts((blackoutsRes.data as Array<{ id: string; date: string; reason?: string }>).map((b) => ({ id: b.id, date: b.date, reason: b.reason })));
       } catch {
         toast.error('Failed to load availability');
       } finally {
