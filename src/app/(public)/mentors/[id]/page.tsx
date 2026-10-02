@@ -87,8 +87,39 @@ export default function PublicMentorProfilePage() {
     );
   }
 
+  // JSON-LD structured data for SEO rich snippets
+  const jsonLd = mentor
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        mainEntity: {
+          '@type': 'Person',
+          name: mentor.fullName,
+          jobTitle: mentor.title,
+          worksFor: mentor.company ? { '@type': 'Organization', name: mentor.company } : undefined,
+          description: mentor.bio || mentor.experience || `${mentor.title} offering 1-on-1 mentorship on MentorAura.`,
+          knowsAbout: mentor.skills.map((s) => s.name),
+          ...(mentor.avgRating && {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: mentor.avgRating,
+              reviewCount: Math.max(mentor.reviewCount, 1),
+              bestRating: '5',
+              worstRating: '1',
+            },
+          }),
+        },
+      }
+    : null;
+
   return (
     <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">

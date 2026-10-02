@@ -7,6 +7,79 @@ import { useAuth } from '@/context/AuthContext';
 import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import type { MentorProfile, Skill, SkillLevel } from '@/lib/types';
+import { schedulingApi } from '@/lib/api/client';
+
+function MentorBookingsSection() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<unknown[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setLoading(true);
+        const res = await schedulingApi.getMentorBookings();
+        setBookings((res.data as unknown[]) ?? []);
+      } catch {
+        toast.error('Failed to load bookings');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleCancel = async (id: string) => {
+    const reason = prompt('Cancellation reason (optional)') || undefined;
+    try {
+      await schedulingApi.cancelBooking(id, reason);
+      setBookings((prev) => prev.filter((b: unknown) => (b as { id: string }).id !== id));
+      toast.success('Booking cancelled');
+    } catch {
+      toast.error('Failed to cancel booking');
+    }
+  };
+
+  if (loading) return <div className="text-sm text-gray-600">Loading bookings...</div>;
+
+  return (
+    <div className="space-y-4">
+      {bookings.length === 0 && <p className="text-sm text-gray-600">No bookings yet.</p>}
+      {bookings.map((b: unknown) => {
+        const booking = b as {
+          id: string;
+          scheduledAt: string;
+          durationMinutes: number;
+          status: string;
+          meetingLink?: string;
+          cancellationReason?: string;
+          mentee?: { email?: string };
+          mentorship?: { plan?: { title?: string } };
+        };
+        return (
+          <div key={booking.id} className="p-5 bg-white rounded-2xl border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-gray-900">{booking.mentorship?.plan?.title || 'Session'}</p>
+              <p className="text-xs text-gray-500">Mentee: {booking.mentee?.email || 'Unknown'}</p>
+              <p className="text-xs text-gray-500">{new Date(booking.scheduledAt).toLocaleString()} • {booking.durationMinutes} min</p>
+              {booking.cancellationReason && <p className="text-xs text-red-600 mt-1">Reason: {booking.cancellationReason}</p>}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                booking.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : booking.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'
+              }`}>{booking.status}</span>
+              {booking.status === 'SCHEDULED' && booking.meetingLink && (
+                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-orange-600 text-xs font-bold hover:underline">Join</a>
+              )}
+              {booking.status === 'SCHEDULED' && (
+                <button onClick={() => handleCancel(booking.id)} className="text-red-600 text-xs font-bold hover:underline">Cancel</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 import { MentorSidebar, MentorTab } from '@/components/mentor/MentorSidebar';
 import { MentorHeader } from '@/components/mentor/MentorHeader';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -246,6 +319,7 @@ export default function MentorDashboardPage() {
     skills: 'Skills & Technical Expertise',
     availability: 'Weekly Availability Schedule',
     plans: 'Mentorship Plans & Packages',
+    bookings: 'Calendar & Sessions',
   };
 
   return (
@@ -731,6 +805,13 @@ export default function MentorDashboardPage() {
                 Go to Plans Manager
                 <ChevronRight className="w-4 h-4" />
               </Link>
+            </div>
+          )}
+          {/* TAB 6: BOOKINGS */}
+          {activeTab === 'bookings' && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-bold text-[#172033]">Calendar & Sessions</h2>
+              <MentorBookingsSection />
             </div>
           )}
         </main>
