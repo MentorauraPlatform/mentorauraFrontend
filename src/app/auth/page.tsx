@@ -132,7 +132,24 @@ export default function AuthPage() {
       await refetchUser();
       showToast('Logged in successfully!', 'success');
 
-      const userObj = res as { user?: { isMentor?: boolean }; data?: { user?: { isMentor?: boolean } } };
+      const userObj = res as {
+        user?: { isMentor?: boolean; role?: string };
+        data?: { user?: { isMentor?: boolean; role?: string } };
+        role?: string;
+      };
+
+      const userRole = (
+        userObj?.user?.role ||
+        userObj?.data?.user?.role ||
+        userObj?.role ||
+        ''
+      ).toLowerCase();
+
+      if (userRole === 'admin' || userRole === 'super_admin') {
+        router.push('/admin');
+        return;
+      }
+
       const isMentor =
         userObj?.user?.isMentor ??
         userObj?.data?.user?.isMentor ??

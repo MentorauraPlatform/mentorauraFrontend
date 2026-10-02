@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import type { MeResponse, MentorProfile } from '@/lib/types';
 
-export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans';
+export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings';
 
 interface MentorSidebarProps {
   activeTab: MentorTab;
@@ -79,6 +79,12 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
       label: 'Mentorship Plans',
       icon: Package,
       badge: 'Manage',
+    },
+    {
+      id: 'bookings' as MentorTab,
+      label: 'Calendar & Sessions',
+      icon: Calendar,
+      badge: undefined,
     },
   ];
 
@@ -170,6 +176,18 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
             <div className="pt-6 px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Quick Shortcuts
             </div>
+            <Link
+              href="/mentee/dashboard"
+              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <span>Mentee Dashboard</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-orange-400 border border-orange-500/20">
+                Switch
+              </span>
+            </Link>
             <Link
               href="/mentor/plans"
               className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"

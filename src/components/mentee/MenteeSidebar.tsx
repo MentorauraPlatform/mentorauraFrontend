@@ -14,6 +14,7 @@ import {
   X,
   Compass,
   Award,
+  Briefcase,
 } from 'lucide-react';
 import type { MeResponse } from '@/lib/types';
 
@@ -23,53 +24,29 @@ interface MenteeSidebarProps {
   activeTab: MenteeTab;
   setActiveTab: (tab: MenteeTab) => void;
   user: MeResponse | null;
-  onLogout: () => void;
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => void;
 }
 
 export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
   activeTab,
   setActiveTab,
   user,
-  onLogout,
   isOpen,
   onClose,
+  onLogout,
 }) => {
   const menteeName = user?.menteeProfile?.fullName || user?.email?.split('@')[0] || 'Mentee';
   const menteeInitial = menteeName.charAt(0).toUpperCase();
+  const isMentor = user?.isMentor ?? (user?.role === 'mentor' || user?.role === 'MENTOR' || !!user?.mentorProfile);
 
-  const navItems = [
-    {
-      id: 'overview' as MenteeTab,
-      label: 'Overview',
-      icon: LayoutDashboard,
-      badge: undefined,
-    },
-    {
-      id: 'sessions' as MenteeTab,
-      label: 'My Sessions',
-      icon: Calendar,
-      badge: '2 Upcoming',
-    },
-    {
-      id: 'mentors' as MenteeTab,
-      label: 'My Mentors',
-      icon: Users,
-      badge: undefined,
-    },
-    {
-      id: 'goals' as MenteeTab,
-      label: 'Learning Goals',
-      icon: Target,
-      badge: '3 Active',
-    },
-    {
-      id: 'settings' as MenteeTab,
-      label: 'Profile & Settings',
-      icon: Settings,
-      badge: undefined,
-    },
+  const navItems: { id: MenteeTab; label: string; icon: React.ElementType; badge?: string }[] = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'sessions', label: 'My Sessions', icon: Calendar },
+    { id: 'mentors', label: 'My Mentors', icon: Users },
+    { id: 'goals', label: 'Learning Goals', icon: Target },
+    { id: 'settings', label: 'Account Settings', icon: Settings },
   ];
 
   return (
@@ -160,6 +137,20 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
             <div className="pt-6 px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Explore & Connect
             </div>
+            {isMentor && (
+              <Link
+                href="/mentor/dashboard"
+                className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group border border-orange-500/30 bg-orange-500/5 mb-1.5"
+              >
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                  <span>Mentor Portal</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-orange-500 text-white">
+                  Switch
+                </span>
+              </Link>
+            )}
             <Link
               href="/mentors"
               className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"

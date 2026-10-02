@@ -15,6 +15,16 @@
     "dashboard": "Dashboard",
     "logout": "Log Out"
   },
+  "dashboardHeader": {
+    "welcomeBack": "Welcome back",
+    "verified": "Verified",
+    "pendingVerification": "Pending Verification",
+    "switchToMenteeMode": "Switch to Mentee Mode",
+    "switchToMentorMode": "Switch to Mentor Mode",
+    "managePlans": "Manage Plans",
+    "browseMentors": "Browse Mentors",
+    "searchPlaceholder": "Search mentors or topics..."
+  },
   "hero": {
     "badge": "World-Class 1-on-1 Mentorship Platform",
     "titlePart1": "Reach your career goals with a ",
