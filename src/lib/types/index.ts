@@ -37,6 +37,7 @@ export interface LoginResponse {
   user: {
     id: string;
     email: string;
+    role: string;
     isMentor: boolean;
     fullName: string;
     avatarUrl: string | null;

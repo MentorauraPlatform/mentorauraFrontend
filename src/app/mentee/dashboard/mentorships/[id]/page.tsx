@@ -34,7 +34,12 @@ export default function MentorshipDetailPage({
           sessionsApi.list(id),
         ]);
         setMentorship(mentorshipRes.data);
-        setSessions(sessionsRes.data.data);
+        const sessionsList: MentorshipSession[] = Array.isArray(sessionsRes.data)
+          ? sessionsRes.data
+          : Array.isArray((sessionsRes.data as any)?.data)
+          ? (sessionsRes.data as any).data
+          : [];
+        setSessions(sessionsList);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Failed to load mentorship');

@@ -39,6 +39,11 @@ export default function MenteeDashboardPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
+      const userRole = String(user.role ?? '').trim().toLowerCase();
+      if (userRole === 'admin' || userRole === 'super_admin') {
+        router.push('/admin');
+        return;
+      }
       const isMentor = user.isMentor ?? (user.role === 'mentor' || user.role === 'MENTOR' || !!user.mentorProfile);
       if (isMentor) {
         router.push('/mentor/dashboard');

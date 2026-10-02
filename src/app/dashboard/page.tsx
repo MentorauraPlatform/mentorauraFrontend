@@ -16,9 +16,16 @@ export default function DashboardRedirectPage() {
       return;
     }
 
+    const userRole = String(user.role ?? '').trim().toLowerCase();
+
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      router.replace('/admin');
+      return;
+    }
+
     const isMentor = Boolean(
       (user as unknown as { isMentor?: boolean })?.isMentor ||
-        String(user.role ?? '').trim().toLowerCase() === 'mentor'
+        userRole === 'mentor'
     );
 
     if (isMentor) {
