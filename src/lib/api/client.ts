@@ -6,7 +6,7 @@
  * to the NestJS API and renders what comes back.
  */
 
-import type { MentorProfile, MenteeProfile, Availability, UserSkill, PlanSummary, MentorshipApplication, Mentorship, MentorshipSession } from '../types';
+import type { MentorProfile, MenteeProfile, Availability, UserSkill, UserSkillSummary, PlanSummary, MentorshipApplication, Mentorship, MentorshipSession } from '../types';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -269,11 +269,15 @@ export const mentorApi = {
     apiClient.post<MentorProfile>('/mentor/applications/me/submit', data),
 };
 
+export interface AddMenteeSkillPayload {
+  name: string;
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+}
+
 export interface CreateMenteeProfilePayload {
   fullName: string;
+  avatarUrl?: string;
   headline?: string;
-  goals?: string[];
-  interests?: string[];
 }
 
 export type UpdateMenteeProfilePayload = Partial<CreateMenteeProfilePayload>;
@@ -282,7 +286,7 @@ export interface UpdateMenteeExperiencePayload {
   currentRole?: string;
   educationBackground?: string;
   yearsOfExperience?: number;
-  experienceLevel?: string;
+  experienceLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 }
 // Mentee onboarding
 
@@ -308,17 +312,17 @@ export const menteeApi = {
   updateAvailability: (data: { availability: Availability }) =>
     apiClient.patch<MenteeProfile>('/mentee/onboarding/me/availability', data),
 
-  addSkill: (data: AddSkillPayload) =>
-    apiClient.post<UserSkill>('/mentee/onboarding/me/skills', data),
+  addSkill: (data: AddMenteeSkillPayload) =>
+    apiClient.post<UserSkillSummary>('/mentee/onboarding/me/skills', data),
 
   updateSkill: (skillId: string, data: UpdateSkillPayload) =>
-    apiClient.patch<UserSkill>(`/mentee/onboarding/me/skills/${skillId}`, data),
+    apiClient.patch<UserSkillSummary>(`/mentee/onboarding/me/skills/${skillId}`, data),
 
   removeSkill: (skillId: string) =>
     apiClient.delete<{ message: string }>(`/mentee/onboarding/me/skills/${skillId}`),
 
-  submitOnboarding: () =>
-    apiClient.post<MenteeProfile>('/mentee/onboarding/me/submit', {}),
+  submitOnboarding: (data: { confirmed: boolean }) =>
+    apiClient.post<MenteeProfile>('/mentee/onboarding/me/submit', data),
 };
 
 // ── Plans ─────────────────────────────────────────────────────────────────────

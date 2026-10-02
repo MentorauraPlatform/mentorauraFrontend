@@ -62,6 +62,7 @@ export interface MenteeProfile {
   experienceLevel?: string | null;
   availability?: Availability | null;
   onboardingCompleted?: boolean;
+  user?: { userSkills?: UserSkillSummary[] };
 }
 
 export interface MentorProfileSummary {
