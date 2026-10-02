@@ -115,7 +115,7 @@ export function useMenteeOnboarding() {
             availability: existing.availability || initialData.availability,
           });
           if (existing.onboardingCompleted) {
-            setCurrentStep(8);
+            setCurrentStep(7);
           }
         }
 
