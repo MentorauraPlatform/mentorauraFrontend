@@ -415,9 +415,7 @@ export default function MentorDashboardPage() {
               </div>
 
               {/* Next Scheduled Call Hero Spotlight */}
-              <div className="p-6 bg-gradient-to-br from-[#172033] to-slate-900 text-white rounded-3xl shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#FF6B00]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-
+              <div className="p-6 bg-[#172033] text-white rounded-3xl shadow-xl relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -433,7 +431,7 @@ export default function MentorDashboardPage() {
                     </h2>
 
                     <div className="flex items-center gap-3 pt-1">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
+                      <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm">
                         AS
                       </div>
                       <div>
@@ -446,7 +444,7 @@ export default function MentorDashboardPage() {
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                     <button
                       onClick={() => toast.info('Video room opening...')}
-                      className="px-5 py-3 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2"
                     >
                       <Video className="w-4 h-4" />
                       Start Meeting
@@ -609,7 +607,7 @@ export default function MentorDashboardPage() {
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                   >
                     <Save className="w-4 h-4" />
                     {savingProfile ? 'Saving...' : 'Save Profile Changes'}
@@ -781,7 +779,7 @@ export default function MentorDashboardPage() {
                 <button
                   onClick={handleSaveAvailability}
                   disabled={savingAvailability}
-                  className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {savingAvailability ? 'Saving Schedule...' : 'Save Availability Schedule'}
@@ -800,7 +798,7 @@ export default function MentorDashboardPage() {
               </p>
               <Link
                 href="/mentor/plans"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all"
               >
                 Go to Plans Manager
                 <ChevronRight className="w-4 h-4" />

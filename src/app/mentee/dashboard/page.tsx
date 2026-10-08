@@ -234,9 +234,7 @@ export default function MenteeDashboardPage() {
               </div>
 
               {/* Spotlight: Next Scheduled Session */}
-              <div className="p-6 bg-gradient-to-br from-[#172033] to-slate-900 text-white rounded-3xl shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#FF6B00]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-
+              <div className="p-6 bg-[#172033] text-white rounded-3xl shadow-xl relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -252,7 +250,7 @@ export default function MenteeDashboardPage() {
                     </h2>
 
                     <div className="flex items-center gap-3 pt-1">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center font-bold text-white text-sm">
+                      <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm">
                         JD
                       </div>
                       <div>
@@ -265,7 +263,7 @@ export default function MenteeDashboardPage() {
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                     <button
                       onClick={() => toast.info('Joining video room session...')}
-                      className="px-5 py-3 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2"
                     >
                       <Video className="w-4 h-4" />
                       Join Meeting
@@ -304,7 +302,7 @@ export default function MenteeDashboardPage() {
                         className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center font-bold text-base shrink-0">
+                          <div className="w-12 h-12 rounded-2xl bg-[#172033] text-white flex items-center justify-center font-bold text-base shrink-0">
                             {mentor.fullName.charAt(0)}
                           </div>
                           <div>
@@ -466,7 +464,7 @@ export default function MenteeDashboardPage() {
                 </div>
                 <Link
                   href="/mentors"
-                  className="px-4 py-2 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 hover:opacity-95 transition-all flex items-center gap-2"
+                  className="px-4 py-2 bg-[#FF6B00] text-white text-xs font-bold rounded-xl shadow-md hover:opacity-95 transition-all flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Add New Mentor
@@ -479,9 +477,9 @@ export default function MenteeDashboardPage() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-400 to-amber-500 text-white flex items-center justify-center font-bold text-lg">
-                          JD
-                        </div>
+                          <div className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center font-bold text-lg">
+                            JD
+                          </div>
                         <div>
                           <h3 className="font-bold text-slate-900">John Doe</h3>
                           <p className="text-xs text-slate-500">Staff Frontend Engineer</p>
@@ -519,9 +517,9 @@ export default function MenteeDashboardPage() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-400 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
-                          SJ
-                        </div>
+                          <div className="w-12 h-12 rounded-2xl bg-[#172033] text-white flex items-center justify-center font-bold text-lg">
+                            SJ
+                          </div>
                         <div>
                           <h3 className="font-bold text-slate-900">Sarah Jenkins</h3>
                           <p className="text-xs text-slate-500">Lead Product Manager</p>
@@ -577,7 +575,7 @@ export default function MenteeDashboardPage() {
                   />
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-orange-500/20"
+                    className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl transition-all shadow-md"
                   >
                     Add Goal
                   </button>
@@ -681,7 +679,7 @@ export default function MenteeDashboardPage() {
                 <div className="pt-2">
                   <button
                     onClick={() => toast.success('Profile preferences updated!')}
-                    className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all"
+                    className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all"
                   >
                     Save Changes
                   </button>
