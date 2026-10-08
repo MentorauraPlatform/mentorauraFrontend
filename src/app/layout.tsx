@@ -46,6 +46,22 @@ export const metadata: Metadata = {
     description: "Accelerate your career with personalized 1-on-1 mentorship from top tech industry leaders.",
     url: "https://mentoraura.com",
     siteName: "MentorAura",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MentorAura Platform Logo & Brand",
+        type: "image/png",
+      },
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "MentorAura Icon Logo",
+        type: "image/png",
+      },
+    ],
     locale: "en_US",
     type: "website",
   },
@@ -53,6 +69,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "MentorAura | 1-on-1 Mentorship & Career Coaching",
     description: "Accelerate your career with personalized 1-on-1 mentorship from top tech industry leaders.",
+    images: ["/og-image.png"],
     creator: "@mentoraura",
   },
 };
@@ -69,6 +86,13 @@ export default async function RootLayout({
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <meta property="og:image" content="https://mentoraura.com/og-image.png" />
+        <meta property="og:image:secure_url" content="https://mentoraura.com/og-image.png" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="MentorAura Platform Logo" />
+        <meta name="twitter:image" content="https://mentoraura.com/og-image.png" />
       </head>
       <body className="antialiased font-sans bg-[#FFFCF9] text-[#172033]">
         <NextIntlClientProvider messages={messages}>

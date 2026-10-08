@@ -15,6 +15,16 @@
     "dashboard": "Tableau de bord",
     "logout": "Déconnexion"
   },
+  "dashboardHeader": {
+    "welcomeBack": "Bon retour",
+    "verified": "Vérifié",
+    "pendingVerification": "En attente de vérification",
+    "switchToMenteeMode": "Passer en Mode Mentoré",
+    "switchToMentorMode": "Passer en Mode Mentor",
+    "managePlans": "Gérer les offres",
+    "browseMentors": "Parcourir les mentors",
+    "searchPlaceholder": "Rechercher des mentors ou sujets..."
+  },
   "hero": {
     "badge": "Plateforme de Mentorat 1-sur-1 de Classe Mondiale",
     "titlePart1": "Atteignez vos objectifs de carrière avec un ",

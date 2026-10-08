@@ -5,6 +5,7 @@
 export * from './http';
 export * from './auth';
 export * from './mentor';
+export * from './mentee';
 export * from './plans';
 export * from './applications';
 export * from './mentorships';
