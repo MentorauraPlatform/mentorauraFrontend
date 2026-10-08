@@ -80,7 +80,7 @@ export default function MenteeDashboardPage() {
       setEditProfile({
         fullName: user.menteeProfile.fullName || '',
         headline: user.menteeProfile.headline || '',
-        goals: user.menteeProfile.goals || '',
+        goals: (user.menteeProfile.goals ?? []).join(', '),
       });
     }
   }, [user]);

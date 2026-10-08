@@ -55,8 +55,15 @@ export interface MenteeProfile {
   fullName: string;
   avatarUrl: string | null;
   headline: string | null;
-  goals: string | null;
+  goals: string[];
   interests: string[];
+  currentRole?: string | null;
+  educationBackground?: string | null;
+  yearsOfExperience?: number | null;
+  experienceLevel?: string | null;
+  availability?: Availability | null;
+  onboardingCompleted?: boolean;
+  user?: { userSkills?: UserSkillSummary[] };
 }
 
 export interface MentorProfileSummary {
