@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 
@@ -11,7 +11,7 @@ export function Step1BasicInfo({ data, updateData }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">Let's get to know you</h2>
+        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">Let&apos;s get to know you</h2>
         <p className="text-[#64748B] text-base">Tell us a bit about yourself to personalize your mentee experience.</p>
       </div>
 

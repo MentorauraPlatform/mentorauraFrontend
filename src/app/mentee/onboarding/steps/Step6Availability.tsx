@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 import type { Availability, TimeSlot } from '@/lib/types';
@@ -47,7 +47,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-extrabold text-[#172033] mb-2">When are you available?</h2>
-        <p className="text-[#64748B] text-base">Set your timezone and the times you're generally free for mentorship sessions.</p>
+        <p className="text-[#64748B] text-base">Set your timezone and the times you&apos;re generally free for mentorship sessions.</p>
       </div>
 
       <div className="max-w-2xl space-y-6">

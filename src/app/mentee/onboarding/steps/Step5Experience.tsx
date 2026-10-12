@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 
@@ -18,7 +18,7 @@ export function Step5Experience({ data, updateData }: Props) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-extrabold text-[#172033] mb-2">Tell us about your experience</h2>
-        <p className="text-[#64748B] text-base">This helps mentors understand where you're coming from.</p>
+        <p className="text-[#64748B] text-base">This helps mentors understand where you&apos;re coming from.</p>
       </div>
 
       <div className="space-y-6 max-w-xl">

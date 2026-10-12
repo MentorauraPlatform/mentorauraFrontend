@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 
@@ -21,7 +21,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-extrabold text-[#172033] mb-2">What do you want to achieve?</h2>
-        <p className="text-[#64748B] text-base">Select the goals you're hoping mentorship will help with.</p>
+        <p className="text-[#64748B] text-base">Select the goals you&apos;re hoping mentorship will help with.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 max-w-2xl">

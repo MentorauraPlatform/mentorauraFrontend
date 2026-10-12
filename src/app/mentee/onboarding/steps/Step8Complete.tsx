@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 interface Props {
   onGoToDashboard: () => void;
@@ -13,7 +13,7 @@ export function Step8Complete({ onGoToDashboard }: Props) {
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       </div>
-      <h2 className="text-2xl font-extrabold text-[#172033] mb-3">You're all set!</h2>
+      <h2 className="text-2xl font-extrabold text-[#172033] mb-3">You&apos;re all set!</h2>
       <p className="text-[#64748B] text-base max-w-md mb-8">
         Your mentee profile is complete. You can now browse mentors, explore plans, and start your mentorship journey.
       </p>

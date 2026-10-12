@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 import type { Skill, SkillLevel } from '@/lib/types';
@@ -49,7 +49,7 @@ export function Step2Skills({
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-extrabold text-[#172033] mb-2">What are you learning?</h2>
-        <p className="text-[#64748B] text-base">Add the skills you're building, and your current level in each.</p>
+        <p className="text-[#64748B] text-base">Add the skills you&apos;re building, and your current level in each.</p>
       </div>
 
       <div className="max-w-xl space-y-4">
