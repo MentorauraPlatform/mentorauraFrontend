@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -50,6 +50,19 @@ export default function MenteeDashboardPage() {
       if (isMentor) {
         router.push('/mentor/dashboard');
       }
+    }
+  }, [user, authLoading, router]);
+
+  // Send mentees with an incomplete profile to onboarding
+  useEffect(() => {
+    if (
+      !authLoading &&
+      user &&
+      !user.isMentor &&
+      user.menteeProfile &&
+      !user.menteeProfile.onboardingCompleted
+    ) {
+      router.push('/mentee/onboarding');
     }
   }, [user, authLoading, router]);
 
@@ -442,7 +455,7 @@ export default function MenteeDashboardPage() {
                           <div>
                             <p className="text-sm font-bold text-gray-900">{booking.mentorship?.plan?.title || 'Session'}</p>
                             <p className="text-xs text-gray-500">Mentor: {booking.mentorship?.mentor?.fullName || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{new Date(booking.scheduledAt).toLocaleString()} • {booking.durationMinutes} min</p>
+                            <p className="text-xs text-gray-500">{new Date(booking.scheduledAt).toLocaleString()} â€¢ {booking.durationMinutes} min</p>
                             {booking.cancellationReason && <p className="text-xs text-red-600 mt-1">Reason: {booking.cancellationReason}</p>}
                           </div>
                           <div className="flex items-center gap-3">
@@ -699,3 +712,4 @@ export default function MenteeDashboardPage() {
     </div>
   );
 }
+
