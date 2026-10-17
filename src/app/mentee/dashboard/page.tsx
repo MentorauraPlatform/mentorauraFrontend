@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { MenteeSidebar, MenteeTab } from '@/components/mentee/MenteeSidebar';
 import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { LoadingState } from '@/components/ui/LoadingState';
+  
 import {
   Calendar,
   Clock,
@@ -13,25 +14,16 @@ import {
   Users,
   Target,
   Plus,
-  CheckCircle2,
-  Sparkles,
-  ArrowRight,
-  ExternalLink,
-  BookOpen,
-  TrendingUp,
-  Award,
   Star,
-  Search,
-  MessageSquare,
   ChevronRight,
-  SlidersHorizontal,
-  UserCheck,
-  ShieldCheck,
 } from 'lucide-react';
+
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { marketplaceService, MentorCardData } from '@/services/marketplace.service';
 import { schedulingApi } from '@/lib/api/client';
+import { menteeApi, mentorshipsApi } from '@/lib/api/client';
+import type { Mentorship } from '@/lib/types';
 
 export default function MenteeDashboardPage() {
   const router = useRouter();
@@ -53,14 +45,14 @@ export default function MenteeDashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Send mentees with an incomplete profile to onboarding
+  
+  // Redirect mentees to onboarding if their profile is missing or incomplete
   useEffect(() => {
     if (
       !authLoading &&
       user &&
       !user.isMentor &&
-      user.menteeProfile &&
-      !user.menteeProfile.onboardingCompleted
+      (!user.menteeProfile || !user.menteeProfile.onboardingCompleted)
     ) {
       router.push('/mentee/onboarding');
     }
@@ -68,14 +60,8 @@ export default function MenteeDashboardPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [recommendedMentors, setRecommendedMentors] = useState<MentorCardData[]>([]);
-  const [loadingMentors, setLoadingMentors] = useState(false);
-
-  // Sample Mentee State for rich interactive dashboard demonstration
-  const [goalsList, setGoalsList] = useState([
-    { id: '1', title: 'Master Next.js App Router Architecture', completed: true, targetDate: 'Sept 2026' },
-    { id: '2', title: 'Prepare for Senior Frontend System Design Interviews', completed: false, targetDate: 'Oct 2026' },
-    { id: '3', title: 'Refactor Mentoraura backend NestJS microservices', completed: false, targetDate: 'Nov 2026' },
-  ]);
+  const [goalsList, setGoalsList] = useState<{ id: string; title: string; completed: boolean; targetDate: string }[]>([]);
+  const [mentorships, setMentorships] = useState<Mentorship[]>([]);
   const [newGoalInput, setNewGoalInput] = useState('');
   const [sessionFilter, setSessionFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [bookings, setBookings] = useState<unknown[]>([]);
@@ -99,29 +85,75 @@ export default function MenteeDashboardPage() {
   }, [user]);
 
   // Load recommended mentors for the discovery widget
-  useEffect(() => {
-    setLoadingMentors(true);
-    marketplaceService
-      .searchMentors({ limit: 3 })
-      .then((res) => setRecommendedMentors(res?.items || []))
-      .catch((err) => console.error('Failed to load recommended mentors', err))
-      .finally(() => setLoadingMentors(false));
-  }, []);
+  // Load recommended mentors for the discovery widget
+useEffect(() => {
+  marketplaceService
+    .searchMentors({ limit: 3 })
+    .then((res) => setRecommendedMentors(res?.items || []))
+    .catch((err) => console.error('Failed to load recommended mentors', err));
+}, []);
 
+  
   useEffect(() => {
     if (!user) return;
-    void (async () => {
+
+    const loadDashboardData = async () => {
       try {
         setLoadingBookings(true);
-        const res = await schedulingApi.getMyBookings();
-        setBookings((res.data as unknown[]) ?? []);
-      } catch {
-        // bookings are optional in dashboard
+        const bookingsRes = await schedulingApi.getMyBookings();
+        setBookings((bookingsRes.data as unknown[]) ?? []);
+      } catch (error) {
+        console.error('Failed to load bookings:', error);
+        setBookings([]);
       } finally {
         setLoadingBookings(false);
       }
-    })();
+
+      try {
+        const profileRes = await menteeApi.getMyProfile();
+        const goals = profileRes.data.goals ?? [];
+
+        setGoalsList(
+          goals.map((goal, index) => ({
+            id: String(index),
+            title: goal,
+            completed: false,
+            targetDate: '',
+          }))
+        );
+      } catch (error) {
+        console.error('Failed to load mentee goals:', error);
+        setGoalsList([]);
+      }
+
+      try {
+        const mentorshipsRes = await mentorshipsApi.getMenteeMentorships();
+        setMentorships(mentorshipsRes.data ?? []);
+      } catch (error) {
+        console.error('Failed to load mentorships:', error);
+        setMentorships([]);
+      }
+    };
+
+    void loadDashboardData();
   }, [user]);
+
+    const activeMentorsCount = mentorships.filter((m) => (m as { status?: string }).status === 'ACTIVE').length;
+  const upcomingSessionsCount = (bookings as { status: string }[]).filter((b) => b.status === 'SCHEDULED').length;
+  const completedGoalsCount = goalsList.filter((g) => g.completed).length;
+   const goalProgressPercent = goalsList.length > 0 ? Math.round((completedGoalsCount / goalsList.length) * 100) : 0;
+
+  const sortedUpcoming = (bookings as { id: string; scheduledAt: string; status: string; meetingLink?: string; mentorship?: { plan?: { title?: string }; mentor?: { fullName?: string } } }[])
+    .filter((b) => b.status === 'SCHEDULED')
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  const nextBooking = sortedUpcoming[0];
+  const nextBookingTime = nextBooking
+    ? new Date(nextBooking.scheduledAt).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' })
+    : '';
+  const nextBookingMentorName = nextBooking?.mentorship?.mentor?.fullName ?? '';
+  const nextBookingInitials = nextBookingMentorName
+    ? nextBookingMentorName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+    : '';
 
   if (authLoading) {
     return <LoadingState message="Loading your Mentee Hub..." />;
@@ -197,7 +229,7 @@ export default function MenteeDashboardPage() {
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Active Mentors
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">2</h2>
+                      <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">{activeMentorsCount}</h2>
                     <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1 inline-block">
                       Active Subscriptions
                     </span>
@@ -212,9 +244,9 @@ export default function MenteeDashboardPage() {
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Upcoming Sessions
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">2</h2>
+                      <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">{upcomingSessionsCount}</h2>
                     <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      Next in 2 days
+                      {upcomingSessionsCount > 0 ? 'Scheduled' : 'None scheduled'}
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -242,9 +274,9 @@ export default function MenteeDashboardPage() {
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Goal Progress
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">33%</h2>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">{goalProgressPercent}%</h2>
                     <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      1 of 3 Completed
+                      {completedGoalsCount} of {goalsList.length} Completed
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
@@ -260,30 +292,32 @@ export default function MenteeDashboardPage() {
                     <div className="flex items-center gap-2">
                       <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full text-xs font-bold flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        Next Live Call
+                                               Next Live Call
                       </span>
-                      <span className="text-xs text-slate-400">Wednesday, 4:00 PM GMT+1</span>
+                      <span className="text-xs text-slate-400">{nextBooking ? nextBookingTime : 'No upcoming calls'}</span>
                     </div>
 
                     <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                      Frontend Architecture & System Design Review
+                      {nextBooking ? (nextBooking.mentorship?.plan?.title ?? 'Mentorship Session') : 'No session scheduled yet'}
                     </h2>
 
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm">
-                        JD
+                    {nextBooking && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm">
+                          {nextBookingInitials}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">{nextBookingMentorName}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">John Doe</p>
-                        <p className="text-xs text-slate-400">Staff Frontend Engineer at TechCorp</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                     <button
-                      onClick={() => toast.info('Joining video room session...')}
-                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                      onClick={() => nextBooking?.meetingLink ? window.open(nextBooking.meetingLink, '_blank') : toast.info('No meeting link yet')}
+                      disabled={!nextBooking}
+                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Video className="w-4 h-4" />
                       Join Meeting
@@ -491,87 +525,55 @@ export default function MenteeDashboardPage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Active Mentor Card 1 */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center font-bold text-lg">
-                            JD
+                 {mentorships.length === 0 ? (
+                <p className="text-sm text-slate-500">No active mentors yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mentorships.map((m) => {
+                    const mentorship = m as unknown as { id: string; status: string; mentor?: { fullName?: string; title?: string }; plan?: { title?: string; priceAmount?: number; currency?: string } };
+                    const mentorName = mentorship.mentor?.fullName || 'Mentor';
+                    const initials = mentorName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+                    return (
+                      <div key={mentorship.id} className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center font-bold text-lg">
+                                  {initials}
+                                </div>
+                              <div>
+                                <h3 className="font-bold text-slate-900">{mentorName}</h3>
+                                <p className="text-xs text-slate-500">{mentorship.mentor?.title || ''}</p>
+                              </div>
+                            </div>
+                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[11px] font-bold">
+                              {mentorship.status}
+                            </span>
                           </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900">John Doe</h3>
-                          <p className="text-xs text-slate-500">Staff Frontend Engineer</p>
+
+                          <div className="p-3 bg-slate-50 rounded-xl space-y-1 text-xs">
+                            <div className="flex justify-between font-medium">
+                              <span className="text-slate-500">Plan: {mentorship.plan?.title || 'N/A'}</span>
+                              <span className="font-bold text-slate-800">
+                                {mentorship.plan?.priceAmount != null ? `${mentorship.plan.currency ?? ''} ${mentorship.plan.priceAmount}` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+                            <Link
+                              href="/mentee/dashboard/bookings/new"
+                              className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-colors"
+                            >
+                              Book Next Session
+                            </Link>
                         </div>
                       </div>
-                      <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[11px] font-bold">
-                        Active Plan
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 rounded-xl space-y-1 text-xs">
-                      <div className="flex justify-between font-medium">
-                        <span className="text-slate-500">Plan: Pro Mentorship</span>
-                        <span className="font-bold text-slate-800">$150 / mo</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span className="text-slate-500">Sessions Remaining:</span>
-                        <span className="font-bold text-orange-600">2 of 4 calls left</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-                      <Link
-                        href="/mentee/dashboard/bookings/new"
-                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-colors"
-                      >
-                        Book Next Session
-                      </Link>
-                  </div>
+                    );
+                  })}
                 </div>
-
-                {/* Active Mentor Card 2 */}
-                <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-[#172033] text-white flex items-center justify-center font-bold text-lg">
-                            SJ
-                          </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900">Sarah Jenkins</h3>
-                          <p className="text-xs text-slate-500">Lead Product Manager</p>
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[11px] font-bold">
-                        Active Plan
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 rounded-xl space-y-1 text-xs">
-                      <div className="flex justify-between font-medium">
-                        <span className="text-slate-500">Plan: Standard Guidance</span>
-                        <span className="font-bold text-slate-800">$100 / mo</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span className="text-slate-500">Sessions Remaining:</span>
-                        <span className="font-bold text-orange-600">1 of 2 calls left</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-                      <Link
-                        href="/mentee/dashboard/bookings/new"
-                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-colors"
-                      >
-                        Book Next Session
-                      </Link>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
