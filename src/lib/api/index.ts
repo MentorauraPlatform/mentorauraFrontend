@@ -12,3 +12,4 @@ export * from './mentorships';
 export * from './sessions';
 export * from './admin';
 export * from './scheduling';
+export * from './payments';
