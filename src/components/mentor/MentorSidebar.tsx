@@ -16,10 +16,11 @@ import {
   AlertCircle,
   Users,
   Calendar,
+  MessageSquare,
 } from 'lucide-react';
 import type { MeResponse, MentorProfile } from '@/lib/types';
 
-export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings';
+export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings' | 'messages';
 
 interface MentorSidebarProps {
   activeTab: MentorTab;
@@ -29,6 +30,7 @@ interface MentorSidebarProps {
   onLogout: () => void;
   isOpen: boolean;
   onClose: () => void;
+  unreadMessagesCount?: number;
 }
 
 export const MentorSidebar: React.FC<MentorSidebarProps> = ({
@@ -39,6 +41,7 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
   onLogout,
   isOpen,
   onClose,
+  unreadMessagesCount,
 }) => {
   const mentorName =
     profile?.fullName ||
@@ -85,6 +88,12 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
       label: 'Calendar & Sessions',
       icon: Calendar,
       badge: undefined,
+    },
+    {
+      id: 'messages' as MentorTab,
+      label: 'Messages',
+      icon: MessageSquare,
+      badge: unreadMessagesCount && unreadMessagesCount > 0 ? String(unreadMessagesCount) : undefined,
     },
   ];
 

@@ -8,6 +8,8 @@ import { mentorApi, apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import type { MentorProfile, Skill, SkillLevel } from '@/lib/types';
 import { schedulingApi } from '@/lib/api/client';
+import { messagingApi } from '@/lib/api/messaging';
+import { ChatView } from '@/components/messaging/ChatView';
 
 function MentorBookingsSection() {
   const { user } = useAuth();
@@ -130,6 +132,18 @@ export default function MentorDashboardPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MentorTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (user) {
+      messagingApi
+        .getUnreadCount()
+        .then((res) => {
+          setUnreadMessagesCount(res.data?.unreadCount ?? 0);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -320,6 +334,7 @@ export default function MentorDashboardPage() {
     availability: 'Weekly Availability Schedule',
     plans: 'Mentorship Plans & Packages',
     bookings: 'Calendar & Sessions',
+    messages: 'Direct Messaging',
   };
 
   return (
@@ -333,6 +348,7 @@ export default function MentorDashboardPage() {
         onLogout={logout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        unreadMessagesCount={unreadMessagesCount}
       />
 
       {/* Main Content Area */}
@@ -810,6 +826,13 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-[#172033]">Calendar & Sessions</h2>
               <MentorBookingsSection />
+            </div>
+          )}
+
+          {/* TAB 7: MESSAGES */}
+          {activeTab === 'messages' && user && (
+            <div className="space-y-4">
+              <ChatView currentUserId={user.id} userRole="MENTOR" />
             </div>
           )}
         </main>

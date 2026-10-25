@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { MeResponse } from '@/lib/types';
 
-export type MenteeTab = 'overview' | 'sessions' | 'mentors' | 'goals' | 'settings';
+export type MenteeTab = 'overview' | 'sessions' | 'mentors' | 'messages' | 'goals' | 'settings';
 
 interface MenteeSidebarProps {
   activeTab: MenteeTab;
@@ -27,6 +27,7 @@ interface MenteeSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void;
+  unreadMessagesCount?: number;
 }
 
 export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
@@ -36,6 +37,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
   isOpen,
   onClose,
   onLogout,
+  unreadMessagesCount,
 }) => {
   const menteeName = user?.menteeProfile?.fullName || user?.email?.split('@')[0] || 'Mentee';
   const menteeInitial = menteeName.charAt(0).toUpperCase();
@@ -45,6 +47,12 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'sessions', label: 'My Sessions', icon: Calendar },
     { id: 'mentors', label: 'My Mentors', icon: Users },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: MessageSquare,
+      badge: unreadMessagesCount && unreadMessagesCount > 0 ? String(unreadMessagesCount) : undefined,
+    },
     { id: 'goals', label: 'Learning Goals', icon: Target },
     { id: 'settings', label: 'Account Settings', icon: Settings },
   ];

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ import {
   Plus,
   Star,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
@@ -23,12 +24,26 @@ import { toast } from 'sonner';
 import { marketplaceService, MentorCardData } from '@/services/marketplace.service';
 import { schedulingApi } from '@/lib/api/client';
 import { menteeApi, mentorshipsApi } from '@/lib/api/client';
+import { messagingApi } from '@/lib/api/messaging';
+import { ChatView } from '@/components/messaging/ChatView';
 import type { Mentorship } from '@/lib/types';
 
 export default function MenteeDashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MenteeTab>('overview');
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (user) {
+      messagingApi
+        .getUnreadCount()
+        .then((res) => {
+          setUnreadMessagesCount(res.data?.unreadCount ?? 0);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
 
   useEffect(() => {
@@ -192,6 +207,7 @@ useEffect(() => {
     overview: 'Mentee Dashboard',
     sessions: 'My Mentorship Sessions',
     mentors: 'My Subscribed Mentors',
+    messages: 'Direct Messaging',
     goals: 'Learning Goals & Growth',
     settings: 'Profile & Preferences',
   };
@@ -206,6 +222,7 @@ useEffect(() => {
         onLogout={logout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        unreadMessagesCount={unreadMessagesCount}
       />
 
       {/* Main Content Area */}
@@ -562,6 +579,20 @@ useEffect(() => {
                         </div>
 
                         <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await messagingApi.getOrCreateForMentorship(m.id);
+                                  setActiveTab('messages');
+                                } catch {
+                                  setActiveTab('messages');
+                                }
+                              }}
+                              className="flex-1 py-2.5 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 text-[#FF6B00] font-bold text-xs rounded-xl text-center transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              Message Mentor
+                            </button>
                             <Link
                               href="/mentee/dashboard/bookings/new"
                               className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-colors"
@@ -574,6 +605,13 @@ useEffect(() => {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB: REAL-TIME MESSAGING */}
+          {activeTab === 'messages' && user && (
+            <div className="space-y-4">
+              <ChatView currentUserId={user.id} userRole="MENTEE" />
             </div>
           )}
 
