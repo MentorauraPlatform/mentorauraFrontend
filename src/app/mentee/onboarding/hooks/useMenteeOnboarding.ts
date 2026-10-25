@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -62,7 +62,7 @@ export const LEVEL_COLORS: Record<SkillLevel, string> = {
 
 export function useMenteeOnboarding() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, refetchUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [data, setData] = useState<OnboardingData>(initialData);
   const [profile, setProfile] = useState<MenteeProfile | null>(null);
@@ -243,6 +243,7 @@ export function useMenteeOnboarding() {
       toast.success('Onboarding complete!', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
       });
+      await refetchUser();
       setCurrentStep(8);
     } catch (err: unknown) {
       const apiError = err as { message?: string };
@@ -333,3 +334,4 @@ export function useMenteeOnboarding() {
     GOAL_OPTIONS,
   };
 }
+

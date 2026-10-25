@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -164,7 +164,19 @@ export default function AuthPage() {
           router.push('/mentor/onboarding');
         }
       } else {
-        router.push('/mentee/dashboard');
+        try {
+          const meRes = await authApi.getMe();
+          const me = ((meRes as { data?: unknown }).data ?? meRes) as {
+            menteeProfile?: { onboardingCompleted?: boolean } | null;
+          };
+          router.push(
+            me?.menteeProfile?.onboardingCompleted
+              ? '/mentee/dashboard'
+              : '/mentee/onboarding',
+          );
+        } catch {
+          router.push('/mentee/dashboard');
+        }
       }
     } catch (err: unknown) {
       const apiErr = err as { message?: string | string[] };
@@ -456,7 +468,7 @@ export default function AuthPage() {
                       <Input
                         label="Password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -791,8 +803,9 @@ export default function AuthPage() {
 
       {/* Footer */}
       <footer className="py-5 text-center text-xs text-gray-400 font-medium">
-        © {new Date().getFullYear()} MentorAura Inc. All rights reserved.
+        Â© {new Date().getFullYear()} MentorAura Inc. All rights reserved.
       </footer>
     </div>
   );
 }
+
