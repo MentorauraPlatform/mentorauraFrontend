@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
@@ -79,7 +79,7 @@ export function Step3Interests({ data, updateData, options }: Props) {
       </div>
 
       <div className="max-w-md">
-        <label className="block text-sm font-bold text-[#172033] mb-2">Don't see your interest? Add your own</label>
+        <label className="block text-sm font-bold text-[#172033] mb-2">Don&apos;t see your interest? Add your own</label>
         <div className="flex gap-3">
           <input
             type="text"

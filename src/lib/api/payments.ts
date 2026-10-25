@@ -1,6 +1,6 @@
 import { apiClient } from './http';
 
-export type PaymentProvider = 'MTN_MOMO' | 'ORANGE_MONEY' | 'CARD';
+export type PaymentProvider = 'MTN_MOMO' | 'ORANGE_MONEY'; // | 'CARD';
 
 export interface InitiatePaymentPayload {
   mentorshipId: string;

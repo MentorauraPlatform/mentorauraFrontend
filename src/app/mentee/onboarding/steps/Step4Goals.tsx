@@ -49,7 +49,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
           What do you want to achieve?
         </h2>
         <p className="text-[#64748B] text-base">
-          Select the goals you're hoping mentorship will help with.
+          Select the goals you&apos;re hoping mentorship will help with.
         </p>
       </div>
 
@@ -89,7 +89,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
 
       <div className="max-w-md">
         <label className="block text-sm font-bold text-[#172033] mb-2">
-          Don't see your goal? Add your own
+          Don&apos;t see your goal? Add your own
         </label>
 
         <div className="flex gap-3">

@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { plansApi } from '@/lib/api/client';
-import type { PlanSummary } from '@/lib/types';
+import { plansApi, applicationsApi } from '@/lib/api/client';
+import type { PlanSummary, MentorshipApplication } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function BrowsePlansPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [applications, setApplications] = useState<MentorshipApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +29,21 @@ export default function BrowsePlansPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await plansApi.list();
+        const [response, appsRes] = await Promise.all([
+          plansApi.list(),
+          applicationsApi.getMyApplications().catch(() => null),
+        ]);
+
+        if (appsRes?.data) {
+          const rawApps = appsRes.data as unknown;
+          const appList = Array.isArray(rawApps)
+            ? (rawApps as MentorshipApplication[])
+            : Array.isArray((rawApps as any)?.data)
+            ? ((rawApps as any).data as MentorshipApplication[])
+            : [];
+          setApplications(appList);
+        }
+
         const raw = response as unknown;
         let plansList: PlanSummary[] = [];
         if (Array.isArray(raw)) {
@@ -115,12 +131,32 @@ export default function BrowsePlansPage() {
                       {plan.priceAmount} {plan.currency}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleSelectPlan(plan.id)}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 font-medium transition-colors"
-                  >
-                    Apply
-                  </button>
+                  {(() => {
+                    const isApplied = applications.some(
+                      (a) => a.planId === plan.id && a.status === 'PENDING'
+                    );
+
+                    if (isApplied) {
+                      return (
+                        <button
+                          onClick={() => router.push('/mentee/dashboard/mentorships')}
+                          className="bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Applied
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={() => handleSelectPlan(plan.id)}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 font-medium transition-colors"
+                      >
+                        Apply
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

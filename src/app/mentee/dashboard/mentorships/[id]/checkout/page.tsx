@@ -142,7 +142,7 @@ export default function CheckoutPage({
 
   // Validate phone number
   const validatePhone = (num: string) => {
-    if (provider === 'CARD') return true;
+    // if (provider === ('CARD' as any)) return true;
     const clean = num.replace(/\D/g, '');
     if (clean.length < 8 || clean.length > 12) {
       setPhoneError('Please enter a valid mobile money number (e.g., 6XXXXXXXX)');
@@ -155,7 +155,7 @@ export default function CheckoutPage({
   // 3. Initiate Payment
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (provider !== 'CARD' && !validatePhone(phoneNumber)) {
+    if (!validatePhone(phoneNumber)) {
       return;
     }
 
@@ -168,7 +168,7 @@ export default function CheckoutPage({
       const res = await paymentsApi.initiate({
         mentorshipId,
         provider,
-        phoneNumber: provider !== 'CARD' ? phoneNumber : undefined,
+        phoneNumber,
         returnUrl,
       });
 
@@ -280,7 +280,7 @@ export default function CheckoutPage({
                     <label className="block text-sm font-semibold text-gray-800 mb-3">
                       Select Payment Provider
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* MTN MoMo */}
                       <button
                         type="button"
@@ -331,74 +331,56 @@ export default function CheckoutPage({
                         </div>
                       </button>
 
-                      {/* Credit / Debit Card */}
+                      {/* Credit / Debit Card (Temporarily commented out)
                       <button
                         type="button"
-                        onClick={() => {
-                          setProvider('CARD');
-                          setPhoneError('');
-                        }}
-                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                          provider === 'CARD'
-                            ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-400'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
+                        disabled
+                        className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 text-left opacity-50 cursor-not-allowed"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <CreditCard className="w-5 h-5 text-blue-600" />
-                          {provider === 'CARD' && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                          )}
+                          <CreditCard className="w-5 h-5 text-gray-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">Bank Card</p>
-                          <p className="text-xs text-gray-500">Visa / Mastercard</p>
+                          <p className="text-sm font-bold text-gray-700">Bank Card</p>
+                          <p className="text-xs text-gray-400">Visa / Mastercard (Coming soon)</p>
                         </div>
                       </button>
+                      */}
                     </div>
                   </div>
 
                   {/* Mobile Money Phone Input */}
-                  {provider !== 'CARD' && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-800">
-                        {provider === 'MTN_MOMO' ? 'MTN' : 'Orange'} Phone Number
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 text-sm font-medium">
-                          +237
-                        </div>
-                        <input
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={(e) => {
-                            setPhoneNumber(e.target.value);
-                            if (phoneError) validatePhone(e.target.value);
-                          }}
-                          placeholder="6XXXXXXXX"
-                          className={`w-full pl-16 pr-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:bg-white text-sm font-medium ${
-                            phoneError
-                              ? 'border-red-300 focus:ring-red-200'
-                              : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'
-                          }`}
-                        />
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-800">
+                      {provider === 'MTN_MOMO' ? 'MTN' : 'Orange'} Phone Number
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 text-sm font-medium">
+                        +237
                       </div>
-                      {phoneError ? (
-                        <p className="text-xs text-red-600">{phoneError}</p>
-                      ) : (
-                        <p className="text-xs text-gray-500">
-                          Enter your registered mobile money account number to receive the prompt.
-                        </p>
-                      )}
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (phoneError) validatePhone(e.target.value);
+                        }}
+                        placeholder="6XXXXXXXX"
+                        className={`w-full pl-16 pr-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:bg-white text-sm font-medium ${
+                          phoneError
+                            ? 'border-red-300 focus:ring-red-200'
+                            : 'border-gray-200 focus:ring-orange-200 focus:border-orange-500'
+                        }`}
+                      />
                     </div>
-                  )}
-
-                  {/* Card redirect notice */}
-                  {provider === 'CARD' && (
-                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-800 leading-relaxed">
-                      You will be redirected to the secure ZoPay payment gateway to complete your card transaction and automatically returned upon confirmation.
-                    </div>
-                  )}
+                    {phoneError ? (
+                      <p className="text-xs text-red-600">{phoneError}</p>
+                    ) : (
+                      <p className="text-xs text-gray-500">
+                        Enter your registered mobile money account number to receive the prompt.
+                      </p>
+                    )}
+                  </div>
 
                   {/* Submit Button */}
                   <button
