@@ -190,6 +190,7 @@ export default function MenteeMentorshipsPage() {
                             Status: {mentorship.status}
                           </p>
                         </div>
+                        <div className="flex items-center gap-3">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
                               String(mentorship.status) === 'INTRO'
@@ -205,6 +206,19 @@ export default function MenteeMentorshipsPage() {
                           >
                             {mentorship.status}
                           </span>
+
+                          {String(mentorship.status) === 'INTRO' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`);
+                              }}
+                              className="bg-orange-600 hover:bg-orange-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                            >
+                              Activate Plan
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

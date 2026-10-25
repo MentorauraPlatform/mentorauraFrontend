@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { applicationsApi, plansApi } from '@/lib/api/client';
 import { marketplaceService, MentorDetailData } from '@/services/marketplace.service';
-import type { PlanSummary } from '@/lib/types';
+import type { PlanSummary, MentorshipApplication } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function ApplyPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function ApplyPage() {
   const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [message, setMessage] = useState('');
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [myApplications, setMyApplications] = useState<MentorshipApplication[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -46,10 +48,21 @@ export default function ApplyPage() {
 
         // 1. If mentorId is available, load that specific mentor and their plans
         if (pMentorId) {
-          const [mentorRes, plansRes] = await Promise.all([
+          const [mentorRes, plansRes, appsRes] = await Promise.all([
             marketplaceService.getMentorProfile(pMentorId).catch(() => null),
             plansApi.getMentorPlans(pMentorId).catch(() => null),
+            applicationsApi.getMyApplications().catch(() => null),
           ]);
+
+          if (appsRes?.data) {
+            const rawApps = appsRes.data as unknown;
+            const appList = Array.isArray(rawApps)
+              ? (rawApps as MentorshipApplication[])
+              : Array.isArray((rawApps as any)?.data)
+              ? ((rawApps as any).data as MentorshipApplication[])
+              : [];
+            setMyApplications(appList);
+          }
 
           if (mentorRes) {
             setMentor(mentorRes);
@@ -91,7 +104,21 @@ export default function ApplyPage() {
         }
 
         // 2. If only planId is available, fetch all plans and filter to the selected plan's mentor
-        const response = await plansApi.list();
+        const [response, appsRes] = await Promise.all([
+          plansApi.list().catch(() => null),
+          applicationsApi.getMyApplications().catch(() => null),
+        ]);
+
+        if (appsRes?.data) {
+          const rawApps = appsRes.data as unknown;
+          const appList = Array.isArray(rawApps)
+            ? (rawApps as MentorshipApplication[])
+            : Array.isArray((rawApps as any)?.data)
+            ? ((rawApps as any).data as MentorshipApplication[])
+            : [];
+          setMyApplications(appList);
+        }
+
         const raw = response as unknown;
         let allPlans: PlanSummary[] = [];
         if (Array.isArray(raw)) {
@@ -181,6 +208,38 @@ export default function ApplyPage() {
             </div>
           )}
 
+          {(() => {
+            const existing = myApplications.find(
+              (a) => (a.planId === planId || (mentor && a.mentorId === mentor.id)) && a.status === 'PENDING'
+            );
+            if (!existing) return null;
+
+            return (
+              <div className="mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    Application Already Submitted
+                  </h3>
+                  <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                    You already submitted an application for this plan on{' '}
+                    <span className="font-semibold">
+                      {new Date(existing.createdAt).toLocaleDateString()}
+                    </span>
+                    . Your application is currently pending review by {mentor?.fullName || 'the mentor'}.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push('/mentee/dashboard/mentorships')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap shadow-sm"
+                >
+                  View Application
+                </button>
+              </div>
+            );
+          })()}
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
               {error}
@@ -258,13 +317,26 @@ export default function ApplyPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={loading || !planId || !agreedTerms}
-                className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 disabled:opacity-50 font-medium transition-colors"
-              >
-                {loading ? 'Submitting...' : 'Submit Application'}
-              </button>
+              {(() => {
+                const isAlreadyApplied = Boolean(
+                  myApplications.find(
+                    (a) => (a.planId === planId || (mentor && a.mentorId === mentor.id)) && a.status === 'PENDING'
+                  )
+                );
+                return (
+                  <button
+                    type="submit"
+                    disabled={loading || !planId || !agreedTerms || isAlreadyApplied}
+                    className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 disabled:opacity-50 font-medium transition-colors"
+                  >
+                    {loading
+                      ? 'Submitting...'
+                      : isAlreadyApplied
+                      ? 'Application Already Submitted'
+                      : 'Submit Application'}
+                  </button>
+                );
+              })()}
               <button
                 type="button"
                 onClick={() => router.back()}

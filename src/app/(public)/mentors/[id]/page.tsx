@@ -19,8 +19,12 @@ import {
   MessageSquare,
   Award,
   ArrowLeft,
+  Clock,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useAuth } from '@/context/AuthContext';
+import { applicationsApi, mentorshipsApi } from '@/lib/api/client';
+import type { MentorshipApplication, Mentorship } from '@/lib/types';
 import {
   marketplaceService,
   MentorDetailData,
@@ -31,10 +35,14 @@ export default function PublicMentorProfilePage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  const { user } = useAuth();
 
   const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [applications, setApplications] = useState<MentorshipApplication[]>([]);
+  const [mentorships, setMentorships] = useState<Mentorship[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -49,6 +57,44 @@ export default function PublicMentorProfilePage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!user) {
+      setApplications([]);
+      setMentorships([]);
+      return;
+    }
+
+    let isMounted = true;
+    void Promise.allSettled([
+      applicationsApi.getMyApplications(),
+      mentorshipsApi.getMenteeMentorships(),
+    ]).then(([appsRes, mentorshipsRes]) => {
+      if (!isMounted) return;
+      if (appsRes.status === 'fulfilled') {
+        const raw = appsRes.value.data as unknown;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as any)?.data)
+          ? (raw as any).data
+          : [];
+        setApplications(list);
+      }
+      if (mentorshipsRes.status === 'fulfilled') {
+        const raw = mentorshipsRes.value.data as unknown;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as any)?.data)
+          ? (raw as any).data
+          : [];
+        setMentorships(list);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   if (loading) {
     return (
@@ -86,6 +132,66 @@ export default function PublicMentorProfilePage() {
       </div>
     );
   }
+
+  // Check if current user has any application or mentorship with this mentor
+  const mentorPendingApp = applications.find(
+    (a) => mentor && (a.mentorId === mentor.id || (mentor.plans || []).some((p) => p.id === a.planId)) && a.status === 'PENDING'
+  );
+  const mentorActiveOrIntro = mentorships.find(
+    (m) =>
+      mentor &&
+      (m.mentorId === mentor.id || (mentor.plans || []).some((p) => p.id === m.planId)) &&
+      ['INTRO', 'ACTIVE', 'PAUSED'].includes(m.status)
+  );
+
+  const getPlanStatus = (planId: string) => {
+    // 1. Mentorship takes highest priority
+    const userMentorship = mentorships.find(
+      (m) =>
+        (m.planId === planId || (mentor && m.mentorId === mentor.id)) &&
+        ['INTRO', 'ACTIVE', 'PAUSED'].includes(m.status)
+    );
+
+    if (userMentorship) {
+      return {
+        type:
+          userMentorship.status === 'INTRO'
+            ? ('INTRO_MENTORSHIP' as const)
+            : ('ACTIVE_MENTORSHIP' as const),
+        mentorship: userMentorship,
+      };
+    }
+
+    // 2. Pending application for this specific plan or this mentor
+    const pendingApp = applications.find(
+      (a) =>
+        (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+        a.status === 'PENDING'
+    );
+
+    if (pendingApp) {
+      return {
+        type: 'PENDING_APPLICATION' as const,
+        application: pendingApp,
+      };
+    }
+
+    // 3. Accepted application
+    const acceptedApp = applications.find(
+      (a) =>
+        (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+        a.status === 'ACCEPTED'
+    );
+
+    if (acceptedApp) {
+      return {
+        type: 'ACCEPTED_APPLICATION' as const,
+        application: acceptedApp,
+      };
+    }
+
+    return { type: 'NONE' as const };
+  };
 
   // JSON-LD structured data for SEO rich snippets
   const jsonLd = mentor
@@ -166,11 +272,38 @@ export default function PublicMentorProfilePage() {
             </div>
 
             <div className="w-full md:w-auto flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
-              <a href="#plans">
-                <Button variant="primary" size="lg" className="w-full font-bold shadow-md shadow-orange-500/10">
-                  {t('bookMentorship')}
+              {mentorPendingApp ? (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full font-bold text-emerald-700 border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 gap-2 shadow-sm"
+                  onClick={() => router.push('/mentee/dashboard/mentorships')}
+                >
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  Application Pending
                 </Button>
-              </a>
+              ) : mentorActiveOrIntro ? (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full font-bold shadow-md shadow-orange-500/10"
+                  onClick={() => {
+                    if (mentorActiveOrIntro.status === 'INTRO') {
+                      router.push(`/mentee/dashboard/mentorships/${mentorActiveOrIntro.id}/checkout`);
+                    } else {
+                      router.push(`/mentee/dashboard/mentorships/${mentorActiveOrIntro.id}`);
+                    }
+                  }}
+                >
+                  {mentorActiveOrIntro.status === 'INTRO' ? 'Activate Mentorship' : 'View Mentorship'}
+                </Button>
+              ) : (
+                <a href="#plans">
+                  <Button variant="primary" size="lg" className="w-full font-bold shadow-md shadow-orange-500/10">
+                    {t('bookMentorship')}
+                  </Button>
+                </a>
+              )}
             </div>
           </div>
         </Card>
@@ -320,16 +453,89 @@ export default function PublicMentorProfilePage() {
                       </div>
                     </div>
 
-                    <Button
-                      variant="primary"
-                      size="md"
-                      className="w-full font-bold mt-2"
-                      onClick={() => {
-                        router.push(`/mentee/dashboard/mentorships/apply?mentorId=${mentor.id}&planId=${plan.id}`);
-                      }}
-                    >
-                      {t('applyForPlan')}
-                    </Button>
+                    {(() => {
+                      const planStatus = getPlanStatus(plan.id);
+
+                      if (planStatus.type === 'PENDING_APPLICATION') {
+                        return (
+                          <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
+                            <div className="w-full py-2.5 px-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center gap-2 text-emerald-800 font-bold text-xs shadow-sm">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>Applied • Application Pending</span>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs font-semibold text-slate-700 hover:text-orange-600 border-slate-200 hover:bg-slate-50 transition-colors"
+                              onClick={() => router.push('/mentee/dashboard/mentorships')}
+                            >
+                              View Application in Dashboard
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      if (planStatus.type === 'INTRO_MENTORSHIP' || planStatus.type === 'ACCEPTED_APPLICATION') {
+                        const mId = planStatus.type === 'INTRO_MENTORSHIP' ? planStatus.mentorship.id : null;
+                        return (
+                          <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
+                            <div className="w-full py-2 px-3 bg-amber-50 border border-amber-200 rounded-xl text-center text-amber-800 text-xs font-semibold">
+                              Application Accepted!
+                            </div>
+                            <Button
+                              variant="primary"
+                              size="md"
+                              className="w-full font-bold bg-orange-600 hover:bg-orange-700 shadow-md shadow-orange-500/20"
+                              onClick={() => {
+                                if (mId) {
+                                  router.push(`/mentee/dashboard/mentorships/${mId}/checkout`);
+                                } else {
+                                  router.push('/mentee/dashboard/mentorships');
+                                }
+                              }}
+                            >
+                              Activate Plan & Pay
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      if (planStatus.type === 'ACTIVE_MENTORSHIP') {
+                        return (
+                          <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
+                            <div className="w-full py-2 px-3 bg-green-50 border border-green-200 rounded-xl text-center text-green-800 text-xs font-semibold flex items-center justify-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                              Active Mentorship
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="md"
+                              className="w-full font-bold text-slate-800 hover:text-orange-600"
+                              onClick={() => router.push(`/mentee/dashboard/mentorships/${planStatus.mentorship.id}`)}
+                            >
+                              View Mentorship
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="w-full font-bold mt-2"
+                          onClick={() => {
+                            if (!user) {
+                              router.push(`/auth?mode=login&redirect=/mentors/${mentor.id}`);
+                              return;
+                            }
+                            router.push(`/mentee/dashboard/mentorships/apply?mentorId=${mentor.id}&planId=${plan.id}`);
+                          }}
+                        >
+                          {t('applyForPlan')}
+                        </Button>
+                      );
+                    })()}
                   </Card>
                 ))
               )}

@@ -69,26 +69,65 @@ export default function MentorshipDetailPage({
     <div className="min-h-screen bg-[#FFFCF9] py-12">
       <div className="max-w-3xl mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {mentorship.plan?.title || 'Mentorship'}
-            </h1>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              String(mentorship.status) === 'INTRO'
-                                ? 'bg-blue-100 text-blue-800'
-                                : String(mentorship.status) === 'ACTIVE'
-                                ? 'bg-green-100 text-green-800'
-                                : String(mentorship.status) === 'PAUSED'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : String(mentorship.status) === 'COMPLETED'
-                                ? 'bg-gray-100 text-gray-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {mentorship.status}
-                          </span>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {mentorship.plan?.title || 'Mentorship'}
+              </h1>
+              <span
+                className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                  String(mentorship.status) === 'INTRO'
+                    ? 'bg-blue-100 text-blue-800'
+                    : String(mentorship.status) === 'ACTIVE'
+                    ? 'bg-green-100 text-green-800'
+                    : String(mentorship.status) === 'PAUSED'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : String(mentorship.status) === 'COMPLETED'
+                    ? 'bg-gray-100 text-gray-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {mentorship.status}
+              </span>
+            </div>
+
+            {String(mentorship.status) === 'INTRO' && (
+              <button
+                onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-orange-600/20 transition-all text-sm"
+              >
+                Activate Plan & Pay
+              </button>
+            )}
+
+            {String(mentorship.status) === 'ACTIVE' && (
+              <button
+                onClick={() => router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mentorship.id}`)}
+                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-green-600/20 transition-all text-sm"
+              >
+                Book a Session
+              </button>
+            )}
           </div>
+
+          {String(mentorship.status) === 'INTRO' && (
+            <div className="mb-8 p-5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-bold text-gray-900">
+                  Ready to activate full monthly mentorship?
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Intro call completed. Activate your plan with MTN MoMo, Orange Money, or Card to start booking sessions.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap"
+              >
+                Proceed to Payment
+              </button>
+            </div>
+          )}
 
           <div className="space-y-6">
             <div>

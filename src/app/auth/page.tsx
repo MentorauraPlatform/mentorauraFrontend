@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -31,7 +31,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { authService } from '@/services/auth.service';
-import { mentorApi } from '@/lib/api/client';
+import { mentorApi, authApi } from '@/lib/api/client';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -164,7 +164,19 @@ export default function AuthPage() {
           router.push('/mentor/onboarding');
         }
       } else {
-        router.push('/mentee/dashboard');
+        try {
+          const meRes = await authApi.getMe();
+          const me = ((meRes as { data?: unknown }).data ?? meRes) as {
+            menteeProfile?: { onboardingCompleted?: boolean } | null;
+          };
+          router.push(
+            me?.menteeProfile?.onboardingCompleted
+              ? '/mentee/dashboard'
+              : '/mentee/onboarding',
+          );
+        } catch {
+          router.push('/mentee/dashboard');
+        }
       }
     } catch (err: unknown) {
       const apiErr = err as { message?: string | string[] };
@@ -377,9 +389,29 @@ export default function AuthPage() {
                   </div>
 
                   {error && mode === 'login' && (
-                    <div className="mb-5 p-3.5 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-700 text-sm font-semibold">
-                      <AlertCircle className="w-5 h-5 shrink-0 text-[#DC2626] mt-0.5" />
-                      <span>{error}</span>
+                    <div className="mb-5 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle className="w-5 h-5 shrink-0 text-[#DC2626] mt-0.5" />
+                        <span>{error}</span>
+                      </div>
+                      {error.toLowerCase().includes('verify') && email && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await authApi.resendVerification(email);
+                              showToast('New verification link sent to your email!', 'success');
+                            } catch (err: unknown) {
+                              const apiErr = err as { message?: string };
+                              showToast(apiErr?.message || 'Failed to send verification email.', 'error');
+                            }
+                          }}
+                          className="ml-7 text-xs font-bold text-[#FF6B00] hover:underline flex items-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Resend Verification Link to {email}</span>
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -436,7 +468,7 @@ export default function AuthPage() {
                       <Input
                         label="Password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -771,8 +803,9 @@ export default function AuthPage() {
 
       {/* Footer */}
       <footer className="py-5 text-center text-xs text-gray-400 font-medium">
-        © {new Date().getFullYear()} MentorAura Inc. All rights reserved.
+        Â© {new Date().getFullYear()} MentorAura Inc. All rights reserved.
       </footer>
     </div>
   );
 }
+
