@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 import type { SkillLevel } from '@/lib/types';
@@ -90,7 +90,7 @@ export function Step7Review({ data, levelColors }: Props) {
           <div className="space-y-1">
             {data.availability.slots.map((slot, index) => (
               <p key={index} className="text-sm text-[#64748B]">
-                {slot.day.charAt(0) + slot.day.slice(1).toLowerCase()}: {slot.startTime} – {slot.endTime}
+                {slot.day ? slot.day.charAt(0) + slot.day.slice(1).toLowerCase() : 'Day not set'}: {slot.startTime || '--'} - {slot.endTime || '--'}
               </p>
             ))}
           </div>
