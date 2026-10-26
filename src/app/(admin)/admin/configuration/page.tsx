@@ -1,152 +1,484 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { ShieldCheck, Percent, Save, Bell } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  ShieldCheck,
+  Percent,
+  Save,
+  Bell,
+  Layers,
+  Plus,
+  Trash2,
+  Edit2,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  Clock,
+  Wallet,
+} from 'lucide-react';
+import { adminApi, PlatformCategory, PlatformSettingItem } from '@/lib/api/admin';
 
 export default function AdminConfigurationPage() {
-  const [platformFee, setPlatformFee] = useState('15');
-  const [currency, setCurrency] = useState('XAF');
-  const [autoApproveMentors, setAutoApproveMentors] = useState(false);
-  const [supportEmail, setSupportEmail] = useState('support@mentoraura.com');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<Record<string, string>>({
+    global_commission_rate: '15',
+    min_payout_amount: '10000',
+    auto_cancel_hours: '24',
+    dispute_grace_period_days: '7',
+    support_email: 'support@mentoraura.com',
+    terms_url: 'https://mentoraura.com/terms',
+    privacy_url: 'https://mentoraura.com/privacy',
+  });
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<PlatformCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  // Category Modal State
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<PlatformCategory | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDescription, setCategoryDescription] = useState('');
+  const [categoryLoading, setCategoryLoading] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showToast = (type: 'success' | 'error', text: string) => {
+    setToastMessage({ type, text });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [settingsRes, catRes] = await Promise.all([
+        adminApi.getSettings(),
+        adminApi.getCategories(),
+      ]);
+
+      const sData = settingsRes.data || (settingsRes as any);
+      const newSettings: Record<string, string> = {};
+      const newDesc: Record<string, string> = {};
+
+      if (sData) {
+        for (const [k, v] of Object.entries(sData as Record<string, PlatformSettingItem>)) {
+          newSettings[k] = v.value;
+          newDesc[k] = v.description;
+        }
+        setSettings((prev) => ({ ...prev, ...newSettings }));
+        setDescriptions(newDesc);
+      }
+
+      const cData = catRes.data || (catRes as any);
+      setCategories(Array.isArray(cData) ? cData : []);
+    } catch (err) {
+      console.error('Failed to load configuration:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleSettingChange = (key: string, value: string) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      toast.success('Platform configuration saved successfully.');
-    }, 600);
+    try {
+      setSavingSettings(true);
+      const res = await adminApi.updateSettings(settings);
+      showToast('success', res.message || 'Platform settings updated successfully');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to update platform settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Category Actions
+  const handleOpenCategoryModal = (cat?: PlatformCategory) => {
+    if (cat) {
+      setEditingCategory(cat);
+      setCategoryName(cat.name);
+      setCategoryDescription(cat.description || '');
+    } else {
+      setEditingCategory(null);
+      setCategoryName('');
+      setCategoryDescription('');
+    }
+    setCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim()) {
+      alert('Please provide a category name');
+      return;
+    }
+
+    try {
+      setCategoryLoading(true);
+      if (editingCategory) {
+        await adminApi.updateCategory(editingCategory.id, {
+          name: categoryName.trim(),
+          description: categoryDescription.trim() || undefined,
+        });
+        showToast('success', `Category '${categoryName}' updated successfully`);
+      } else {
+        await adminApi.createCategory({
+          name: categoryName.trim(),
+          description: categoryDescription.trim() || undefined,
+        });
+        showToast('success', `Category '${categoryName}' created successfully`);
+      }
+      setCategoryModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to save category');
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (cat: PlatformCategory) => {
+    if (cat.mentorCount > 0) {
+      alert(`Cannot delete '${cat.name}' because it has ${cat.mentorCount} active mentor(s) assigned.`);
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete category '${cat.name}'?`)) return;
+
+    try {
+      await adminApi.deleteCategory(cat.id);
+      showToast('success', `Category '${cat.name}' deleted`);
+      fetchData();
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to delete category');
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 font-sans pb-16">
+    <div className="max-w-5xl mx-auto space-y-8 font-sans pb-16">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-sm font-semibold transition-all ${
+            toastMessage.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+          }`}
+        >
+          {toastMessage.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 shrink-0" />
+          )}
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
+      {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Platform Configuration & Settings
+          Platform System Settings & Categories
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Manage system rules, marketplace commission parameters, vetting policies, and admin alerts.
+          Control global commission rates, financial thresholds, platform policies, and mentor specialization categories.
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Marketplace & Financial Rules */}
-        <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
+      {/* Settings Form */}
+      <form onSubmit={handleSaveSettings} className="space-y-6">
+        {/* Marketplace Economics */}
+        <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Percent className="w-5 h-5 text-orange-600" />
-            <h2 className="text-base font-bold text-slate-900">Commission & Economics</h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Platform Commission & Financial Parameters</h2>
+              <p className="text-xs text-slate-500">Configures platform revenue retention and mentor payout minimums.</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Platform Service Commission (%)</label>
+              <label className="text-xs font-bold text-slate-700">Global Platform Commission (%)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="global-commission-input"
+                  min="0"
+                  max="50"
+                  value={settings.global_commission_rate || '15'}
+                  onChange={(e) => handleSettingChange('global_commission_rate', e.target.value)}
+                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {descriptions.global_commission_rate || 'Platform commission deducted automatically from session fees.'}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Minimum Payout Withdrawal (XAF)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="min-payout-input"
+                  min="1000"
+                  step="1000"
+                  value={settings.min_payout_amount || '10000'}
+                  onChange={(e) => handleSettingChange('min_payout_amount', e.target.value)}
+                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">XAF</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {descriptions.min_payout_amount || 'Minimum mentor balance required to initiate a withdrawal.'}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Auto-Cancellation Window (Hours)</label>
               <input
                 type="number"
-                min="0"
-                max="50"
-                value={platformFee}
-                onChange={(e) => setPlatformFee(e.target.value)}
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                id="auto-cancel-hours-input"
+                min="1"
+                max="72"
+                value={settings.auto_cancel_hours || '24'}
+                onChange={(e) => handleSettingChange('auto_cancel_hours', e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20"
               />
-              <p className="text-[11px] text-slate-400">Deducted from mentor payouts automatically.</p>
+              <p className="text-[11px] text-slate-400">Hours before session start after which cancellations are penalized.</p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Primary Marketplace Currency</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-white"
-              >
-                <option value="XAF">Central African CFA Franc (XAF)</option>
-                <option value="USD">United States Dollar (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-              </select>
-              <p className="text-[11px] text-slate-400">Default currency for pricing plans and settlements.</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Vetting & Security Policy */}
-        <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-base font-bold text-slate-900">Vetting & Compliance Policies</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-900 block">Strict Manual Admin Vetting</span>
-                <p className="text-xs text-slate-500">
-                  When enabled, all mentor applicants must be approved by an Admin or Super Admin before appearing on the public directory.
-                </p>
-              </div>
-              <Badge variant="success" size="sm">Active (Enforced)</Badge>
-            </div>
-
-            <div className="flex items-start justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-900 block">Auto-Approve Verified Domains</span>
-                <p className="text-xs text-slate-500">
-                  Allow mentors with recognized corporate partner emails to bypass manual vetting.
-                </p>
-              </div>
+              <label className="text-xs font-bold text-slate-700">Dispute Claim Grace Window (Days)</label>
               <input
-                type="checkbox"
-                checked={autoApproveMentors}
-                onChange={(e) => setAutoApproveMentors(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
+                type="number"
+                id="dispute-grace-days-input"
+                min="1"
+                max="30"
+                value={settings.dispute_grace_period_days || '7'}
+                onChange={(e) => handleSettingChange('dispute_grace_period_days', e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20"
               />
+              <p className="text-[11px] text-slate-400">Number of days after session conclusion to submit a refund claim.</p>
             </div>
           </div>
         </Card>
 
-        {/* Support & Notification Alerts */}
-        <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
+        {/* Platform Legal & Policies */}
+        <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Bell className="w-5 h-5 text-orange-600" />
-            <h2 className="text-base font-bold text-slate-900">System Notifications & Escalations</h2>
+            <FileText className="w-5 h-5 text-blue-600" />
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Platform Policies & Legal URLs</h2>
+              <p className="text-xs text-slate-500">Legal agreements linked in emails, terms, and authentication pages.</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Platform Support Email</label>
+              <label className="text-xs font-bold text-slate-700">Support / Escalation Email</label>
               <input
                 type="email"
-                value={supportEmail}
-                onChange={(e) => setSupportEmail(e.target.value)}
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                id="support-email-input"
+                value={settings.support_email || 'support@mentoraura.com'}
+                onChange={(e) => handleSettingChange('support_email', e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20"
               />
             </div>
 
-            <div className="space-y-1 flex items-center justify-between pt-5">
-              <div className="space-y-0.5">
-                <span className="text-xs font-bold text-slate-900 block">Admin Email Alerts</span>
-                <p className="text-[11px] text-slate-400">Receive emails for new mentor submissions.</p>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Terms of Service URL</label>
               <input
-                type="checkbox"
-                checked={emailAlerts}
-                onChange={(e) => setEmailAlerts(e.target.checked)}
-                className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500"
+                type="url"
+                id="terms-url-input"
+                value={settings.terms_url || ''}
+                onChange={(e) => handleSettingChange('terms_url', e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20"
+              />
+            </div>
+
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-xs font-bold text-slate-700">Privacy Policy URL</label>
+              <input
+                type="url"
+                id="privacy-url-input"
+                value={settings.privacy_url || ''}
+                onChange={(e) => handleSettingChange('privacy_url', e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20"
               />
             </div>
           </div>
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" variant="primary" size="md" isLoading={saving} className="gap-2 font-bold">
-            <Save className="w-4 h-4" /> Save Configuration
+          <Button
+            id="save-platform-settings-btn"
+            type="submit"
+            variant="primary"
+            size="md"
+            isLoading={savingSettings}
+            className="bg-[#F97316] hover:bg-[#ea580c] text-white flex items-center gap-2 font-bold shadow-sm"
+          >
+            <Save className="w-4 h-4" />
+            <span>Save System Settings</span>
           </Button>
         </div>
       </form>
+
+      {/* Supported Categories Management */}
+      <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-purple-600" />
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Supported Mentor Categories</h2>
+              <p className="text-xs text-slate-500">Categories displayed in marketplace navigation and mentor profiles.</p>
+            </div>
+          </div>
+          <Button
+            id="create-category-btn"
+            size="sm"
+            variant="primary"
+            onClick={() => handleOpenCategoryModal()}
+            className="bg-[#172033] hover:bg-slate-800 text-white flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Category</span>
+          </Button>
+        </div>
+
+        {/* Categories Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs" id="admin-categories-table">
+            <thead>
+              <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                <th className="py-2.5 px-3">Category Name</th>
+                <th className="py-2.5 px-3">Slug</th>
+                <th className="py-2.5 px-3">Description</th>
+                <th className="py-2.5 px-3 text-center">Active Mentors</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-3 font-bold text-slate-900">{cat.name}</td>
+                    <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">{cat.slug}</td>
+                    <td className="py-3 px-3 text-slate-600 max-w-xs truncate">{cat.description || '—'}</td>
+                    <td className="py-3 px-3 text-center">
+                      <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full font-bold text-[11px]">
+                        {cat.mentorCount} mentor{cat.mentorCount === 1 ? '' : 's'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          id={`edit-category-${cat.id}`}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenCategoryModal(cat)}
+                          className="text-xs py-1 px-2.5 h-auto rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 mr-1" />
+                          <span>Edit</span>
+                        </Button>
+                        <Button
+                          id={`delete-category-${cat.id}`}
+                          size="sm"
+                          variant="outline"
+                          disabled={cat.mentorCount > 0}
+                          onClick={() => handleDeleteCategory(cat)}
+                          className={`text-xs py-1 px-2.5 h-auto rounded-lg ${
+                            cat.mentorCount > 0
+                              ? 'opacity-40 cursor-not-allowed border-slate-200 text-slate-400'
+                              : 'border-rose-200 text-rose-600 hover:bg-rose-50'
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          <span>Delete</span>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                    No categories configured yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Category Create/Edit Modal */}
+      {categoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <Card padding="lg" className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900">
+              {editingCategory ? 'Edit Mentor Category' : 'Create New Mentor Category'}
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  id="category-name-input"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  placeholder="e.g. Artificial Intelligence & Machine Learning"
+                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Description
+                </label>
+                <textarea
+                  id="category-description-input"
+                  rows={3}
+                  value={categoryDescription}
+                  onChange={(e) => setCategoryDescription(e.target.value)}
+                  placeholder="Brief summary of skills and mentors covered by this category..."
+                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCategoryModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                id="submit-category-btn"
+                variant="primary"
+                size="sm"
+                onClick={handleSaveCategory}
+                disabled={categoryLoading || !categoryName.trim()}
+                className="bg-[#F97316] hover:bg-[#ea580c] text-white"
+              >
+                {editingCategory ? 'Update Category' : 'Create Category'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
