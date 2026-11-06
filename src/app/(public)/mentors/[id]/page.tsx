@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { MentorReviewsSection } from '@/components/reviews/MentorReviewsSection';
 import {
   Star,
   ShieldCheck,
@@ -16,7 +17,6 @@ import {
   CheckCircle2,
   Loader2,
   AlertCircle,
-  MessageSquare,
   Award,
   ArrowLeft,
   Clock,
@@ -374,36 +374,8 @@ export default function PublicMentorProfilePage() {
               </Card>
             )}
 
-            {/* Reviews Section */}
-            <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-amber-500" />
-                {t('menteeReviews', { count: mentor.reviewCount })}
-              </h2>
-
-              {mentor.reviews.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-2">
-                  {t('noReviews', { name: mentor.fullName })}
-                </p>
-              ) : (
-                <div className="space-y-4 divide-y divide-slate-100">
-                  {mentor.reviews.map((rev) => (
-                    <div key={rev.id} className="pt-4 first:pt-0 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">{rev.reviewerName}</span>
-                        <div className="flex items-center gap-1 font-bold text-xs text-amber-600">
-                          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                          <span>{rev.rating}.0</span>
-                        </div>
-                      </div>
-                      {rev.comment && (
-                        <p className="text-xs text-slate-600 leading-normal">{rev.comment}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+            {/* Reviews Section (live data from the reviews API) */}
+            <MentorReviewsSection mentorId={mentor.id} mentorName={mentor.fullName} />
           </div>
 
           {/* Right Column: Plans & Pricing */}

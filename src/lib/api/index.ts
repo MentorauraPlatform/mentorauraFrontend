@@ -13,3 +13,5 @@ export * from './sessions';
 export * from './admin';
 export * from './scheduling';
 export * from './payments';
+
+export * from './reviews';
