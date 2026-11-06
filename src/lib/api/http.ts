@@ -19,10 +19,22 @@ export type ApiError = {
   error?: string;
 };
 
+const BFF_AUTH_ROUTES = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+  '/auth/me',
+  '/auth/refresh',
+  '/auth/token',
+  '/auth/admin/accept-invite',
+]);
+
 export function getEndpointUrl(path: string): string {
   if (typeof window !== 'undefined') {
-    // In browser, route requests through Next.js API routes (BFF pattern)
-    if (path.startsWith('/auth/')) {
+    const cleanPath = path.split('?')[0];
+    // In browser, route cookie-managing auth requests through Next.js BFF API routes,
+    // and route stateless auth/API endpoints through the catch-all proxy.
+    if (BFF_AUTH_ROUTES.has(cleanPath)) {
       return `/api${path}`;
     }
     return `/api/proxy${path}`;

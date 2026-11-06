@@ -4,17 +4,30 @@ import { apiClient } from './http';
 export interface CreateMentorProfilePayload {
   fullName: string;
   title: string;
+  headline?: string;
   company?: string;
   bio?: string;
   experience?: string;
+  yearsOfExperience?: number;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  cvUrl?: string;
+  idDocumentUrl?: string;
   areasOfExpertise?: string[];
 }
 
 export interface UpdateMentorProfilePayload {
+  fullName?: string;
   title?: string;
+  headline?: string;
   company?: string;
   bio?: string;
   experience?: string;
+  yearsOfExperience?: number;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  cvUrl?: string;
+  idDocumentUrl?: string;
   areasOfExpertise?: string[];
 }
 

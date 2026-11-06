@@ -29,6 +29,12 @@ interface Step6ReviewProps {
 
 export function Step6Review({ data, getSkillLevelLabel }: Step6ReviewProps) {
   const t = useTranslations('onboarding');
+  const tCommon = useTranslations('common');
+
+  const getDayShort = (day: string) => {
+    const cap = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+    return tCommon(cap).slice(0, 3);
+  };
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -108,7 +114,7 @@ export function Step6Review({ data, getSkillLevelLabel }: Step6ReviewProps) {
                   key={i}
                   className="bg-[#F8FAFC] border border-[#E5E7EB] px-4 py-2 rounded-lg text-base text-[#172033]"
                 >
-                  {DAY_LABELS[slot.day] || slot.day} {slot.startTime}–{slot.endTime}
+                  {getDayShort(slot.day)} {slot.startTime}–{slot.endTime}
                 </span>
               ))}
             </div>

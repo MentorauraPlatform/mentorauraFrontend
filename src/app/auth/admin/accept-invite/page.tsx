@@ -17,11 +17,13 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 function AcceptInviteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refetchUser } = useAuth();
+  const t = useTranslations('acceptInvitePage');
 
   const tokenParam = searchParams.get('token') || '';
 
@@ -43,17 +45,17 @@ function AcceptInviteContent() {
     e.preventDefault();
 
     if (!token.trim()) {
-      toast.error('Invitation token is required.');
+      toast.error(t('missingTokenError'));
       return;
     }
 
     if (password.length < 8) {
-      toast.error('Password must be at least 8 characters long.');
+      toast.error(t('passwordLengthError'));
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match.');
+      toast.error(t('passwordMismatchError'));
       return;
     }
 
@@ -66,14 +68,14 @@ function AcceptInviteContent() {
       });
 
       setSuccess(true);
-      toast.success('Admin account activated successfully!');
+      toast.success(t('activatedSuccessToast'));
       await refetchUser();
 
       setTimeout(() => {
         router.push('/admin');
       }, 1500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid or expired invitation token';
+      const msg = err instanceof Error ? err.message : t('acceptInviteError');
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -87,14 +89,14 @@ function AcceptInviteContent() {
           <div className="inline-flex items-center gap-2 mb-2">
             <BrandLogo size="md" />
             <span className="text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-950/80 px-2 py-0.5 rounded border border-orange-800">
-              Admin Portal
+              {t('badge')}
             </span>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">
-            Accept Administrative Invitation
+            {t('title')}
           </h1>
           <p className="text-xs text-slate-400">
-            Set up your administrative credentials to activate your MentorAura staff account.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -102,48 +104,48 @@ function AcceptInviteContent() {
           {success ? (
             <div className="text-center py-6 space-y-3">
               <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-              <h2 className="text-lg font-bold text-white">Access Granted!</h2>
+              <h2 className="text-lg font-bold text-white">{t('welcomeTitle')}</h2>
               <p className="text-xs text-slate-400">
-                Your administrative privileges have been activated. Redirecting you to the management workspace...
+                {t('welcomeDesc')}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Invitation Token</label>
+                <label className="text-xs font-bold text-slate-300 block">{t('tokenLabel')}</label>
                 <input
                   type="text"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  placeholder="Paste your 64-character token"
+                  placeholder={t('tokenPlaceholder')}
                   required
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Your Full Name</label>
+                <label className="text-xs font-bold text-slate-300 block">{t('fullNameLabel')}</label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Sarah Connor"
+                    placeholder={t('fullNamePlaceholder')}
                     className="w-full text-xs pl-9 pr-3 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Create Admin Password</label>
+                <label className="text-xs font-bold text-slate-300 block">{t('newPasswordLabel')}</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 8 chars, 1 uppercase, 1 symbol"
+                    placeholder={t('newPasswordPlaceholder')}
                     required
                     className="w-full text-xs pl-9 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                   />
@@ -158,14 +160,14 @@ function AcceptInviteContent() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Confirm Password</label>
+                <label className="text-xs font-bold text-slate-300 block">{t('confirmPasswordLabel')}</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter password"
+                    placeholder={t('confirmPasswordPlaceholder')}
                     required
                     className="w-full text-xs pl-9 pr-3 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                   />
@@ -179,16 +181,16 @@ function AcceptInviteContent() {
                 isLoading={loading}
                 className="w-full font-bold gap-2 mt-2 bg-orange-600 hover:bg-orange-700"
               >
-                <ShieldAlert className="w-4 h-4" /> Activate Admin Account
+                <ShieldAlert className="w-4 h-4" /> {t('completeSetup')}
               </Button>
             </form>
           )}
         </Card>
 
         <p className="text-center text-xs text-slate-500">
-          Already have an active account?{' '}
+          {t('alreadyActivePrompt')}{' '}
           <Link href="/auth?mode=login" className="text-orange-400 font-bold hover:underline">
-            Log In Here
+            {t('logInHere')}
           </Link>
         </p>
       </div>
@@ -197,8 +199,9 @@ function AcceptInviteContent() {
 }
 
 export default function AcceptAdminInvitePage() {
+  const t = useTranslations('acceptInvitePage');
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading invitation...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">{t('loadingInvitation')}</div>}>
       <AcceptInviteContent />
     </Suspense>
   );

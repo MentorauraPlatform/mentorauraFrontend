@@ -2,6 +2,7 @@
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 import type { Skill, SkillLevel } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   data: OnboardingData;
@@ -32,6 +33,21 @@ export function Step2Skills({
   onUpdateSkillLevel,
   levelColors,
 }: Props) {
+  const t = useTranslations('menteeOnboarding.step2');
+
+  const getLevelLabel = (level: SkillLevel) => {
+    switch (level) {
+      case 'BEGINNER':
+        return t('beginner');
+      case 'INTERMEDIATE':
+        return t('intermediate');
+      case 'ADVANCED':
+        return t('advanced');
+      case 'EXPERT':
+        return t('expert');
+    }
+  };
+
   const existingNames = new Set(data.skills.map((s) => s.name.toLowerCase()));
   const suggestions = skills
     .filter((s) => !existingNames.has(s.name.toLowerCase()))
@@ -48,8 +64,8 @@ export function Step2Skills({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">What are you learning?</h2>
-        <p className="text-[#64748B] text-base">Add the skills you&apos;re building, and your current level in each.</p>
+        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">{t('heading')}</h2>
+        <p className="text-[#64748B] text-base">{t('subheading')}</p>
       </div>
 
       <div className="max-w-xl space-y-4">
@@ -60,7 +76,7 @@ export function Step2Skills({
               value={skillNameInput}
               onChange={(e) => setSkillNameInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="e.g. Python, JavaScript, PostgreSQL"
+              placeholder={t('skillInputPlaceholder')}
               className="w-full px-4 py-3.5 bg-[#FFFCF9] border border-[#E5E7EB] rounded-xl text-base text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
             />
             {skillNameInput.trim().length > 0 && suggestions.length > 0 && (
@@ -85,7 +101,7 @@ export function Step2Skills({
           >
             {LEVELS.map((level) => (
               <option key={level} value={level}>
-                {level.charAt(0) + level.slice(1).toLowerCase()}
+                {getLevelLabel(level)}
               </option>
             ))}
           </select>
@@ -95,13 +111,13 @@ export function Step2Skills({
             disabled={!skillNameInput.trim() || skillSaving}
             className="px-6 py-3.5 bg-[#F97316] text-white rounded-xl font-bold hover:bg-[#ea580c] disabled:opacity-50 transition-colors"
           >
-            {skillSaving ? 'Adding...' : 'Add'}
+            {skillSaving ? t('adding') : t('addBtn')}
           </button>
         </div>
 
         <div className="space-y-3 pt-2">
           {data.skills.length === 0 && (
-            <p className="text-sm text-[#94A3B8]">No skills added yet.</p>
+            <p className="text-sm text-[#94A3B8]">{t('noSkillsAdded')}</p>
           )}
           {data.skills.map((skill) => (
             <div
@@ -118,7 +134,7 @@ export function Step2Skills({
                 >
                   {LEVELS.map((level) => (
                     <option key={level} value={level}>
-                      {level.charAt(0) + level.slice(1).toLowerCase()}
+                      {getLevelLabel(level)}
                     </option>
                   ))}
                 </select>
@@ -127,7 +143,7 @@ export function Step2Skills({
                   onClick={() => onRemoveSkill(skill.id)}
                   disabled={skillSaving}
                   className="text-[#94A3B8] hover:text-red-500 disabled:opacity-50 text-sm font-bold px-2"
-                  aria-label={`Remove ${skill.name}`}
+                  aria-label={t('removeSkillAria', { name: skill.name })}
                 >
                   x
                 </button>

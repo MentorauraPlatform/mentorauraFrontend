@@ -3,10 +3,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslations } from 'next-intl';
 
 export default function DashboardRedirectPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const t = useTranslations('common');
 
   useEffect(() => {
     if (isLoading) return;
@@ -31,13 +33,13 @@ export default function DashboardRedirectPage() {
     if (isMentor) {
       router.replace('/mentor/dashboard');
     } else {
-      router.replace('/mentee/dashboard/mentorships');
+      router.replace('/mentee/dashboard');
     }
   }, [user, isLoading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-      <div className="text-lg text-gray-600">Redirecting to your dashboard...</div>
+      <div className="text-lg text-gray-600">{t('redirecting')}</div>
     </div>
   );
 }

@@ -92,7 +92,7 @@ export default function MentorOnboardingPage() {
 
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12 lg:py-16">
         <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] overflow-hidden">
           {/* Header */}
           <div className="bg-[#172033] px-8 sm:px-10 py-8 sm:py-10">
@@ -101,9 +101,12 @@ export default function MentorOnboardingPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold text-white tracking-tight">Mentor Onboarding</h1>
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">{onboarding.t('title')}</h1>
                 <p className="text-sm text-white/60 font-medium">
-                  Step {onboarding.currentStep} of 6: {onboarding.t(STEPS[onboarding.currentStep - 1]?.title)}
+                  {onboarding.t('stepCounter', {
+                    step: onboarding.currentStep,
+                    title: onboarding.t(STEPS[onboarding.currentStep - 1]?.title),
+                  })}
                 </p>
               </div>
             </div>
@@ -196,6 +199,7 @@ export default function MentorOnboardingPage() {
                 rawAreas={rawAreas}
                 onRawAreasChange={setRawAreas}
                 onExperienceChange={(value) => onboarding.updateData({ experience: value })}
+                onUpdateData={onboarding.updateData}
                 onBlur={syncAreasFromRaw}
                 onKeyDown={handleKeyDown}
               />

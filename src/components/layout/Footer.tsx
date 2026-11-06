@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="bg-[#172033] text-white border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-12 sm:py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-10">
           {/* Brand Info */}
           <div className="space-y-4 col-span-2 md:col-span-2">
@@ -24,12 +24,12 @@ export const Footer: React.FC = () => {
               </span>
             </Link>
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed max-w-sm">
-              MentorAura connects tech professionals, startups, and career switchers with top 1% industry mentors for 1-on-1 career coaching, code reviews, and strategic guidance.
+              {tFooter('description')}
             </p>
             <div className="flex items-center gap-3 pt-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 text-xs font-semibold text-orange-400 border border-slate-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                500+ {tCat('activeMentorsCount')}
+                {tFooter('verifiedMentorsBadge')}
               </span>
             </div>
           </div>
@@ -50,22 +50,25 @@ export const Footer: React.FC = () => {
           {/* Resources */}
           <div>
             <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3 sm:mb-4">
-              Resources
+              {tFooter('resources')}
             </h3>
             <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
               <li><Link href="#how-it-works" className="hover:text-white transition-colors">{tNav('howItWorks')}</Link></li>
               <li><Link href="#pricing" className="hover:text-white transition-colors">{tNav('pricing')}</Link></li>
+              <li><Link href="/sitemap-html" className="hover:text-white transition-colors">{tFooter('sitemap')}</Link></li>
             </ul>
           </div>
 
           {/* Become a Mentor & Legal */}
           <div className="col-span-2 sm:col-span-1">
             <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3 sm:mb-4">
-              Join & Support
+              {tFooter('joinSupport')}
             </h3>
             <ul className="space-y-2.5 text-xs sm:text-sm text-[#94A3B8]">
               <li><Link href="/auth?mode=register" className="text-[#F97316] font-semibold hover:text-white transition-colors">{tNav('signup')}</Link></li>
               <li><Link href="#teams" className="hover:text-white transition-colors">{tNav('forTeams')}</Link></li>
+              <li><Link href="/privacy" className="hover:text-white transition-colors">{tFooter('privacyPolicy')}</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition-colors">{tFooter('termsOfService')}</Link></li>
             </ul>
           </div>
         </div>

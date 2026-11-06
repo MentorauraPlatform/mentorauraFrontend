@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -62,7 +62,7 @@ export const LEVEL_COLORS: Record<SkillLevel, string> = {
 
 export function useMenteeOnboarding() {
   const router = useRouter();
-  const { user, isLoading: authLoading, refetchUser } = useAuth();
+  const { user, isLoading: authLoading, refetchUser, setUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [data, setData] = useState<OnboardingData>(initialData);
   const [profile, setProfile] = useState<MenteeProfile | null>(null);
@@ -75,10 +75,12 @@ export function useMenteeOnboarding() {
   const [skillLevelInput, setSkillLevelInput] = useState<SkillLevel>('BEGINNER');
   const [skillSaving, setSkillSaving] = useState(false);
 
+  const userId = user?.id;
+
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
+    if (!userId) {
       router.replace('/auth?mode=login');
       return;
     }
@@ -88,7 +90,7 @@ export function useMenteeOnboarding() {
         setLoading(true);
         const [profileRes, skillsRes] = await Promise.all([
           menteeApi.getMyProfile().catch(() => null),
-          apiClient.get<Skill[]>('/mentor/applications/skills').catch((err) => {
+          apiClient.get<Skill[]>('/skills').catch((err) => {
             console.error('Failed to fetch skills list:', err);
             return { data: [] as Skill[] };
           }),
@@ -127,7 +129,7 @@ export function useMenteeOnboarding() {
         setProfileLoaded(true);
       }
     })();
-  }, [user, authLoading, router]);
+  }, [userId, authLoading, router]);
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
@@ -240,6 +242,17 @@ export function useMenteeOnboarding() {
       setSubmitFailed(false);
       const res = await menteeApi.submitOnboarding({ confirmed: true });
       setProfile(res.data);
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              menteeProfile: {
+                ...(prev.menteeProfile ?? res.data),
+                onboardingCompleted: true,
+              },
+            }
+          : prev
+      );
       toast.success('Onboarding complete!', {
         className: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
       });

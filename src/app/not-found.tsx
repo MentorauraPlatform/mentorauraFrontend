@@ -21,7 +21,7 @@ export default function NotFound() {
       <SimpleHeader />
 
       {/* Main 404 Hero Section */}
-      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 flex flex-col items-center justify-center text-center z-10">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-12 flex-1 flex flex-col items-center justify-center text-center z-10">
         
         {/* Floating Badge */}
         <Badge variant="orange" size="md" className="gap-2 shadow-xs mb-6 px-4 py-1.5 inline-flex items-center">
@@ -55,7 +55,7 @@ export default function NotFound() {
               variant="primary"
               size="lg"
               className="w-full font-bold shadow-md gap-2"
-              leftIcon={<Home className="w-[#F97316]" />}
+              leftIcon={<Home className="w-5 h-5 text-[#F97316]" />}
             >
               {tNotFound('backHome')}
             </Button>

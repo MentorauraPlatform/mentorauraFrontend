@@ -41,6 +41,12 @@ export const authApi = {
       body: JSON.stringify({ email }),
     }),
 
+  verifyEmail: (token: string) =>
+    rawRequest<{ message?: string; data?: { message?: string } }>(
+      `/auth/verify-email?token=${encodeURIComponent(token)}`,
+      { method: 'GET' },
+    ),
+
   refreshToken: (data: RefreshTokenPayload) =>
     rawRequest<RefreshTokenResponse>('/auth/refresh', {
       method: 'POST',

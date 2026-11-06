@@ -13,13 +13,18 @@ import {
   CheckCheck,
   Sparkles,
   RefreshCw,
+  Flag,
+  X,
 } from 'lucide-react';
 import {
   messagingApi,
   ConversationSummary,
   ChatMessage,
 } from '@/lib/api/messaging';
+import { adminApi } from '@/lib/api/admin';
+import { toast } from 'sonner';
 import { useMessagingSocket } from '@/lib/hooks/useMessagingSocket';
+import { useTranslations } from 'next-intl';
 
 interface ChatViewProps {
   currentUserId: string;
@@ -34,6 +39,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSelectConversation,
   userRole,
 }) => {
+  const t = useTranslations('chat');
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
@@ -47,6 +53,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{
+    targetType: 'MESSAGE' | 'USER_PROFILE';
+    targetId: string;
+    label: string;
+  } | null>(null);
+  const [reportReason, setReportReason] = useState('Harassment or inappropriate content');
+  const [reportDetails, setReportDetails] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   // Mobile view toggle (show list vs show conversation)
   const [mobileShowChat, setMobileShowChat] = useState(
@@ -335,10 +349,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const formatDateHeader = (isoString: string) => {
     const date = new Date(isoString);
     const today = new Date();
-    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === today.toDateString()) return t('today');
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    if (date.toDateString() === yesterday.toDateString()) return t('yesterday');
     return date.toLocaleDateString([], {
       month: 'short',
       day: 'numeric',
@@ -390,18 +404,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-white tracking-tight">
-                Messages
+                {t('messagesTitle')}
               </h2>
               {isConnected && (
                 <span
-                  title="Live WebSocket Connected"
+                  title={t('liveConnected')}
                   className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"
                 />
               )}
             </div>
             <button
               onClick={fetchConversations}
-              title="Refresh messages"
+              title={t('refreshMessages')}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
@@ -416,7 +430,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
+              placeholder={t('searchConversations')}
               className="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#FF6B00] transition-colors"
             />
           </div>
@@ -427,17 +441,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
           {isLoadingConversations ? (
             <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
               <div className="w-6 h-6 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs">Loading conversations...</span>
+              <span className="text-xs">{t('loadingConversations')}</span>
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="p-8 text-center text-slate-400">
               <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-600" />
               <p className="text-sm font-medium text-slate-300">
-                No conversations yet
+                {t('noConversations')}
               </p>
               <p className="text-xs mt-1 text-slate-500">
-                When a mentorship application is accepted, direct messaging will
-                activate here.
+                {t('noConversationsDesc')}
               </p>
             </div>
           ) : (
@@ -477,7 +490,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     )}
                     {other?.isMentor && (
                       <span
-                        title="Verified Mentor"
+                        title={t('verifiedMentor')}
                         className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 border border-slate-900 flex items-center justify-center text-[9px] text-white font-bold"
                       >
                         ✓
@@ -504,7 +517,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-xs text-slate-400 truncate pr-2">
-                        {conv.lastMessage?.content || 'Started conversation'}
+                        {conv.lastMessage?.content || t('startedConversation')}
                       </p>
                       {conv.unreadCount > 0 && (
                         <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#FF6B00] text-white">
@@ -562,19 +575,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     </span>
                     {activeConversation.otherParticipant.isMentor && (
                       <span className="text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        Mentor
+                        {t('mentorRole')}
                       </span>
                     )}
                   </div>
                   <span className="text-xs text-slate-400 truncate max-w-[200px] md:max-w-md">
                     {otherParticipantTyping ? (
                       <span className="text-[#FF6B00] font-medium animate-pulse">
-                        typing...
+                        {t('typing')}
                       </span>
                     ) : (
                       activeConversation.otherParticipant.title ||
                       activeConversation.otherParticipant.headline ||
-                      'Participant'
+                      t('participantFallback')
                     )}
                   </span>
                 </div>
@@ -585,14 +598,29 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <Link
                   href={
                     userRole === 'MENTEE'
-                      ? '/mentee/dashboard/bookings'
+                      ? '/mentee/dashboard/bookings/new'
                       : '/mentor/dashboard'
                   }
                   className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
                 >
                   <Calendar className="w-3.5 h-3.5 text-[#FF6B00]" />
-                  Schedule Call
+                  {t('scheduleCall')}
                 </Link>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReportTarget({
+                      targetType: 'USER_PROFILE',
+                      targetId: activeConversation.otherParticipant.id,
+                      label: `${activeConversation.otherParticipant.name}`,
+                    })
+                  }
+                  title={t('reportUser')}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 bg-slate-800 hover:bg-red-950/60 hover:text-red-400 transition-colors border border-slate-700"
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">{t('reportShort')}</span>
+                </button>
               </div>
             </div>
 
@@ -609,7 +637,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     {isLoadingEarlier && (
                       <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                     )}
-                    Load earlier messages
+                    {t('loadEarlierMessages')}
                   </button>
                 </div>
               )}
@@ -622,11 +650,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 py-12">
                   <Sparkles className="w-10 h-10 mb-2 text-[#FF6B00]" />
                   <p className="text-sm font-semibold text-slate-300">
-                    Start the conversation!
+                    {t('startConversationTitle')}
                   </p>
                   <p className="text-xs text-slate-500 max-w-xs mt-1">
-                    Introduce yourself, ask questions, or agree on the next session
-                    date and agenda.
+                    {t('startConversationDesc')}
                   </p>
                 </div>
               ) : (
@@ -671,18 +698,34 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </p>
 
                           <div
-                            className={`flex items-center gap-1 justify-end mt-1 text-[10px] ${
+                            className={`flex items-center gap-1.5 justify-end mt-1 text-[10px] ${
                               isMine ? 'text-orange-100/80' : 'text-slate-400'
                             }`}
                           >
                             <span>{formatTime(msg.createdAt)}</span>
+                            {!isMine && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReportTarget({
+                                    targetType: 'MESSAGE',
+                                    targetId: msg.id,
+                                    label: `"${msg.content.slice(0, 40)}${msg.content.length > 40 ? '...' : ''}"`,
+                                  })
+                                }
+                                title={t('reportMessageTitle')}
+                                className="text-slate-500 hover:text-red-400 transition-colors ml-1"
+                              >
+                                <Flag className="w-3 h-3" />
+                              </button>
+                            )}
                             {isMine &&
                               (msg.isRead ? (
-                                <span title="Read">
+                                <span title={t('read')}>
                                   <CheckCheck className="w-3.5 h-3.5 text-white" />
                                 </span>
                               ) : (
-                                <span title="Sent">
+                                <span title={t('sent')}>
                                   <Check className="w-3.5 h-3.5 text-orange-200" />
                                 </span>
                               ))}
@@ -728,7 +771,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   value={inputText}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your message... (Enter to send, Shift+Enter for newline)"
+                  placeholder={t('typeMessagePlaceholder')}
                   rows={1}
                   className="flex-1 bg-transparent border-0 text-sm text-white placeholder-slate-400 focus:outline-none resize-none max-h-36 py-1 px-2"
                 />
@@ -749,15 +792,112 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <MessageSquare className="w-8 h-8" />
             </div>
             <h3 className="text-base font-bold text-white mb-1">
-              Direct Mentorship Messaging
+              {t('selectConversationTitle')}
             </h3>
             <p className="text-xs text-slate-400 max-w-sm">
-              Select an active conversation on the left to coordinate session
-              topics, exchange links, and ask questions.
+              {t('selectConversationPrompt')}
             </p>
           </div>
         )}
       </div>
+
+      {/* Report Message / User Modal */}
+      {reportTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 text-white shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-red-400" />
+                  {t('reportModalTitle')}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 truncate max-w-xs">
+                  {reportTarget.label}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportTarget(null)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {t('reasonLabel')}
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF6B00]"
+                >
+                  <option value="Harassment or inappropriate content">
+                    {t('reasonHarassment')}
+                  </option>
+                  <option value="Spam or solicitation">{t('reasonSpam')}</option>
+                  <option value="Off-platform payment request">
+                    {t('reasonOffPlatform')}
+                  </option>
+                  <option value="Abusive language">{t('reasonAbusive')}</option>
+                  <option value="Other safety concern">{t('reasonOther')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {t('additionalDetailsLabel')}
+                </label>
+                <textarea
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder={t('reportReasonPlaceholder')}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF6B00] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setReportTarget(null)}
+                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={submittingReport}
+                onClick={async () => {
+                  try {
+                    setSubmittingReport(true);
+                    await adminApi.createReport({
+                      targetType: reportTarget.targetType,
+                      targetId: reportTarget.targetId,
+                      reason: reportReason,
+                      details: reportDetails.trim() || undefined,
+                    });
+                    toast.success(t('reportSubmittedAlert'));
+                    setReportTarget(null);
+                    setReportDetails('');
+                  } catch (err: unknown) {
+                    const apiErr = err as { message?: string };
+                    toast.error(apiErr.message || t('reportFailedAlert'));
+                  } finally {
+                    setSubmittingReport(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50"
+              >
+                {submittingReport ? t('submittingReport') : t('submitReport')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

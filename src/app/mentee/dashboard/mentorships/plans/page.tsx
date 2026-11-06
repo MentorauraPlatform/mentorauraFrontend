@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { plansApi, applicationsApi } from '@/lib/api/client';
 import type { PlanSummary, MentorshipApplication } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
@@ -9,6 +10,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 export default function BrowsePlansPage() {
   const router = useRouter();
+  const t = useTranslations('menteeMentorships');
   const { user, isLoading: authLoading } = useAuth();
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [applications, setApplications] = useState<MentorshipApplication[]>([]);
@@ -62,12 +64,12 @@ export default function BrowsePlansPage() {
         setPlans(plansList);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
-        setError(apiError.message || 'Failed to load plans');
+        setError(apiError.message || t('failedToLoadPlans'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [user]);
+  }, [user, t]);
 
   const handleSelectPlan = (planId: string) => {
     router.push(`/mentee/dashboard/mentorships/apply?planId=${planId}`);
@@ -76,7 +78,7 @@ export default function BrowsePlansPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-lg text-gray-600">Loading plans...</div>
+        <div className="text-lg text-gray-600">{t('loadingPlans')}</div>
       </div>
     );
   }
@@ -91,17 +93,17 @@ export default function BrowsePlansPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Browse Mentorship Plans</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('plansHeading')}</h1>
           <p className="text-gray-600 mt-1">
-            Choose a plan to apply for mentorship.
+            {t('plansSub')}
           </p>
         </div>
 
         {plans.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center text-gray-600">
-            No active plans available right now.
+            {t('noActivePlans')}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -118,14 +120,14 @@ export default function BrowsePlansPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Mentor ID: {plan.mentorId}
+                    {t('mentorHeading')}: {plan.mentorId}
                   </p>
                 </div>
 
                 <div className="mt-6 flex items-center justify-between">
                   <div>
                     <span className="text-xs uppercase tracking-wider text-gray-400 block font-semibold">
-                      Price
+                      {t('priceLabel')}
                     </span>
                     <span className="text-lg font-black text-[#172033]">
                       {plan.priceAmount} {plan.currency}
@@ -140,10 +142,10 @@ export default function BrowsePlansPage() {
                       return (
                         <button
                           onClick={() => router.push('/mentee/dashboard/mentorships')}
-                          className="bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                          className="bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-nowrap shrink-0"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Applied
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{t('appliedBadge')}</span>
                         </button>
                       );
                     }
@@ -151,9 +153,9 @@ export default function BrowsePlansPage() {
                     return (
                       <button
                         onClick={() => handleSelectPlan(plan.id)}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 font-medium transition-colors"
+                        className="bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 font-medium transition-colors whitespace-nowrap flex-nowrap shrink-0"
                       >
-                        Apply
+                        {t('applyBtn')}
                       </button>
                     );
                   })()}

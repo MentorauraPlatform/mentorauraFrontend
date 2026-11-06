@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import {
-  ShieldCheck,
   Percent,
   Save,
-  Bell,
   Layers,
   Plus,
   Trash2,
@@ -16,12 +14,11 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
-  Clock,
-  Wallet,
 } from 'lucide-react';
 import { adminApi, PlatformCategory, PlatformSettingItem } from '@/lib/api/admin';
 
 export default function AdminConfigurationPage() {
+  const t = useTranslations('admin.configuration');
   const [settings, setSettings] = useState<Record<string, string>>({
     global_commission_rate: '15',
     min_payout_amount: '10000',
@@ -33,7 +30,7 @@ export default function AdminConfigurationPage() {
   });
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [categories, setCategories] = useState<PlatformCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Category Modal State
@@ -92,7 +89,7 @@ export default function AdminConfigurationPage() {
     try {
       setSavingSettings(true);
       const res = await adminApi.updateSettings(settings);
-      showToast('success', res.message || 'Platform settings updated successfully');
+      showToast('success', res.message || t('settingsSaved'));
     } catch (err: any) {
       showToast('error', err?.message || 'Failed to update platform settings');
     } finally {
@@ -161,7 +158,7 @@ export default function AdminConfigurationPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 font-sans pb-16">
+    <div className="w-full space-y-8 font-sans pb-16">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -181,10 +178,10 @@ export default function AdminConfigurationPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Platform System Settings & Categories
+          {t('pageTitle')}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Control global commission rates, financial thresholds, platform policies, and mentor specialization categories.
+          {t('pageSubtitle')}
         </p>
       </div>
 
@@ -193,16 +190,16 @@ export default function AdminConfigurationPage() {
         {/* Marketplace Economics */}
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Percent className="w-5 h-5 text-orange-600" />
+            <Percent className="w-5 h-5 text-orange-600 shrink-0" />
             <div>
-              <h2 className="text-base font-bold text-slate-900">Platform Commission & Financial Parameters</h2>
-              <p className="text-xs text-slate-500">Configures platform revenue retention and mentor payout minimums.</p>
+              <h2 className="text-base font-bold text-slate-900">{t('commissionSectionTitle')}</h2>
+              <p className="text-xs text-slate-500">{t('commissionRateHelp')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Global Platform Commission (%)</label>
+              <label className="text-xs font-bold text-slate-700">{t('commissionRateLabel')}</label>
               <div className="relative">
                 <input
                   type="number"
@@ -216,12 +213,12 @@ export default function AdminConfigurationPage() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                {descriptions.global_commission_rate || 'Platform commission deducted automatically from session fees.'}
+                {descriptions.global_commission_rate || t('commissionRateHelp')}
               </p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Minimum Payout Withdrawal (XAF)</label>
+              <label className="text-xs font-bold text-slate-700">{t('minPayoutLabel')}</label>
               <div className="relative">
                 <input
                   type="number"
@@ -235,7 +232,7 @@ export default function AdminConfigurationPage() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">XAF</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                {descriptions.min_payout_amount || 'Minimum mentor balance required to initiate a withdrawal.'}
+                {descriptions.min_payout_amount || t('subtitle')}
               </p>
             </div>
 
@@ -272,10 +269,10 @@ export default function AdminConfigurationPage() {
         {/* Platform Legal & Policies */}
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <FileText className="w-5 h-5 text-blue-600 shrink-0" />
             <div>
-              <h2 className="text-base font-bold text-slate-900">Platform Policies & Legal URLs</h2>
-              <p className="text-xs text-slate-500">Legal agreements linked in emails, terms, and authentication pages.</p>
+              <h2 className="text-base font-bold text-slate-900">{t('title')}</h2>
+              <p className="text-xs text-slate-500">{t('subtitle')}</p>
             </div>
           </div>
 
@@ -322,10 +319,10 @@ export default function AdminConfigurationPage() {
             variant="primary"
             size="md"
             isLoading={savingSettings}
-            className="bg-[#F97316] hover:bg-[#ea580c] text-white flex items-center gap-2 font-bold shadow-sm"
+            className="bg-[#F97316] hover:bg-[#ea580c] text-white flex items-center gap-2 font-bold shadow-sm whitespace-nowrap flex-nowrap shrink-0"
           >
-            <Save className="w-4 h-4" />
-            <span>Save System Settings</span>
+            <Save className="w-4 h-4 shrink-0" />
+            <span>{t('saveConfigBtn')}</span>
           </Button>
         </div>
       </form>
@@ -334,10 +331,10 @@ export default function AdminConfigurationPage() {
       <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-purple-600" />
+            <Layers className="w-5 h-5 text-purple-600 shrink-0" />
             <div>
-              <h2 className="text-base font-bold text-slate-900">Supported Mentor Categories</h2>
-              <p className="text-xs text-slate-500">Categories displayed in marketplace navigation and mentor profiles.</p>
+              <h2 className="text-base font-bold text-slate-900">{t('categoriesSectionTitle')}</h2>
+              <p className="text-xs text-slate-500">{t('subtitle')}</p>
             </div>
           </div>
           <Button
@@ -345,10 +342,10 @@ export default function AdminConfigurationPage() {
             size="sm"
             variant="primary"
             onClick={() => handleOpenCategoryModal()}
-            className="bg-[#172033] hover:bg-slate-800 text-white flex items-center gap-2"
+            className="bg-[#172033] hover:bg-slate-800 text-white flex items-center gap-2 whitespace-nowrap flex-nowrap shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add New Category</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>{t('addCategoryBtn')}</span>
           </Button>
         </div>
 
@@ -372,7 +369,7 @@ export default function AdminConfigurationPage() {
                     <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">{cat.slug}</td>
                     <td className="py-3 px-3 text-slate-600 max-w-xs truncate">{cat.description || '—'}</td>
                     <td className="py-3 px-3 text-center">
-                      <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full font-bold text-[11px]">
+                      <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full font-bold text-[11px] whitespace-nowrap flex-nowrap shrink-0">
                         {cat.mentorCount} mentor{cat.mentorCount === 1 ? '' : 's'}
                       </span>
                     </td>
@@ -383,9 +380,9 @@ export default function AdminConfigurationPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenCategoryModal(cat)}
-                          className="text-xs py-1 px-2.5 h-auto rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                          className="text-xs py-1 px-2.5 h-auto rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 whitespace-nowrap flex-nowrap shrink-0"
                         >
-                          <Edit2 className="w-3.5 h-3.5 mr-1" />
+                          <Edit2 className="w-3.5 h-3.5 mr-1 shrink-0" />
                           <span>Edit</span>
                         </Button>
                         <Button
@@ -394,13 +391,13 @@ export default function AdminConfigurationPage() {
                           variant="outline"
                           disabled={cat.mentorCount > 0}
                           onClick={() => handleDeleteCategory(cat)}
-                          className={`text-xs py-1 px-2.5 h-auto rounded-lg ${
+                          className={`text-xs py-1 px-2.5 h-auto rounded-lg whitespace-nowrap flex-nowrap shrink-0 ${
                             cat.mentorCount > 0
                               ? 'opacity-40 cursor-not-allowed border-slate-200 text-slate-400'
                               : 'border-rose-200 text-rose-600 hover:bg-rose-50'
                           }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          <Trash2 className="w-3.5 h-3.5 mr-1 shrink-0" />
                           <span>Delete</span>
                         </Button>
                       </div>
@@ -410,7 +407,7 @@ export default function AdminConfigurationPage() {
               ) : (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
-                    No categories configured yet
+                    {t('newCategoryPlaceholder')}
                   </td>
                 </tr>
               )}
@@ -437,7 +434,7 @@ export default function AdminConfigurationPage() {
                   id="category-name-input"
                   value={categoryName}
                   onChange={(e) => setCategoryName(e.target.value)}
-                  placeholder="e.g. Artificial Intelligence & Machine Learning"
+                  placeholder={t('categoryNamePlaceholder')}
                   className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
                 />
               </div>
@@ -462,6 +459,7 @@ export default function AdminConfigurationPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setCategoryModalOpen(false)}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
                 Cancel
               </Button>
@@ -471,7 +469,7 @@ export default function AdminConfigurationPage() {
                 size="sm"
                 onClick={handleSaveCategory}
                 disabled={categoryLoading || !categoryName.trim()}
-                className="bg-[#F97316] hover:bg-[#ea580c] text-white"
+                className="bg-[#F97316] hover:bg-[#ea580c] text-white whitespace-nowrap flex-nowrap shrink-0"
               >
                 {editingCategory ? 'Update Category' : 'Create Category'}
               </Button>

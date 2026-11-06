@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   data: OnboardingData;
@@ -11,6 +12,7 @@ interface Props {
 
 export function Step3Interests({ data, updateData, options }: Props) {
   const [customInput, setCustomInput] = useState('');
+  const t = useTranslations('menteeOnboarding.step3');
 
   const toggleInterest = (interest: string) => {
     if (data.interests.includes(interest)) {
@@ -43,8 +45,8 @@ export function Step3Interests({ data, updateData, options }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">What are you interested in?</h2>
-        <p className="text-[#64748B] text-base">Select at least one area. This helps us match you with the right mentors.</p>
+        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">{t('heading')}</h2>
+        <p className="text-[#64748B] text-base">{t('subheading')}</p>
       </div>
 
       <div className="flex flex-wrap gap-3 max-w-2xl">
@@ -79,7 +81,7 @@ export function Step3Interests({ data, updateData, options }: Props) {
       </div>
 
       <div className="max-w-md">
-        <label className="block text-sm font-bold text-[#172033] mb-2">Don&apos;t see your interest? Add your own</label>
+        <label className="block text-sm font-bold text-[#172033] mb-2">{t('customLabel')}</label>
         <div className="flex gap-3">
           <input
             type="text"
@@ -87,7 +89,7 @@ export function Step3Interests({ data, updateData, options }: Props) {
             onChange={(e) => setCustomInput(e.target.value)}
             onKeyDown={handleKeyDown}
             maxLength={50}
-            placeholder="e.g. Blockchain, UX Research"
+            placeholder={t('customPlaceholder')}
             className="flex-1 px-4 py-3 bg-[#FFFCF9] border border-[#E5E7EB] rounded-xl text-sm text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
           />
           <button
@@ -96,13 +98,13 @@ export function Step3Interests({ data, updateData, options }: Props) {
             disabled={!customInput.trim()}
             className="px-5 py-3 bg-[#172033] text-white rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
-            Add
+            {t('addBtn')}
           </button>
         </div>
       </div>
 
       {data.interests.length === 0 && (
-        <p className="text-sm text-[#94A3B8]">Pick at least one interest to continue.</p>
+        <p className="text-sm text-[#94A3B8]">{t('pickAtLeastOne')}</p>
       )}
     </div>
   );

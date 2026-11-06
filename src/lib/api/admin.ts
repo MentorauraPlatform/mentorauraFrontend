@@ -17,6 +17,7 @@ export interface AdminMentorApplication {
   cvUrl?: string;
   areasOfExpertise: string[];
   onboardingStatus: string;
+  status?: string;
   isVerified: boolean;
   rejectionReason?: string;
   createdAt: string;
@@ -43,20 +44,33 @@ export interface AdminUserItem {
 // ── Financial Reporting ──────────────────────────────────────────────
 export interface FinancialSummary {
   gmv: number;
+  totalGmv?: number;
   platformCommission: number;
+  totalPlatformRevenue?: number;
   mentorVolume: number;
+  netMentorEarnings?: number;
   currency: string;
   totalTransactions: number;
+  totalTransactionsCount?: number;
   successfulTransactions: number;
-  breakdown: {
+  successfulTransactionsCount?: number;
+  pendingTransactionsCount?: number;
+  failedTransactionsCount?: number;
+  breakdown?: {
     byProvider: Record<string, { count: number; volume: number }>;
     byStatus: Record<string, number>;
   };
-  monthlyTrends: Array<{
+  monthlyTrends?: Array<{
     month: string;
     gmv: number;
     commission: number;
     transactions: number;
+  }>;
+  monthlyTrend?: Array<{
+    month: string;
+    gmv: number;
+    platformRevenue: number;
+    count: number;
   }>;
 }
 
@@ -69,17 +83,30 @@ export interface FinancialTransaction {
   status: string;
   provider: string;
   providerTxId?: string;
+  providerReference?: string;
   createdAt: string;
   user?: {
     id: string;
     email: string;
     name: string;
   };
+  mentee?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  mentor?: {
+    id: string;
+    fullName?: string;
+    name?: string;
+    email: string;
+  } | null;
   mentorship?: {
     id: string;
     mentorName: string;
     planTitle?: string;
-  };
+  } | null;
+  planTitle?: string;
 }
 
 // ── Payouts Management ───────────────────────────────────────────────
@@ -97,7 +124,8 @@ export interface AdminPayout {
   createdAt: string;
   mentor: {
     id: string;
-    fullName: string;
+    fullName?: string;
+    name?: string;
     title?: string;
     email: string;
   };
@@ -111,6 +139,19 @@ export interface PayoutStats {
   paidAmount: number;
   rejectedCount: number;
   currency: string;
+}
+
+export interface MentorPayoutBalance {
+  currency: string;
+  mentorId: string;
+  mentorName: string;
+  totalGrossRevenue: number;
+  totalNetEarned: number;
+  totalWithdrawn: number;
+  pendingWithdrawals: number;
+  availableBalance: number;
+  minPayoutAmount: number;
+  commissionPercent: number;
 }
 
 // ── Dispute Resolution ───────────────────────────────────────────────
@@ -307,6 +348,9 @@ export const adminApi = {
   getPayoutStats: () =>
     apiClient.get<PayoutStats>('/admin/payouts/stats'),
 
+  getMentorPayoutBalance: () =>
+    apiClient.get<MentorPayoutBalance>('/admin/payouts/balance'),
+
   approvePayout: (id: string) =>
     apiClient.patch<{ message: string; payout: AdminPayout }>(`/admin/payouts/${id}/approve`, {}),
 
@@ -339,6 +383,21 @@ export const adminApi = {
   resolveDispute: (id: string, data: { status: string; resolutionNotes: string; refundAmount?: number }) =>
     apiClient.patch<{ message: string; dispute: AdminDispute }>(`/admin/disputes/${id}/resolve`, data),
 
+  createDispute: (data: {
+    title: string;
+    description: string;
+    reason:
+      | 'SESSION_NO_SHOW'
+      | 'POOR_QUALITY'
+      | 'UNAUTHORIZED_CHARGE'
+      | 'MENTOR_UNRESPONSIVE'
+      | 'SCHEDULING_CONFLICT'
+      | 'OTHER';
+    bookingId?: string;
+    mentorshipId?: string;
+    targetUserId?: string;
+  }) => apiClient.post<AdminDispute>('/disputes', data),
+
   // 4. Content & Chat Moderation
   getModerationReports: (params?: { page?: number; limit?: number; status?: string; targetType?: string }) => {
     const query = new URLSearchParams();
@@ -354,6 +413,13 @@ export const adminApi = {
 
   takeModerationAction: (reportId: string, data: { action: 'DELETE_CONTENT' | 'SUSPEND_USER' | 'DISMISS' | 'WARN_USER'; notes?: string }) =>
     apiClient.post<{ message: string; status: string }>(`/admin/moderation/reports/${reportId}/action`, data),
+
+  createReport: (data: {
+    targetType: 'MESSAGE' | 'USER_PROFILE' | 'REVIEW';
+    targetId: string;
+    reason: string;
+    details?: string;
+  }) => apiClient.post<ModerationReport>('/moderation/reports', data),
 
   // 5. Platform Settings & Categories
   getSettings: () =>

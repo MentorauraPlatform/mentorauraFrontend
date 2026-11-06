@@ -13,9 +13,15 @@ export type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export interface OnboardingData {
   fullName: string;
   title: string;
+  headline: string;
   company: string;
   bio: string;
   experience: string;
+  yearsOfExperience: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  cvUrl: string;
+  idDocumentUrl: string;
   areasOfExpertise: string[];
   skills: Array<{ id: string; name: string; level: SkillLevel }>;
   availability: Availability;
@@ -24,9 +30,15 @@ export interface OnboardingData {
 export const initialData: OnboardingData = {
   fullName: '',
   title: '',
+  headline: '',
   company: '',
   bio: '',
   experience: '',
+  yearsOfExperience: '',
+  linkedinUrl: '',
+  githubUrl: '',
+  cvUrl: '',
+  idDocumentUrl: '',
   areasOfExpertise: [],
   skills: [],
   availability: {
@@ -104,9 +116,15 @@ export function useMentorOnboarding() {
           setData({
             fullName: existing.fullName || '',
             title: existing.title || '',
+            headline: existing.headline || '',
             company: existing.company || '',
             bio: existing.bio || '',
             experience: existing.experience || '',
+            yearsOfExperience: existing.yearsOfExperience != null ? String(existing.yearsOfExperience) : '',
+            linkedinUrl: existing.linkedinUrl || '',
+            githubUrl: existing.githubUrl || '',
+            cvUrl: existing.cvUrl || '',
+            idDocumentUrl: existing.idDocumentUrl || '',
             areasOfExpertise: existing.areasOfExpertise || [],
             skills: (existing.user?.userSkills || []).map((us: UserSkill) => ({
               id: us.skill.id,
@@ -121,7 +139,6 @@ export function useMentorOnboarding() {
         }
 
         setSkills(skillsRes.data);
-        console.log('Fetched skills count:', skillsRes.data?.length ?? 0);
       } catch (err) {
         console.error('Onboarding initialization error:', err);
       } finally {
@@ -133,11 +150,6 @@ export function useMentorOnboarding() {
 
   useEffect(() => {
     if (!profileLoaded || !user) return;
-
-    if (!user.mentorProfile) {
-      router.replace('/');
-      return;
-    }
 
     if (profile && (profile.onboardingStatus === 'COMPLETE' || profile.onboardingStatus === 'PENDING')) {
       router.replace('/mentor/dashboard');
@@ -170,13 +182,49 @@ export function useMentorOnboarding() {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     const result = validateStep(currentStep);
     if (!result.valid) {
       setError(result.message ?? null);
       return;
     }
     setError(null);
+
+    if (currentStep === 2) {
+      try {
+        setLoading(true);
+        if (!profile) {
+          const res = await mentorApi.createProfile({
+            fullName: data.fullName,
+            title: data.title,
+            headline: data.headline || undefined,
+            company: data.company || undefined,
+            bio: data.bio || undefined,
+            linkedinUrl: data.linkedinUrl || undefined,
+            githubUrl: data.githubUrl || undefined,
+          });
+          setProfile(res.data);
+        } else {
+          const res = await mentorApi.updateProfile({
+            fullName: data.fullName,
+            title: data.title,
+            headline: data.headline || undefined,
+            company: data.company || undefined,
+            bio: data.bio || undefined,
+            linkedinUrl: data.linkedinUrl || undefined,
+            githubUrl: data.githubUrl || undefined,
+          });
+          setProfile(res.data);
+        }
+      } catch (err: unknown) {
+        const apiError = err as { message?: string };
+        setError(apiError.message || 'Failed to save profile details.');
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+
     setCurrentStep((prev) => Math.min(prev + 1, 7) as Step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -192,21 +240,35 @@ export function useMentorOnboarding() {
       setLoading(true);
       setError(null);
       setSubmitFailed(false);
+      const parsedYears = data.yearsOfExperience ? Number(data.yearsOfExperience) : undefined;
       if (!profile) {
         await mentorApi.createProfile({
           fullName: data.fullName,
           title: data.title,
-          company: data.company,
-          bio: data.bio,
-          experience: data.experience,
+          headline: data.headline || undefined,
+          company: data.company || undefined,
+          bio: data.bio || undefined,
+          experience: data.experience || undefined,
+          yearsOfExperience: parsedYears,
+          linkedinUrl: data.linkedinUrl || undefined,
+          githubUrl: data.githubUrl || undefined,
+          cvUrl: data.cvUrl || undefined,
+          idDocumentUrl: data.idDocumentUrl || undefined,
           areasOfExpertise: data.areasOfExpertise,
         });
       } else {
         await mentorApi.updateProfile({
+          fullName: data.fullName,
           title: data.title,
-          company: data.company,
-          bio: data.bio,
-          experience: data.experience,
+          headline: data.headline || undefined,
+          company: data.company || undefined,
+          bio: data.bio || undefined,
+          experience: data.experience || undefined,
+          yearsOfExperience: parsedYears,
+          linkedinUrl: data.linkedinUrl || undefined,
+          githubUrl: data.githubUrl || undefined,
+          cvUrl: data.cvUrl || undefined,
+          idDocumentUrl: data.idDocumentUrl || undefined,
           areasOfExpertise: data.areasOfExpertise,
         });
       }

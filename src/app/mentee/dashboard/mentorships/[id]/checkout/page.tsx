@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useEffect, useState, useRef } from 'react';
+import { use, useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { mentorshipsApi } from '@/lib/api/mentorships';
 import { paymentsApi, PaymentProvider, PaymentStatusResponse } from '@/lib/api/payments';
 import type { Mentorship } from '@/lib/types';
@@ -11,7 +12,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Smartphone,
-  CreditCard,
   ArrowRight,
   Loader2,
   ChevronLeft,
@@ -23,13 +23,9 @@ import { toast } from 'sonner';
 
 type CheckoutStep = 'SELECT_METHOD' | 'PROCESSING_USSD' | 'SUCCESS' | 'FAILED';
 
-export default function CheckoutPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: mentorshipId } = use(params);
+function CheckoutContent({ mentorshipId }: { mentorshipId: string }) {
   const router = useRouter();
+  const t = useTranslations('menteeMentorships');
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
 
@@ -47,7 +43,7 @@ export default function CheckoutPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [ussdInstructions, setUssdInstructions] = useState('');
-  const [pollingStatus, setPollingStatus] = useState<PaymentStatusResponse | null>(null);
+  const [, setPollingStatus] = useState<PaymentStatusResponse | null>(null);
   const [failureReason, setFailureReason] = useState<string>('');
 
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -88,19 +84,19 @@ export default function CheckoutPage({
             startPolling(urlPaymentId);
           } else if (urlStatus === 'cancel') {
             setStep('SELECT_METHOD');
-            toast.error('Payment was cancelled. You can try again.');
+            toast.error(t('paymentCancelledToast'));
           }
         } else if (data.status === 'ACTIVE') {
           setStep('SUCCESS');
         }
       } catch (err: unknown) {
         const apiError = err as { message?: string };
-        setError(apiError.message || 'Failed to load mentorship information');
+        setError(apiError.message || t('loadMentorshipError'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [mentorshipId, user, authLoading, router, searchParams]);
+  }, [mentorshipId, user, authLoading, router, searchParams, t]);
 
   // 2. Poll for payment completion
   const startPolling = (pId: string) => {
@@ -120,15 +116,15 @@ export default function CheckoutPage({
         if (statusData.status === 'SUCCESS' || statusData.mentorshipStatus === 'ACTIVE') {
           stopPolling();
           setStep('SUCCESS');
-          toast.success('Payment confirmed! Mentorship is now active.');
+          toast.success(t('paymentSuccessHeading'));
         } else if (statusData.status === 'FAILED') {
           stopPolling();
           setStep('FAILED');
-          setFailureReason('Payment was declined or timed out. Please try again.');
+          setFailureReason(t('paymentFailedDefaultReason'));
         } else if (attempts >= maxAttempts) {
           stopPolling();
           setStep('FAILED');
-          setFailureReason('Transaction timed out awaiting PIN approval. Please try again.');
+          setFailureReason(t('paymentFailedDefaultReason'));
         }
       } catch (err: unknown) {
         console.error('Polling error:', err);
@@ -142,10 +138,9 @@ export default function CheckoutPage({
 
   // Validate phone number
   const validatePhone = (num: string) => {
-    // if (provider === ('CARD' as any)) return true;
     const clean = num.replace(/\D/g, '');
     if (clean.length < 8 || clean.length > 12) {
-      setPhoneError('Please enter a valid mobile money number (e.g., 6XXXXXXXX)');
+      setPhoneError(t('validPhoneError'));
       return false;
     }
     setPhoneError('');
@@ -183,7 +178,7 @@ export default function CheckoutPage({
 
       if (data.status === 'SUCCESS') {
         setStep('SUCCESS');
-        toast.success('Payment succeeded!');
+        toast.success(t('paymentSuccessHeading'));
         return;
       }
 
@@ -197,7 +192,7 @@ export default function CheckoutPage({
       startPolling(data.paymentId);
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
-      const msg = apiErr.message || 'Payment initiation failed. Please verify your details.';
+      const msg = apiErr.message || t('paymentFailedDefaultReason');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -209,8 +204,8 @@ export default function CheckoutPage({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
-          <p className="text-sm font-medium text-gray-600">Loading checkout session...</p>
+          <Loader2 className="w-8 h-8 text-orange-600 animate-spin shrink-0" />
+          <p className="text-sm font-medium text-gray-600">{t('loadingCheckout')}</p>
         </div>
       </div>
     );
@@ -220,14 +215,14 @@ export default function CheckoutPage({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] px-4">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Checkout Error</h2>
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 shrink-0" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('checkoutErrorTitle')}</h2>
           <p className="text-sm text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-            className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
+            className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition whitespace-nowrap flex-nowrap shrink-0"
           >
-            Back to Mentorship
+            {t('backToMentorship')}
           </button>
         </div>
       </div>
@@ -240,14 +235,15 @@ export default function CheckoutPage({
   const currency = plan?.currency || 'XAF';
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#FFFCF9] py-10 px-4 sm:px-6 lg:px-8 xl:px-12">
+      <div className="w-full">
         {/* Navigation Back */}
         <button
           onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition whitespace-nowrap flex-nowrap shrink-0"
         >
-          <ChevronLeft className="w-4 h-4" /> Back to Mentorship Details
+          <ChevronLeft className="w-4 h-4 shrink-0" />
+          <span>{t('backToDetails')}</span>
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -256,13 +252,13 @@ export default function CheckoutPage({
             {step === 'SELECT_METHOD' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
-                    <Lock className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                    <Lock className="w-5 h-5 shrink-0" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold text-gray-900">Activate Mentorship Plan</h1>
+                    <h1 className="text-xl font-bold text-gray-900">{t('activatePlanHeading')}</h1>
                     <p className="text-xs text-gray-500">
-                      Intro completed. Choose payment method to begin monthly mentorship.
+                      {t('activatePlanDesc')}
                     </p>
                   </div>
                 </div>
@@ -278,7 +274,7 @@ export default function CheckoutPage({
                   {/* Payment Method Selector */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-800 mb-3">
-                      Select Payment Provider
+                      {t('selectProviderLabel')}
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* MTN MoMo */}
@@ -288,21 +284,21 @@ export default function CheckoutPage({
                           setProvider('MTN_MOMO');
                           setPhoneError('');
                         }}
-                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all whitespace-nowrap flex-nowrap shrink-0 ${
                           provider === 'MTN_MOMO'
                             ? 'border-yellow-500 bg-yellow-50/50 ring-2 ring-yellow-400'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <Smartphone className="w-5 h-5 text-yellow-600" />
+                          <Smartphone className="w-5 h-5 text-yellow-600 shrink-0" />
                           {provider === 'MTN_MOMO' && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">MTN MoMo</p>
-                          <p className="text-xs text-gray-500">Mobile Money</p>
+                          <p className="text-sm font-bold text-gray-900">{t('mtnMomo')}</p>
+                          <p className="text-xs text-gray-500">{t('mobileMoneyOption')}</p>
                         </div>
                       </button>
 
@@ -313,46 +309,30 @@ export default function CheckoutPage({
                           setProvider('ORANGE_MONEY');
                           setPhoneError('');
                         }}
-                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all whitespace-nowrap flex-nowrap shrink-0 ${
                           provider === 'ORANGE_MONEY'
                             ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-400'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <Smartphone className="w-5 h-5 text-orange-600" />
+                          <Smartphone className="w-5 h-5 text-orange-600 shrink-0" />
                           {provider === 'ORANGE_MONEY' && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">Orange Money</p>
-                          <p className="text-xs text-gray-500">Mobile Money</p>
+                          <p className="text-sm font-bold text-gray-900">{t('orangeMoney')}</p>
+                          <p className="text-xs text-gray-500">{t('mobileMoneyOption')}</p>
                         </div>
                       </button>
-
-                      {/* Credit / Debit Card (Temporarily commented out)
-                      <button
-                        type="button"
-                        disabled
-                        className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 text-left opacity-50 cursor-not-allowed"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <CreditCard className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-700">Bank Card</p>
-                          <p className="text-xs text-gray-400">Visa / Mastercard (Coming soon)</p>
-                        </div>
-                      </button>
-                      */}
                     </div>
                   </div>
 
                   {/* Mobile Money Phone Input */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-800">
-                      {provider === 'MTN_MOMO' ? 'MTN' : 'Orange'} Phone Number
+                      {t('providerPhoneLabel', { provider: provider === 'MTN_MOMO' ? 'MTN' : 'Orange' })}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 text-sm font-medium">
@@ -377,7 +357,7 @@ export default function CheckoutPage({
                       <p className="text-xs text-red-600">{phoneError}</p>
                     ) : (
                       <p className="text-xs text-gray-500">
-                        Enter your registered mobile money account number to receive the prompt.
+                        {t('phoneRegisteredHint')}
                       </p>
                     )}
                   </div>
@@ -386,17 +366,17 @@ export default function CheckoutPage({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3.5 px-6 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3.5 px-6 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-nowrap shrink-0"
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Initiating Payment...
+                        <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                        <span>{t('processingPayment')}</span>
                       </>
                     ) : (
                       <>
-                        Pay {price.toLocaleString()} {currency}
-                        <ArrowRight className="w-4 h-4" />
+                        <span>{t('payNowBtn', { amount: price.toLocaleString(), currency })}</span>
+                        <ArrowRight className="w-4 h-4 shrink-0" />
                       </>
                     )}
                   </button>
@@ -410,34 +390,34 @@ export default function CheckoutPage({
                 <div className="relative mx-auto w-20 h-20">
                   <div className="absolute inset-0 rounded-full bg-orange-100 animate-ping opacity-75" />
                   <div className="relative w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-white shadow-md">
-                    <Smartphone className="w-10 h-10 animate-bounce" />
+                    <Smartphone className="w-10 h-10 animate-bounce shrink-0" />
                   </div>
                 </div>
 
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    Check Your Phone
+                    {t('checkPhoneTitle')}
                   </h2>
                   <p className="text-sm text-gray-600 max-w-sm mx-auto">
-                    A payment prompt has been sent to your phone. Please approve the prompt and enter your PIN.
+                    {t('checkPhoneDesc')}
                   </p>
                 </div>
 
                 {/* Instructions Box */}
                 <div className="bg-orange-50/70 border border-orange-200 rounded-xl p-4 text-xs text-orange-900 text-left max-w-md mx-auto space-y-2">
                   <p className="font-semibold flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-orange-600" />
-                    USSD Quick Instructions:
+                    <Sparkles className="w-4 h-4 text-orange-600 shrink-0" />
+                    <span>{t('ussdInstructionsLabel')}</span>
                   </p>
                   <p>{ussdInstructions}</p>
                   <p className="text-[11px] text-orange-700 pt-1 border-t border-orange-200">
-                    This screen updates automatically as soon as your payment is processed.
+                    {t('screenUpdatesNote')}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                  <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-                  Waiting for network confirmation...
+                  <Loader2 className="w-4 h-4 animate-spin text-orange-500 shrink-0" />
+                  <span>{t('waitingNetwork')}</span>
                 </div>
 
                 <div className="pt-2 flex justify-center gap-4">
@@ -446,9 +426,10 @@ export default function CheckoutPage({
                     onClick={() => {
                       if (paymentId) startPolling(paymentId);
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium py-1.5 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition"
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium py-1.5 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" /> Check Status Now
+                    <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                    <span>{t('checkStatusBtn')}</span>
                   </button>
                   <button
                     type="button"
@@ -456,9 +437,9 @@ export default function CheckoutPage({
                       stopPolling();
                       setStep('SELECT_METHOD');
                     }}
-                    className="text-xs text-red-600 hover:text-red-700 font-medium py-1.5 px-3"
+                    className="text-xs text-red-600 hover:text-red-700 font-medium py-1.5 px-3 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Cancel & Try Again
+                    {t('cancelTryAgainBtn')}
                   </button>
                 </div>
               </div>
@@ -468,36 +449,37 @@ export default function CheckoutPage({
             {step === 'SUCCESS' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center space-y-6">
                 <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto shadow-inner">
-                  <CheckCircle2 className="w-10 h-10" />
+                  <CheckCircle2 className="w-10 h-10 shrink-0" />
                 </div>
 
                 <div>
                   <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 mb-2">
-                    Mentorship Active
+                    {t('mentorshipActiveBadge')}
                   </span>
-                  <h2 className="text-2xl font-bold text-gray-900">Payment Successful!</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{t('paymentSuccessHeading')}</h2>
                   <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-                    Your mentorship with <strong className="text-gray-900">{mentor?.fullName || 'your mentor'}</strong> is now officially active. You can now schedule your sessions.
+                    {t('paymentSuccessMessage', { mentor: mentor?.fullName || t('mentorFallback') })}
                   </p>
                 </div>
 
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-gray-600 max-w-md mx-auto flex justify-between items-center">
-                  <span>Amount Paid:</span>
+                  <span>{t('amountPaidLabel')}</span>
                   <span className="font-bold text-gray-900">{price.toLocaleString()} {currency}</span>
                 </div>
 
                 <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                   <button
                     onClick={() => router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mentorshipId}`)}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3.5 px-6 rounded-xl font-bold shadow-lg shadow-orange-600/20 transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3.5 px-6 rounded-xl font-bold shadow-lg shadow-orange-600/20 transition flex items-center justify-center gap-2 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Book First Session <ArrowRight className="w-4 h-4" />
+                    <span>{t('bookFirstSessionBtn')}</span>
+                    <ArrowRight className="w-4 h-4 shrink-0" />
                   </button>
                   <button
                     onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3.5 px-6 rounded-xl font-semibold transition"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3.5 px-6 rounded-xl font-semibold transition whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Mentorship Overview
+                    {t('mentorshipOverviewBtn')}
                   </button>
                 </div>
               </div>
@@ -507,13 +489,13 @@ export default function CheckoutPage({
             {step === 'FAILED' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center space-y-6">
                 <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-                  <AlertCircle className="w-10 h-10" />
+                  <AlertCircle className="w-10 h-10 shrink-0" />
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Payment Unsuccessful</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('paymentFailedHeading')}</h2>
                   <p className="text-sm text-gray-600 mt-2 max-w-sm mx-auto">
-                    {failureReason || 'We could not complete your transaction. Please verify your balance and try again.'}
+                    {failureReason || t('paymentFailedDefaultReason')}
                   </p>
                 </div>
 
@@ -523,15 +505,15 @@ export default function CheckoutPage({
                       setStep('SELECT_METHOD');
                       setError(null);
                     }}
-                    className="bg-orange-600 text-white py-3 px-6 rounded-xl font-bold hover:bg-orange-700 transition"
+                    className="bg-orange-600 text-white py-3 px-6 rounded-xl font-bold hover:bg-orange-700 transition whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Try Again
+                    {t('tryAgainBtn')}
                   </button>
                   <button
                     onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-                    className="border border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-50 transition"
+                    className="border border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-50 transition whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Cancel
+                    {t('cancelBtn')}
                   </button>
                 </div>
               </div>
@@ -542,17 +524,17 @@ export default function CheckoutPage({
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
               <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                Order Summary
+                {t('orderSummary')}
               </h2>
 
               {/* Mentor Info */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-lg flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-lg shrink-0">
                   {mentor?.fullName?.charAt(0) || 'M'}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">{mentor?.fullName || 'Mentor'}</p>
-                  <p className="text-xs text-gray-500">{mentor?.title || 'Verified Mentor'}</p>
+                  <p className="text-sm font-bold text-gray-900">{mentor?.fullName || t('mentorFallback')}</p>
+                  <p className="text-xs text-gray-500">{mentor?.title || t('mentorFallback')}</p>
                 </div>
               </div>
 
@@ -560,8 +542,8 @@ export default function CheckoutPage({
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900">{plan?.title || 'Mentorship Plan'}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Monthly Mentorship Subscription</p>
+                    <h3 className="text-sm font-bold text-gray-900">{plan?.title || t('planFallback')}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">{t('monthlySubscriptionNote')}</p>
                   </div>
                   <span className="text-sm font-extrabold text-gray-900">
                     {price.toLocaleString()} {currency}
@@ -570,12 +552,12 @@ export default function CheckoutPage({
 
                 <div className="pt-3 border-t border-gray-200 space-y-1.5 text-xs text-gray-600">
                   <div className="flex justify-between">
-                    <span>Intro Call:</span>
-                    <span className="text-green-600 font-medium">Completed</span>
+                    <span>{t('introCallLabel')}</span>
+                    <span className="text-green-600 font-medium">{t('introCallCompleted')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Billing Cycle:</span>
-                    <span>Monthly</span>
+                    <span>{t('billingCycleLabel')}</span>
+                    <span>{t('billingMonthly')}</span>
                   </div>
                 </div>
               </div>
@@ -583,15 +565,15 @@ export default function CheckoutPage({
               {/* Total Calculation */}
               <div className="space-y-2 pt-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span>
+                  <span>{t('subtotalLabel')}</span>
                   <span>{price.toLocaleString()} {currency}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Processing Fee</span>
-                  <span className="text-green-600 font-medium">0 XAF</span>
+                  <span>{t('processingFeeLabel')}</span>
+                  <span className="text-green-600 font-medium">{t('freeFee')}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-baseline">
-                  <span className="text-base font-bold text-gray-900">Total to Pay</span>
+                  <span className="text-base font-bold text-gray-900">{t('totalToPay')}</span>
                   <span className="text-xl font-extrabold text-orange-600">
                     {price.toLocaleString()} {currency}
                   </span>
@@ -600,11 +582,11 @@ export default function CheckoutPage({
 
               {/* Security Trust Badges */}
               <div className="pt-4 border-t border-gray-100 flex items-start gap-3 text-xs text-gray-500">
-                <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <ShieldCheck className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-gray-700">Bank-Grade ZoPay Security</p>
+                  <p className="font-semibold text-gray-700">{t('zopaySecurityTitle')}</p>
                   <p className="mt-0.5">
-                    End-to-end encrypted transactions via ZoPay compliant gateway.
+                    {t('zopaySecurityDesc')}
                   </p>
                 </div>
               </div>
@@ -613,5 +595,24 @@ export default function CheckoutPage({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id: mentorshipId } = use(params);
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
+          <Loader2 className="w-8 h-8 text-orange-600 animate-spin shrink-0" />
+        </div>
+      }
+    >
+      <CheckoutContent mentorshipId={mentorshipId} />
+    </Suspense>
   );
 }

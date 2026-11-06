@@ -64,6 +64,16 @@ export function Step2Professional({ data, updateData }: Step2ProfessionalProps) 
           </div>
         </div>
         <div>
+          <label className={labelClass}>{t('professional.headline')}</label>
+          <input
+            type="text"
+            value={data.headline}
+            onChange={(e) => updateData({ headline: e.target.value })}
+            className={inputClass}
+            placeholder={t('professional.headlinePlaceholder')}
+          />
+        </div>
+        <div>
           <label className={labelClass}>{t('professional.company')}</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
@@ -75,6 +85,28 @@ export function Step2Professional({ data, updateData }: Step2ProfessionalProps) 
               onChange={(e) => updateData({ company: e.target.value })}
               className={`${inputClass} pl-14`}
               placeholder={t('professional.companyPlaceholder')}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className={labelClass}>{t('professional.linkedinUrl')}</label>
+            <input
+              type="url"
+              value={data.linkedinUrl}
+              onChange={(e) => updateData({ linkedinUrl: e.target.value })}
+              className={inputClass}
+              placeholder={t('professional.linkedinPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>{t('professional.githubUrl')}</label>
+            <input
+              type="url"
+              value={data.githubUrl}
+              onChange={(e) => updateData({ githubUrl: e.target.value })}
+              className={inputClass}
+              placeholder={t('professional.githubPlaceholder')}
             />
           </div>
         </div>

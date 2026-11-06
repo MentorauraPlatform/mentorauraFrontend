@@ -16,20 +16,22 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslations } from 'next-intl';
 
 export const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const t = useTranslations('adminLayout');
 
   const navItems = [
-    { label: 'Overview', href: '/admin', icon: LayoutDashboard },
-    { label: 'Mentor Applications', href: '/admin/applications', icon: ShieldCheck },
-    { label: 'User Management', href: '/admin/users', icon: Users },
-    { label: 'Financial Reporting', href: '/admin/finance', icon: DollarSign },
-    { label: 'Payout Management', href: '/admin/payouts', icon: Wallet },
-    { label: 'Dispute Resolution', href: '/admin/disputes', icon: AlertTriangle },
-    { label: 'Content Moderation', href: '/admin/moderation', icon: Flag },
-    { label: 'Platform Settings', href: '/admin/configuration', icon: Settings },
+    { id: 'overview', label: t('overview'), href: '/admin', icon: LayoutDashboard },
+    { id: 'mentor-applications', label: t('mentorApplications'), href: '/admin/applications', icon: ShieldCheck },
+    { id: 'user-management', label: t('userManagement'), href: '/admin/users', icon: Users },
+    { id: 'financial-reporting', label: t('financialReporting'), href: '/admin/finance', icon: DollarSign },
+    { id: 'payout-management', label: t('payoutManagement'), href: '/admin/payouts', icon: Wallet },
+    { id: 'dispute-resolution', label: t('disputeResolution'), href: '/admin/disputes', icon: AlertTriangle },
+    { id: 'content-moderation', label: t('contentModeration'), href: '/admin/moderation', icon: Flag },
+    { id: 'platform-settings', label: t('platformSettings'), href: '/admin/configuration', icon: Settings },
   ];
 
   return (
@@ -38,7 +40,7 @@ export const AdminSidebar: React.FC = () => {
         <div className="p-6 border-b border-slate-800 flex items-center gap-2 shrink-0">
           <BrandLogo size="sm" />
           <span className="text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-950/60 px-2 py-0.5 rounded border border-orange-800/60">
-            Admin
+            {t('adminBadge')}
           </span>
         </div>
 
@@ -53,7 +55,7 @@ export const AdminSidebar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                id={`admin-nav-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                id={`admin-nav-${item.id}`}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-[#F97316] text-white shadow-md shadow-orange-500/20'
@@ -75,7 +77,7 @@ export const AdminSidebar: React.FC = () => {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-rose-400 hover:bg-rose-950/30 transition-colors"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          <span>Exit Portal</span>
+          <span>{t('exitPortal')}</span>
         </button>
       </div>
     </aside>

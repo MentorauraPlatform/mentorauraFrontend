@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   data: OnboardingData;
@@ -11,6 +12,7 @@ interface Props {
 
 export function Step4Goals({ data, updateData, options }: Props) {
   const [customInput, setCustomInput] = useState('');
+  const t = useTranslations('menteeOnboarding.step4');
 
   const toggleGoal = (goal: string) => {
     if (data.goals.includes(goal)) {
@@ -46,10 +48,10 @@ export function Step4Goals({ data, updateData, options }: Props) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-extrabold text-[#172033] mb-2">
-          What do you want to achieve?
+          {t('heading')}
         </h2>
         <p className="text-[#64748B] text-base">
-          Select the goals you&apos;re hoping mentorship will help with.
+          {t('subheading')}
         </p>
       </div>
 
@@ -78,7 +80,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
             key={goal}
             type="button"
             onClick={() => removeCustomGoal(goal)}
-            aria-label={`Remove custom goal ${goal}`}
+            aria-label={t('removeGoalAria', { goal })}
             className="px-5 py-2.5 rounded-full text-sm font-bold border bg-[#F97316] text-white border-[#F97316] flex items-center gap-2"
           >
             {goal}
@@ -89,7 +91,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
 
       <div className="max-w-md">
         <label className="block text-sm font-bold text-[#172033] mb-2">
-          Don&apos;t see your goal? Add your own
+          {t('customLabel')}
         </label>
 
         <div className="flex gap-3">
@@ -99,7 +101,7 @@ export function Step4Goals({ data, updateData, options }: Props) {
             onChange={(e) => setCustomInput(e.target.value)}
             onKeyDown={handleKeyDown}
             maxLength={50}
-            placeholder="e.g. Launch a side project"
+            placeholder={t('customPlaceholder')}
             className="flex-1 px-4 py-3 bg-[#FFFCF9] border border-[#E5E7EB] rounded-xl text-sm text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
           />
 
@@ -109,14 +111,14 @@ export function Step4Goals({ data, updateData, options }: Props) {
             disabled={!customInput.trim()}
             className="px-5 py-3 bg-[#172033] text-white rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
-            Add
+            {t('addBtn')}
           </button>
         </div>
       </div>
 
       {data.goals.length === 0 && (
         <p className="text-sm text-[#94A3B8]">
-          Pick at least one goal to continue.
+          {t('pickAtLeastOne')}
         </p>
       )}
     </div>

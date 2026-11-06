@@ -3,18 +3,38 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
-import { mentorApi, apiClient } from '@/lib/api/client';
+import { mentorApi, apiClient, schedulingApi, mentorshipsApi, applicationsApi, adminApi } from '@/lib/api/client';
+import type { MentorPayoutBalance } from '@/lib/api/admin';
 import { toast } from 'sonner';
-import type { MentorProfile, Skill, SkillLevel } from '@/lib/types';
-import { schedulingApi } from '@/lib/api/client';
+import type { MentorProfile, Skill, SkillLevel, Mentorship, MentorshipApplication } from '@/lib/types';
 import { messagingApi } from '@/lib/api/messaging';
 import { ChatView } from '@/components/messaging/ChatView';
+import { DisputeModal } from '@/components/modals/DisputeModal';
+import { MentorSidebar, MentorTab } from '@/components/mentor/MentorSidebar';
+import { MentorHeader } from '@/components/mentor/MentorHeader';
+import { LoadingState } from '@/components/ui/LoadingState';
+import {
+  Clock,
+  Video,
+  Users,
+  Plus,
+  Trash2,
+  Sparkles,
+  DollarSign,
+  Star,
+  Save,
+  Globe,
+  Package,
+  ChevronRight,
+} from 'lucide-react';
 
 function MentorBookingsSection() {
-  const { user } = useAuth();
+  const t = useTranslations('mentorSubpages');
   const [bookings, setBookings] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
+  const [disputeBooking, setDisputeBooking] = useState<{ id: string; label: string } | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -23,29 +43,29 @@ function MentorBookingsSection() {
         const res = await schedulingApi.getMentorBookings();
         setBookings((res.data as unknown[]) ?? []);
       } catch {
-        toast.error('Failed to load bookings');
+        toast.error(t('cancelBookingFailedToast'));
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [t]);
 
   const handleCancel = async (id: string) => {
-    const reason = prompt('Cancellation reason (optional)') || undefined;
+    const reason = prompt(t('cancelReasonPrompt')) || undefined;
     try {
       await schedulingApi.cancelBooking(id, reason);
       setBookings((prev) => prev.filter((b: unknown) => (b as { id: string }).id !== id));
-      toast.success('Booking cancelled');
+      toast.success(t('bookingCancelledToast'));
     } catch {
-      toast.error('Failed to cancel booking');
+      toast.error(t('cancelBookingFailedToast'));
     }
   };
 
-  if (loading) return <div className="text-sm text-gray-600">Loading bookings...</div>;
+  if (loading) return <div className="text-sm text-gray-600">{t('bookingsLoading')}</div>;
 
   return (
     <div className="space-y-4">
-      {bookings.length === 0 && <p className="text-sm text-gray-600">No bookings yet.</p>}
+      {bookings.length === 0 && <p className="text-sm text-gray-600">{t('noBookingsYet')}</p>}
       {bookings.map((b: unknown) => {
         const booking = b as {
           id: string;
@@ -60,52 +80,55 @@ function MentorBookingsSection() {
         return (
           <div key={booking.id} className="p-5 bg-white rounded-2xl border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-gray-900">{booking.mentorship?.plan?.title || 'Session'}</p>
-              <p className="text-xs text-gray-500">Mentee: {booking.mentee?.email || 'Unknown'}</p>
+              <p className="text-sm font-bold text-gray-900">{booking.mentorship?.plan?.title || t('planFallback')}</p>
+              <p className="text-xs text-gray-500">{t('menteeLabel', { email: booking.mentee?.email || t('menteeFallback') })}</p>
               <p className="text-xs text-gray-500">{new Date(booking.scheduledAt).toLocaleString()} • {booking.durationMinutes} min</p>
-              {booking.cancellationReason && <p className="text-xs text-red-600 mt-1">Reason: {booking.cancellationReason}</p>}
+              {booking.cancellationReason && (
+                <p className="text-xs text-red-600 mt-1">{t('cancellationReason', { reason: booking.cancellationReason })}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-nowrap shrink-0 ${
                 booking.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : booking.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'
               }`}>{booking.status}</span>
               {booking.status === 'SCHEDULED' && booking.meetingLink && (
-                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-orange-600 text-xs font-bold hover:underline">Join</a>
+                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-orange-600 text-xs font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0">
+                  {t('joinBtn')}
+                </a>
               )}
               {booking.status === 'SCHEDULED' && (
-                <button onClick={() => handleCancel(booking.id)} className="text-red-600 text-xs font-bold hover:underline">Cancel</button>
+                <button onClick={() => handleCancel(booking.id)} className="text-red-600 text-xs font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0">
+                  {t('cancelBtn')}
+                </button>
               )}
+              <button
+                type="button"
+                onClick={() =>
+                  setDisputeBooking({
+                    id: booking.id,
+                    label: t('sessionWithLabel', {
+                      email: booking.mentee?.email || t('menteeFallback'),
+                      date: new Date(booking.scheduledAt).toLocaleDateString(),
+                    }),
+                  })
+                }
+                className="text-slate-500 hover:text-red-600 text-xs font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0"
+              >
+                {t('reportIssueBtn')}
+              </button>
             </div>
           </div>
         );
       })}
+      <DisputeModal
+        isOpen={Boolean(disputeBooking)}
+        onClose={() => setDisputeBooking(null)}
+        bookingId={disputeBooking?.id}
+        contextLabel={disputeBooking?.label}
+      />
     </div>
   );
 }
-import { MentorSidebar, MentorTab } from '@/components/mentor/MentorSidebar';
-import { MentorHeader } from '@/components/mentor/MentorHeader';
-import { LoadingState } from '@/components/ui/LoadingState';
-import {
-  Calendar,
-  Clock,
-  Video,
-  Users,
-  Award,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  DollarSign,
-  Star,
-  Save,
-  Globe,
-  Package,
-  SlidersHorizontal,
-  ChevronRight,
-  TrendingUp,
-  User,
-} from 'lucide-react';
 
 type AvailabilityDay =
   | 'MONDAY'
@@ -129,6 +152,8 @@ type Availability = {
 
 export default function MentorDashboardPage() {
   const router = useRouter();
+  const t = useTranslations('mentorDashboard');
+  const tSub = useTranslations('mentorSubpages');
   const { user, isLoading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<MentorTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -156,7 +181,7 @@ export default function MentorDashboardPage() {
 
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   // Profile Edit State
   const [editData, setEditData] = useState({
@@ -181,6 +206,13 @@ export default function MentorDashboardPage() {
   });
   const [savingAvailability, setSavingAvailability] = useState(false);
 
+  // Live Overview Data State
+  const [mentorMentorships, setMentorMentorships] = useState<Mentorship[]>([]);
+  const [mentorApplications, setMentorApplications] = useState<MentorshipApplication[]>([]);
+  const [mentorBookings, setMentorBookings] = useState<unknown[]>([]);
+  const [payoutBalance, setPayoutBalance] = useState<MentorPayoutBalance | null>(null);
+  const [requestingPayout, setRequestingPayout] = useState(false);
+
   const DAYS: AvailabilityDay[] = [
     'MONDAY',
     'TUESDAY',
@@ -195,13 +227,21 @@ export default function MentorDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const [profileRes, skillsRes] = await Promise.all([
+      const [profileRes, skillsRes, mentorshipsRes, appsRes, bookingsRes, balanceRes] = await Promise.all([
         mentorApi.getMyProfile(),
         apiClient.get<Skill[]>('/mentor/applications/skills').catch(() => ({ data: [] })),
+        mentorshipsApi.getMentorMentorships().catch(() => ({ data: [] as Mentorship[] })),
+        applicationsApi.getMentorApplications().catch(() => ({ data: [] as MentorshipApplication[] })),
+        schedulingApi.getMentorBookings().catch(() => ({ data: [] as unknown[] })),
+        adminApi.getMentorPayoutBalance().catch(() => ({ data: null as MentorPayoutBalance | null })),
       ]);
 
       setProfile(profileRes.data);
       setSkillsList(skillsRes.data || []);
+      setMentorMentorships(mentorshipsRes.data || []);
+      setMentorApplications(appsRes.data || []);
+      setMentorBookings((bookingsRes.data as unknown[]) || []);
+      setPayoutBalance(balanceRes.data || null);
 
       setEditData({
         title: profileRes.data.title || '',
@@ -226,11 +266,11 @@ export default function MentorDashboardPage() {
       });
     } catch (err) {
       console.error('Failed to load mentor profile', err);
-      setError('Failed to load mentor profile.');
+      setError(t('profileSaveError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -260,9 +300,9 @@ export default function MentorDashboardPage() {
     try {
       const updated = await mentorApi.updateProfile(editData);
       setProfile(updated.data);
-      toast.success('Mentor profile updated successfully!');
-    } catch (err) {
-      toast.error('Failed to update profile.');
+      toast.success(t('profileSavedSuccess'));
+    } catch {
+      toast.error(t('profileSaveError'));
     } finally {
       setSavingProfile(false);
     }
@@ -274,11 +314,11 @@ export default function MentorDashboardPage() {
     setSavingSkill(true);
     try {
       await mentorApi.addSkill({ skillId: selectedSkillId, level: selectedLevel });
-      toast.success('Skill added successfully!');
+      toast.success(t('taggedSkills'));
       setSelectedSkillId('');
       void fetchProfileAndSkills();
-    } catch (err) {
-      toast.error('Failed to add skill.');
+    } catch {
+      toast.error(t('skillAddError'));
     } finally {
       setSavingSkill(false);
     }
@@ -288,10 +328,10 @@ export default function MentorDashboardPage() {
   const handleRemoveSkill = async (skillId: string) => {
     try {
       await mentorApi.removeSkill(skillId);
-      toast.success('Skill removed.');
+      toast.success(t('taggedSkills'));
       void fetchProfileAndSkills();
-    } catch (err) {
-      toast.error('Failed to remove skill.');
+    } catch {
+      toast.error(t('skillRemoveError'));
     }
   };
 
@@ -315,26 +355,76 @@ export default function MentorDashboardPage() {
     try {
       const updated = await mentorApi.updateAvailability({ availability });
       setProfile(updated.data);
-      toast.success('Availability schedule saved!');
-    } catch (err) {
-      toast.error('Failed to save availability.');
+      toast.success(t('availabilitySavedSuccess'));
+    } catch {
+      toast.error(t('availabilitySaveError'));
     } finally {
       setSavingAvailability(false);
     }
   };
 
   if (authLoading || loading) {
-    return <LoadingState message="Loading Mentor Portal..." />;
+    return <LoadingState message={t('loadingWorkspace')} />;
   }
 
+  const activeMentorMentorships = mentorMentorships.filter((m) => m.status === 'ACTIVE');
+  const pendingAppsCount = mentorApplications.filter((a) => a.status === 'PENDING').length;
+  const typedBookings = mentorBookings as Array<{
+    id: string;
+    scheduledAt: string;
+    durationMinutes: number;
+    status: string;
+    meetingLink?: string;
+    mentee?: { email?: string; menteeProfile?: { fullName?: string } };
+    mentorship?: { plan?: { title?: string } };
+  }>;
+  const completedBookings = typedBookings.filter((b) => b.status === 'COMPLETED');
+  const totalHoursHeld = (
+    completedBookings.reduce((acc, b) => acc + (Number(b.durationMinutes) || 60), 0) / 60
+  ).toFixed(1);
+  const upcomingBookings = typedBookings
+    .filter((b) => b.status === 'SCHEDULED')
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  const nextUpcomingCall = upcomingBookings[0];
+
+  const handleRequestPayout = async () => {
+    const amountStr = prompt(
+      t('payoutPromptAmount', {
+        currency: payoutBalance?.currency || 'XAF',
+        available: payoutBalance?.availableBalance ?? 0,
+      }),
+    );
+    if (!amountStr) return;
+    const amount = Number(amountStr);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t('invalidPayoutAmount'));
+      return;
+    }
+    const provider = prompt(t('payoutPromptProvider'), 'MTN_MOMO');
+    if (!provider) return;
+    const accountNumber = prompt(t('payoutPromptAccount'));
+    if (!accountNumber) return;
+    try {
+      setRequestingPayout(true);
+      await apiClient.post('/payouts/request', { amount, provider, accountNumber });
+      toast.success(t('payoutSubmittedSuccess'));
+      void fetchProfileAndSkills();
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string };
+      toast.error(apiErr.message || t('payoutRequestError'));
+    } finally {
+      setRequestingPayout(false);
+    }
+  };
+
   const tabTitles: Record<MentorTab, string> = {
-    overview: 'Mentor Dashboard',
-    profile: 'Profile & Bio Settings',
-    skills: 'Skills & Technical Expertise',
-    availability: 'Weekly Availability Schedule',
-    plans: 'Mentorship Plans & Packages',
-    bookings: 'Calendar & Sessions',
-    messages: 'Direct Messaging',
+    overview: t('tabOverview'),
+    profile: t('tabProfile'),
+    skills: t('tabSkills'),
+    availability: t('tabAvailability'),
+    plans: t('tabPlans'),
+    bookings: t('tabBookings'),
+    messages: t('tabMessages'),
   };
 
   return (
@@ -360,7 +450,7 @@ export default function MentorDashboardPage() {
           activeTabTitle={tabTitles[activeTab]}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full space-y-8">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -369,63 +459,80 @@ export default function MentorDashboardPage() {
                 <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
                   <div>
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Monthly Earnings
+                      {t('availableBalance')}
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">$450</h2>
-                    <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      +15% vs last month
-                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">
+                      {payoutBalance
+                        ? `${payoutBalance.availableBalance.toLocaleString()} ${payoutBalance.currency}`
+                        : '0 XAF'}
+                    </h2>
+                    <button
+                      onClick={handleRequestPayout}
+                      disabled={requestingPayout || !payoutBalance || payoutBalance.availableBalance <= 0}
+                      className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md mt-1 inline-block disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0"
+                    >
+                      {requestingPayout ? t('requestingBtn') : t('requestPayoutBtn')}
+                    </button>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                    <DollarSign className="w-6 h-6" />
-                  </div>
-                </div>
-
-                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Active Mentees
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">4 Mentees</h2>
-                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      2 Pro Plans, 2 Standard
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                    <Users className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                    <DollarSign className="w-6 h-6 shrink-0" />
                   </div>
                 </div>
 
                 <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
                   <div>
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Completed Calls
+                      {t('activeMentees')}
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">18 Calls</h2>
-                    <span className="text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      22.5 total hours
-                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">
+                      {activeMentorMentorships.length} {t('menteeFallback')}
+                    </h2>
+                    <Link
+                      href="/mentor/mentees"
+                      className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block hover:underline whitespace-nowrap flex-nowrap shrink-0"
+                    >
+                      {pendingAppsCount > 0 ? `${pendingAppsCount} ${tSub('filterPending', { count: pendingAppsCount })}` : tSub('menteesSubtitle')}
+                    </Link>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                    <Video className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+                    <Users className="w-6 h-6 shrink-0" />
                   </div>
                 </div>
 
                 <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
                   <div>
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Average Rating
+                      {t('completedCalls')}
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-[#172033] mt-1">
+                      {completedBookings.length}
+                    </h2>
+                    <span className="text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md mt-1 inline-block whitespace-nowrap flex-nowrap shrink-0">
+                      {t('totalHours', { hours: totalHoursHeld })}
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+                    <Video className="w-6 h-6 shrink-0" />
+                  </div>
+                </div>
+
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      {t('averageRating')}
                     </span>
                     <div className="flex items-center gap-1 mt-1">
-                      <h2 className="text-2xl sm:text-3xl font-black text-[#172033]">5.0</h2>
-                      <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+                      <h2 className="text-2xl sm:text-3xl font-black text-[#172033]">
+                        {profile?.avgRating ? Number(profile.avgRating).toFixed(1) : '5.0'}
+                      </h2>
+                      <Star className="w-5 h-5 fill-amber-400 text-amber-500 shrink-0" />
                     </div>
-                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                      Based on 12 reviews
+                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md mt-1 inline-block whitespace-nowrap flex-nowrap shrink-0">
+                      {t('menteesServed', { count: profile?.totalMenteesServed ?? activeMentorMentorships.length })}
                     </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                    <Star className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+                    <Star className="w-6 h-6 shrink-0" />
                   </div>
                 </div>
               </div>
@@ -435,35 +542,53 @@ export default function MentorDashboardPage() {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full text-xs font-bold flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        Next Upcoming Call
+                      <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full text-xs font-bold flex items-center gap-1.5 whitespace-nowrap flex-nowrap shrink-0">
+                        <Clock className="w-3.5 h-3.5 animate-pulse shrink-0" />
+                        <span>{t('nextUpcomingCall')}</span>
                       </span>
-                      <span className="text-xs text-slate-400">Tomorrow, 3:00 PM GMT+1</span>
+                      <span className="text-xs text-slate-400">
+                        {nextUpcomingCall
+                          ? new Date(nextUpcomingCall.scheduledAt).toLocaleString()
+                          : t('noUpcomingCalls')}
+                      </span>
                     </div>
 
                     <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                      System Architecture & Code Review Session
+                      {nextUpcomingCall
+                        ? nextUpcomingCall.mentorship?.plan?.title || t('planFallback')
+                        : t('noUpcomingSession')}
                     </h2>
 
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm">
-                        AS
+                    {nextUpcomingCall && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm shrink-0">
+                          {(nextUpcomingCall.mentee?.menteeProfile?.fullName || nextUpcomingCall.mentee?.email || 'M')
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">
+                            {nextUpcomingCall.mentee?.menteeProfile?.fullName || nextUpcomingCall.mentee?.email || t('menteeFallback')}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {t('menteeFallback')} • {nextUpcomingCall.durationMinutes} min
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">Alex Smith</p>
-                        <p className="text-xs text-slate-400">Mentee • Pro Mentorship Plan</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                     <button
-                      onClick={() => toast.info('Video room opening...')}
-                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                      onClick={() =>
+                        nextUpcomingCall?.meetingLink
+                          ? window.open(nextUpcomingCall.meetingLink, '_blank')
+                          : setActiveTab('bookings')
+                      }
+                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-nowrap shrink-0"
                     >
-                      <Video className="w-4 h-4" />
-                      Start Meeting
+                      <Video className="w-4 h-4 shrink-0" />
+                      <span>{nextUpcomingCall?.meetingLink ? t('startMeeting') : t('viewCalendar')}</span>
                     </button>
                   </div>
                 </div>
@@ -475,88 +600,88 @@ export default function MentorDashboardPage() {
                 <div className="lg:col-span-2 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-[#172033]">Your Active Mentees</h3>
-                      <p className="text-xs text-slate-500">Mentees subscribed to your 1-on-1 mentorship plans</p>
+                      <h3 className="text-lg font-bold text-[#172033]">{t('yourActiveMentees')}</h3>
+                      <p className="text-xs text-slate-500">{t('activeMenteesSub')}</p>
                     </div>
+                    <Link href="/mentor/mentees" className="text-xs font-bold text-orange-600 hover:underline whitespace-nowrap flex-nowrap shrink-0">
+                      {t('viewAll', { count: mentorMentorships.length })}
+                    </Link>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                            AS
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-slate-900 text-sm">Alex Smith</h4>
-                            <p className="text-xs text-slate-500">Frontend Engineer</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
-                          Active
-                        </span>
-                      </div>
-                      <div className="p-2.5 bg-slate-50 rounded-xl text-xs flex justify-between text-slate-600">
-                        <span>Plan: Pro Mentorship</span>
-                        <span className="font-bold text-orange-600">2 calls left</span>
-                      </div>
+                  {activeMentorMentorships.length === 0 ? (
+                    <div className="p-6 bg-white rounded-2xl border border-slate-200/80 text-center text-xs text-slate-500">
+                      {t('noActiveMenteesPrompt')}{' '}
+                      <Link href="/mentor/mentees" className="text-orange-600 font-bold hover:underline">
+                        {t('applicationsQueueLink')}
+                      </Link>{' '}
+                      {t('toReviewRequests')}
                     </div>
-
-                    <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
-                            MK
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {activeMentorMentorships.slice(0, 4).map((m) => {
+                        const menteeLabel = m.mentee?.email || t('menteeFallback');
+                        const initials = menteeLabel.slice(0, 2).toUpperCase();
+                        return (
+                          <div key={m.id} className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                  {initials}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-900 text-sm truncate max-w-[160px]">{menteeLabel}</h4>
+                                  <p className="text-xs text-slate-500">{t('menteeFallback')}</p>
+                                </div>
+                              </div>
+                              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold whitespace-nowrap flex-nowrap shrink-0">
+                                {m.status}
+                              </span>
+                            </div>
+                            <div className="p-2.5 bg-slate-50 rounded-xl text-xs flex justify-between text-slate-600">
+                              <span>{t('planLabel')} {m.plan?.title || t('planFallback')}</span>
+                              <Link href="/mentor/mentees" className="font-bold text-orange-600 hover:underline whitespace-nowrap flex-nowrap shrink-0">
+                                {t('managePlans')}
+                              </Link>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-slate-900 text-sm">Marie Keller</h4>
-                            <p className="text-xs text-slate-500">Product Designer</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
-                          Active
-                        </span>
-                      </div>
-                      <div className="p-2.5 bg-slate-50 rounded-xl text-xs flex justify-between text-slate-600">
-                        <span>Plan: Standard Growth</span>
-                        <span className="font-bold text-orange-600">1 call left</span>
-                      </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Right column: Availability & Pricing Checklist */}
                 <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
                   <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-orange-500" />
-                    Profile Optimizations
+                    <Sparkles className="w-4 h-4 text-orange-500 shrink-0" />
+                    <span>{t('profileOptimizations')}</span>
                   </h3>
 
                   <div className="space-y-3 text-xs">
                     <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">Weekly Availability</span>
+                      <span className="font-semibold text-slate-800">{t('weeklyAvailability')}</span>
                       <button
                         onClick={() => setActiveTab('availability')}
-                        className="text-orange-600 font-bold hover:underline"
+                        className="text-orange-600 font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0"
                       >
-                        Set Slots
+                        {t('setSlots')}
                       </button>
                     </div>
 
                     <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">Mentorship Plans</span>
-                      <Link href="/mentor/plans" className="text-orange-600 font-bold hover:underline">
-                        Manage Plans
+                      <span className="font-semibold text-slate-800">{t('mentorshipPlans')}</span>
+                      <Link href="/mentor/plans" className="text-orange-600 font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0">
+                        {t('managePlans')}
                       </Link>
                     </div>
 
                     <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
-                      <span className="font-semibold text-slate-800">Tagged Skills</span>
+                      <span className="font-semibold text-slate-800">{t('taggedSkills')}</span>
                       <button
                         onClick={() => setActiveTab('skills')}
-                        className="text-orange-600 font-bold hover:underline"
+                        className="text-orange-600 font-bold hover:underline whitespace-nowrap flex-nowrap shrink-0"
                       >
-                        Add Skills
+                        {t('addSkills')}
                       </button>
                     </div>
                   </div>
@@ -569,13 +694,13 @@ export default function MentorDashboardPage() {
           {activeTab === 'profile' && (
             <form onSubmit={handleSaveProfile} className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-2xl space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-[#172033]">Public Mentor Profile</h2>
-                <p className="text-xs text-slate-500">This information will be visible to mentees on the directory.</p>
+                <h2 className="text-lg font-bold text-[#172033]">{t('publicMentorProfile')}</h2>
+                <p className="text-xs text-slate-500">{t('publicProfileDesc')}</p>
               </div>
 
               <div className="space-y-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Professional Title</label>
+                  <label className="block font-bold text-slate-700 mb-1">{t('professionalTitleLabel')}</label>
                   <input
                     type="text"
                     required
@@ -587,7 +712,7 @@ export default function MentorDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Company / Organization</label>
+                  <label className="block font-bold text-slate-700 mb-1">{t('companyLabel')}</label>
                   <input
                     type="text"
                     value={editData.company}
@@ -598,7 +723,7 @@ export default function MentorDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Biography</label>
+                  <label className="block font-bold text-slate-700 mb-1">{t('bioLabel')}</label>
                   <textarea
                     rows={4}
                     value={editData.bio}
@@ -609,7 +734,7 @@ export default function MentorDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Experience Summary</label>
+                  <label className="block font-bold text-slate-700 mb-1">{t('experienceSummary')}</label>
                   <input
                     type="text"
                     value={editData.experience}
@@ -623,10 +748,10 @@ export default function MentorDashboardPage() {
                   <button
                     type="submit"
                     disabled={savingProfile}
-className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    <Save className="w-4 h-4" />
-                    {savingProfile ? 'Saving...' : 'Save Profile Changes'}
+                    <Save className="w-4 h-4 shrink-0" />
+                    <span>{savingProfile ? t('savingProfile') : t('saveProfileChangesBtn')}</span>
                   </button>
                 </div>
               </div>
@@ -637,20 +762,20 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
           {activeTab === 'skills' && (
             <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-2xl space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-[#172033]">Skills & Expertise</h2>
-                <p className="text-xs text-slate-500">Manage technical skills displayed on your mentor card</p>
+                <h2 className="text-lg font-bold text-[#172033]">{t('skillsHeading')}</h2>
+                <p className="text-xs text-slate-500">{t('skillsSubheading')}</p>
               </div>
 
               {/* Add Skill Form */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
-                <h3 className="font-bold text-xs text-slate-800">Add New Skill</h3>
+                <h3 className="font-bold text-xs text-slate-800">{t('addNewSkill')}</h3>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     value={selectedSkillId}
                     onChange={(e) => setSelectedSkillId(e.target.value)}
                     className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
                   >
-                    <option value="">Select a skill...</option>
+                    <option value="">{t('selectSkillPlaceholder')}</option>
                     {skillsList.map((sk) => (
                       <option key={sk.id} value={sk.id}>
                         {sk.name}
@@ -663,38 +788,38 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
                     onChange={(e) => setSelectedLevel(e.target.value as SkillLevel)}
                     className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
                   >
-                    <option value="BEGINNER">Beginner</option>
-                    <option value="INTERMEDIATE">Intermediate</option>
-                    <option value="ADVANCED">Advanced</option>
-                    <option value="EXPERT">Expert</option>
+                    <option value="BEGINNER">{t('skillLevelBeginner')}</option>
+                    <option value="INTERMEDIATE">{t('skillLevelIntermediate')}</option>
+                    <option value="ADVANCED">{t('skillLevelAdvanced')}</option>
+                    <option value="EXPERT">{t('skillLevelExpert')}</option>
                   </select>
 
                   <button
                     onClick={handleAddSkill}
                     disabled={!selectedSkillId || savingSkill}
-                    className="px-4 py-2 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-xs transition-all disabled:opacity-50"
+                    className="px-4 py-2 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-xs transition-all disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Add
+                    {savingSkill ? t('addingSkill') : t('addSkill')}
                   </button>
                 </div>
               </div>
 
               {/* Active User Skills */}
               <div className="space-y-2">
-                <h3 className="font-bold text-xs text-slate-800">Tagged Skills</h3>
+                <h3 className="font-bold text-xs text-slate-800">{t('taggedSkills')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile?.user?.userSkills?.map((us) => (
                     <div
                       key={us.id}
-                      className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center gap-2"
+                      className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center gap-2 whitespace-nowrap flex-nowrap shrink-0"
                     >
                       <span>{us.skill.name}</span>
                       <span className="text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded font-bold">
                         {us.level}
                       </span>
                       <button
-                        onClick={() => handleRemoveSkill(us.skillId || us.id)}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
+                        onClick={() => handleRemoveSkill(us.skillId || us.skill?.id || us.id)}
+                        className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -709,14 +834,14 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
           {activeTab === 'availability' && (
             <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs max-w-3xl space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-[#172033]">Weekly Availability Schedule</h2>
-                <p className="text-xs text-slate-500">Configure your recurring 1-on-1 meeting timeslots</p>
+                <h2 className="text-lg font-bold text-[#172033]">{t('availabilityHeading')}</h2>
+                <p className="text-xs text-slate-500">{t('availabilitySubheading')}</p>
               </div>
 
               {/* Timezone Selector */}
               <div className="flex items-center gap-3">
-                <Globe className="w-4 h-4 text-slate-400" />
-                <label className="text-xs font-bold text-slate-700">Timezone:</label>
+                <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                <label className="text-xs font-bold text-slate-700">{t('timezoneLabel')}</label>
                 <select
                   value={availability.timezone}
                   onChange={(e) => setAvailability({ ...availability, timezone: e.target.value })}
@@ -740,14 +865,14 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
                         <span className="font-bold text-xs text-slate-900">{day}</span>
                         <button
                           onClick={() => handleAddSlot(day)}
-                          className="text-xs font-bold text-orange-600 hover:underline flex items-center gap-1"
+                          className="text-xs font-bold text-orange-600 hover:underline flex items-center gap-1 whitespace-nowrap flex-nowrap shrink-0"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Add Slot
+                          <Plus className="w-3.5 h-3.5 shrink-0" /> <span>{t('addSlot')}</span>
                         </button>
                       </div>
 
                       {daySlots.length === 0 ? (
-                        <p className="text-[11px] text-slate-400 italic">No available timeslots set</p>
+                        <p className="text-[11px] text-slate-400 italic">{t('noSlotsSet')}</p>
                       ) : (
                         <div className="space-y-2">
                           {daySlots.map((slot, index) => {
@@ -764,7 +889,7 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
                                   }}
                                   className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
                                 />
-                                <span className="text-xs text-slate-400">to</span>
+                                <span className="text-xs text-slate-400">{t('to')}</span>
                                 <input
                                   type="time"
                                   value={slot.endTime}
@@ -777,9 +902,9 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
                                 />
                                 <button
                                   onClick={() => handleRemoveSlot(globalIndex)}
-                                  className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                  className="text-slate-400 hover:text-red-500 transition-colors p-1 shrink-0"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
                                 </button>
                               </div>
                             );
@@ -795,10 +920,10 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
                 <button
                   onClick={handleSaveAvailability}
                   disabled={savingAvailability}
-                  className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0"
                 >
-                  <Save className="w-4 h-4" />
-                  {savingAvailability ? 'Saving Schedule...' : 'Save Availability Schedule'}
+                  <Save className="w-4 h-4 shrink-0" />
+                  <span>{savingAvailability ? t('savingSchedule') : t('saveSchedule')}</span>
                 </button>
               </div>
             </div>
@@ -807,24 +932,24 @@ className="px-6 py-2.5 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text
           {/* TAB 5: PLANS */}
           {activeTab === 'plans' && (
             <div className="p-8 bg-white rounded-3xl border border-slate-200/80 text-center space-y-4 max-w-xl mx-auto">
-              <Package className="w-12 h-12 text-orange-500 mx-auto" />
-              <h2 className="text-xl font-bold text-[#172033]">Mentorship Pricing Plans</h2>
+              <Package className="w-12 h-12 text-orange-500 mx-auto shrink-0" />
+              <h2 className="text-xl font-bold text-[#172033]">{t('plansHeading')}</h2>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Configure your monthly recurring packages, session allowances, and pricing structure for mentees.
+                {t('plansSubheading')}
               </p>
               <Link
                 href="/mentor/plans"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] hover:bg-[#FF6B00] text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] hover:bg-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md transition-all whitespace-nowrap flex-nowrap shrink-0"
               >
-                Go to Plans Manager
-                <ChevronRight className="w-4 h-4" />
+                <span>{t('goToPlansManager')}</span>
+                <ChevronRight className="w-4 h-4 shrink-0" />
               </Link>
             </div>
           )}
           {/* TAB 6: BOOKINGS */}
           {activeTab === 'bookings' && (
             <div className="space-y-6">
-              <h2 className="text-lg font-bold text-[#172033]">Calendar & Sessions</h2>
+              <h2 className="text-lg font-bold text-[#172033]">{t('calendarSessionsHeading')}</h2>
               <MentorBookingsSection />
             </div>
           )}

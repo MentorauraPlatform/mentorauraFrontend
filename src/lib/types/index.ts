@@ -78,11 +78,15 @@ export interface MentorProfileSummary {
 
 export interface UserSkillSummary {
   id: string;
+  userId?: string;
+  skillId?: string;
   level: SkillLevel;
   skill: {
     id: string;
     name: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MeResponse {
@@ -112,19 +116,6 @@ export interface Availability {
   slots: TimeSlot[];
 }
 
-export interface UserSkillSummary {
-  id: string;
-  userId: string;
-  skillId: string;
-  level: SkillLevel;
-  skill: {
-    id: string;
-    name: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface UserSkill {
   id: string;
   userId: string;
@@ -145,9 +136,15 @@ export interface MentorProfile {
   userId: string;
   fullName: string;
   title: string;
+  headline?: string;
   company?: string;
   bio?: string;
   experience?: string;
+  yearsOfExperience?: number;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  cvUrl?: string;
+  idDocumentUrl?: string;
   areasOfExpertise: string[];
   availability?: Availability;
   onboardingStatus: OnboardingStatus;
@@ -224,6 +221,14 @@ export interface Mentorship {
     priceAmount: number;
     currency: string;
   };
+  bookings?: Array<{
+    id: string;
+    scheduledAt: string;
+    durationMinutes: number;
+    status: string;
+    meetingLink?: string;
+    createdAt?: string;
+  }>;
 }
 
 // ── Mentorship Sessions ────────────────────────────────────────────────────────
@@ -314,6 +319,8 @@ export interface MentorshipApplication {
   planId: string;
   message?: string;
   status: MentorshipApplicationStatus;
+  mentorshipId?: string;
+  mentorshipStatus?: MentorshipStatus;
   createdAt: string;
   mentee?: {
     id: string;
@@ -331,6 +338,14 @@ export interface MentorshipApplication {
     priceAmount: number;
     currency: string;
   };
+  bookings?: Array<{
+    id: string;
+    scheduledAt: string;
+    durationMinutes: number;
+    status: string;
+    meetingLink?: string;
+    createdAt?: string;
+  }>;
 }
 
 // ── Plans ─────────────────────────────────────────────────────────────────────

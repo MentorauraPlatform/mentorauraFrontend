@@ -1,23 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { adminApi, AdminUserItem } from '@/lib/api/client';
 import {
-  Users,
   Search,
   UserPlus,
   Loader2,
   AlertCircle,
-  ShieldCheck,
   UserCheck,
   UserX,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
+  const t = useTranslations('admin.users');
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -27,7 +27,7 @@ export default function AdminUsersPage() {
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'SUPER_ADMIN'>('ADMIN');
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  const fetchUsers = () => {
+  const fetchUsers = useCallback(() => {
     setLoading(true);
     adminApi
       .getUsers({ role: roleFilter || undefined, q: search })
@@ -45,14 +45,14 @@ export default function AdminUsersPage() {
       })
       .catch((err) => {
         console.error('Failed to load users:', err);
-        toast.error('Failed to load user management list');
+        toast.error(t('loading'));
       })
       .finally(() => setLoading(false));
-  };
+  }, [roleFilter, search, t]);
 
   useEffect(() => {
     fetchUsers();
-  }, [roleFilter]);
+  }, [fetchUsers]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,19 +62,19 @@ export default function AdminUsersPage() {
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) {
-      toast.error('Please enter an admin email address');
+      toast.error(t('emailLabel'));
       return;
     }
 
     setActionLoading(true);
     try {
       await adminApi.inviteAdmin({ email: inviteEmail, role: inviteRole });
-      toast.success(`Admin user '${inviteEmail}' provisioned successfully!`);
+      toast.success(t('inviteSentSuccess'));
       setInviteModalOpen(false);
       setInviteEmail('');
       fetchUsers();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to provision admin';
+      const msg = err instanceof Error ? err.message : t('inviteSentSuccess');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -94,21 +94,21 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 w-full">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">User Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{t('title')}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage platform user accounts, roles, administrative team members, and account active states.
+            {t('subtitle')}
           </p>
         </div>
         <Button
           variant="primary"
           size="md"
-          className="gap-2 font-bold shadow-md shrink-0"
+          className="gap-2 font-bold shadow-md shrink-0 whitespace-nowrap flex-nowrap"
           onClick={() => setInviteModalOpen(true)}
         >
-          <UserPlus className="w-4 h-4" /> Provision Admin User
+          <UserPlus className="w-4 h-4 shrink-0" /> <span>{t('inviteAdminBtn')}</span>
         </Button>
       </div>
 
@@ -119,23 +119,23 @@ export default function AdminUsersPage() {
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize whitespace-nowrap flex-nowrap shrink-0 ${
                 roleFilter === r
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {r === '' ? 'All Roles' : r.toLowerCase().replace('_', ' ')}
+              {r === '' ? t('allRoles') : r.toLowerCase().replace('_', ' ')}
             </button>
           ))}
         </div>
 
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-sm w-full">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
             <input
               type="text"
-              placeholder="Search users by email..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full text-xs bg-white border border-slate-200 rounded-xl pl-10 pr-3 h-10 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs"
@@ -143,9 +143,9 @@ export default function AdminUsersPage() {
           </div>
           <button
             type="submit"
-            className="h-10 px-4 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow transition-all flex items-center justify-center shrink-0 active:scale-[0.98]"
+            className="h-10 px-4 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow transition-all flex items-center justify-center shrink-0 active:scale-[0.98] whitespace-nowrap flex-nowrap"
           >
-            Search
+            {t('userCol')}
           </button>
         </form>
       </div>
@@ -154,24 +154,24 @@ export default function AdminUsersPage() {
       <Card padding="lg" className="p-0 bg-white border border-slate-200 rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
-            <p className="text-xs font-semibold text-slate-500">Loading User Directory...</p>
+            <Loader2 className="w-8 h-8 text-orange-500 animate-spin shrink-0" />
+            <p className="text-xs font-semibold text-slate-500">{t('loading')}</p>
           </div>
         ) : users.length === 0 ? (
           <div className="p-12 text-center space-y-2">
-            <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-            <p className="text-sm font-bold text-slate-800">No Users Found</p>
+            <AlertCircle className="w-8 h-8 text-slate-400 mx-auto shrink-0" />
+            <p className="text-sm font-bold text-slate-800">{t('allRoles')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
                 <tr>
-                  <th className="p-4">User</th>
-                  <th className="p-4">Role</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Joined Date</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4">{t('userCol')}</th>
+                  <th className="p-4">{t('roleCol')}</th>
+                  <th className="p-4">{t('statusCol')}</th>
+                  <th className="p-4">{t('joinedCol')}</th>
+                  <th className="p-4 text-right">{t('actionsCol')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
                     <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-4 font-semibold text-slate-900">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs">
+                          <div className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs shrink-0">
                             {displayName[0].toUpperCase()}
                           </div>
                           <div>
@@ -202,23 +202,23 @@ export default function AdminUsersPage() {
                               : 'slate'
                           }
                           size="sm"
-                          className="capitalize font-bold"
+                          className="capitalize font-bold whitespace-nowrap flex-nowrap shrink-0"
                         >
                           {u.role.toLowerCase()}
                         </Badge>
                       </td>
                       <td className="p-4">
                         {u.isActive ? (
-                          <Badge variant="success" size="sm" className="gap-1 font-semibold">
-                            <UserCheck className="w-3 h-3 text-emerald-600" /> Active
+                          <Badge variant="success" size="sm" className="gap-1 font-semibold whitespace-nowrap flex-nowrap shrink-0">
+                            <UserCheck className="w-3 h-3 text-emerald-600 shrink-0" /> {t('active')}
                           </Badge>
                         ) : (
-                          <Badge variant="error" size="sm" className="gap-1 font-semibold">
-                            <UserX className="w-3 h-3 text-rose-600" /> Suspended
+                          <Badge variant="error" size="sm" className="gap-1 font-semibold whitespace-nowrap flex-nowrap shrink-0">
+                            <UserX className="w-3 h-3 text-rose-600 shrink-0" /> {t('suspended')}
                           </Badge>
                         )}
                       </td>
-                      <td className="p-4 text-slate-500">
+                      <td className="p-4 text-slate-500 whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
                       <td className="p-4 text-right">
@@ -226,11 +226,11 @@ export default function AdminUsersPage() {
                           variant={u.isActive ? 'ghost' : 'outline'}
                           size="sm"
                           onClick={() => handleToggleActive(u)}
-                          className={`text-xs font-semibold ${
+                          className={`text-xs font-semibold whitespace-nowrap flex-nowrap shrink-0 ${
                             u.isActive ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600'
                           }`}
                         >
-                          {u.isActive ? 'Suspend User' : 'Activate User'}
+                          {u.isActive ? t('suspendBtn') : t('reactivateBtn')}
                         </Button>
                       </td>
                     </tr>
@@ -249,14 +249,14 @@ export default function AdminUsersPage() {
             onSubmit={handleInviteSubmit}
             className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200"
           >
-            <h3 className="text-lg font-bold text-slate-900">Provision Admin Account</h3>
+            <h3 className="text-lg font-bold text-slate-900">{t('inviteModalTitle')}</h3>
             <p className="text-xs text-slate-500">
-              Directly provision an administrative team member. They will receive credentials and permissions based on selected role.
+              {t('subtitle')}
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Admin Email Address</label>
+                <label className="font-bold text-slate-700 block mb-1">{t('emailLabel')}</label>
                 <input
                   type="email"
                   required
@@ -268,14 +268,14 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Administrative Role</label>
+                <label className="font-bold text-slate-700 block mb-1">{t('roleLabel')}</label>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as 'ADMIN' | 'SUPER_ADMIN')}
                   className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                 >
-                  <option value="ADMIN">ADMIN (Mentor Vetting & User Management)</option>
-                  <option value="SUPER_ADMIN">SUPER_ADMIN (Full System Privileges)</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                 </select>
               </div>
             </div>
@@ -286,17 +286,18 @@ export default function AdminUsersPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setInviteModalOpen(false)}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 type="submit"
                 variant="primary"
                 size="sm"
                 isLoading={actionLoading}
-                className="font-bold"
+                className="font-bold whitespace-nowrap flex-nowrap shrink-0"
               >
-                Provision Admin
+                {actionLoading ? t('sending') : t('sendInvite')}
               </Button>
             </div>
           </form>

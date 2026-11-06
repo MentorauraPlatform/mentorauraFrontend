@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/Badge';
@@ -14,13 +15,14 @@ import {
   CategoryItem,
 } from '@/services/marketplace.service';
 
-export default function MentorsPage() {
+function MentorsDirectoryContent() {
   const t = useTranslations('marketplace');
+  const searchParams = useSearchParams();
 
   const [mentors, setMentors] = useState<MentorCardData[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => searchParams.get('category') || '');
+  const [searchTerm, setSearchTerm] = useState<string>(() => searchParams.get('q') || '');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
@@ -72,7 +74,7 @@ export default function MentorsPage() {
     <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-10 space-y-8">
         <div>
           <Badge variant="orange" size="md" className="mb-2">
             {t('directoryBadge')}
@@ -197,5 +199,19 @@ export default function MentorsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function MentorsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FFFCF9] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        </div>
+      }
+    >
+      <MentorsDirectoryContent />
+    </Suspense>
   );
 }

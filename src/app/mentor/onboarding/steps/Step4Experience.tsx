@@ -16,11 +16,12 @@ interface Step4ExperienceProps {
   rawAreas: string;
   onRawAreasChange: (value: string) => void;
   onExperienceChange: (value: string) => void;
+  onUpdateData?: (updates: Partial<OnboardingData>) => void;
   onBlur: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperienceChange, onBlur, onKeyDown }: Step4ExperienceProps) {
+export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperienceChange, onUpdateData, onBlur, onKeyDown }: Step4ExperienceProps) {
   const t = useTranslations('onboarding');
 
   return (
@@ -55,7 +56,7 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
             placeholder={t('experience.experiencePlaceholder')}
           />
           <div className="mt-3 flex justify-between text-sm text-[#64748B]">
-            <span>{data.experience.length} characters</span>
+            <span>{t('experience.charactersCount', { count: data.experience.length })}</span>
             <span>{t('experience.experienceHint')}</span>
           </div>
         </div>
@@ -84,6 +85,42 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
             </div>
           )}
         </div>
+        {onUpdateData && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <label className={labelClass}>{t('experience.yearsOfExperience')}</label>
+              <input
+                type="number"
+                min={0}
+                max={60}
+                value={data.yearsOfExperience}
+                onChange={(e) => onUpdateData({ yearsOfExperience: e.target.value })}
+                className={inputClass}
+                placeholder={t('experience.yearsPlaceholder')}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t('experience.cvUrl')}</label>
+              <input
+                type="url"
+                value={data.cvUrl}
+                onChange={(e) => onUpdateData({ cvUrl: e.target.value })}
+                className={inputClass}
+                placeholder={t('experience.cvPlaceholder')}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t('experience.idDocUrl')}</label>
+              <input
+                type="url"
+                value={data.idDocumentUrl}
+                onChange={(e) => onUpdateData({ idDocumentUrl: e.target.value })}
+                className={inputClass}
+                placeholder={t('experience.idDocPlaceholder')}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

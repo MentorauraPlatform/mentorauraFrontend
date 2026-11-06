@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -71,7 +72,7 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className="sticky top-0 z-50 glass-nav bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-16 sm:h-20 flex items-center justify-between">
           
           {/* Brand Logo Component */}
           <BrandLogo onClick={closeMenu} />
@@ -128,6 +129,7 @@ export const Navbar: React.FC = () => {
           {/* Desktop User Profile / Auth CTA Actions & Language Switcher */}
           <div className="hidden lg:flex items-center gap-3">
             <LanguageSwitcher />
+            <NotificationBell />
             {isAuthenticated ? (
               <div className="relative">
                 <button

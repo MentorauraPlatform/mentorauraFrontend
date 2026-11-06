@@ -2,9 +2,12 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { mentorshipsApi, sessionsApi } from '@/lib/api/client';
 import type { Mentorship, MentorshipSession } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { DisputeModal } from '@/components/modals/DisputeModal';
+import { Calendar, PhoneCall, Video, CheckCircle2 } from 'lucide-react';
 
 export default function MentorshipDetailPage({
   params,
@@ -13,11 +16,13 @@ export default function MentorshipDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations('menteeMentorships');
   const { user, isLoading: authLoading } = useAuth();
   const [mentorship, setMentorship] = useState<Mentorship | null>(null);
   const [sessions, setSessions] = useState<MentorshipSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -42,17 +47,17 @@ export default function MentorshipDetailPage({
         setSessions(sessionsList);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
-        setError(apiError.message || 'Failed to load mentorship');
+        setError(apiError.message || t('failedToLoad'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [user, authLoading, router, id]);
+  }, [user, authLoading, router, id, t]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-lg text-gray-600">Loading...</div>
+        <div className="text-lg text-gray-600">{t('loadingMentorships')}</div>
       </div>
     );
   }
@@ -60,22 +65,22 @@ export default function MentorshipDetailPage({
   if (error || !mentorship) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-red-600">{error || 'Mentorship not found'}</div>
+        <div className="text-red-600">{error || t('failedToLoad')}</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {mentorship.plan?.title || 'Mentorship'}
+                {mentorship.plan?.title || t('planFallback')}
               </h1>
               <span
-                className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-nowrap shrink-0 ${
                   String(mentorship.status) === 'INTRO'
                     ? 'bg-blue-100 text-blue-800'
                     : String(mentorship.status) === 'ACTIVE'
@@ -92,54 +97,83 @@ export default function MentorshipDetailPage({
             </div>
 
             {String(mentorship.status) === 'INTRO' && (
-              <button
-                onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-orange-600/20 transition-all text-sm"
-              >
-                Activate Plan & Pay
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {sessions.length === 0 && (
+                  <button
+                    onClick={() => router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mentorship.id}`)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-600/20 transition-all text-sm whitespace-nowrap flex-nowrap shrink-0 flex items-center gap-1.5"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {t('bookFreeIntroCall')}
+                  </button>
+                )}
+                <button
+                  onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-orange-600/20 transition-all text-sm whitespace-nowrap flex-nowrap shrink-0"
+                >
+                  {t('activatePlan')}
+                </button>
+              </div>
             )}
 
             {String(mentorship.status) === 'ACTIVE' && (
               <button
                 onClick={() => router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mentorship.id}`)}
-                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-green-600/20 transition-all text-sm"
+                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-green-600/20 transition-all text-sm whitespace-nowrap flex-nowrap shrink-0"
               >
-                Book a Session
+                {t('bookSession')}
               </button>
             )}
           </div>
 
           {String(mentorship.status) === 'INTRO' && (
-            <div className="mb-8 p-5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h4 className="text-sm font-bold text-gray-900">
-                  Ready to activate full monthly mentorship?
-                </h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  Intro call completed. Activate your plan with MTN MoMo, Orange Money, or Card to start booking sessions.
-                </p>
+            <div className="mb-8 p-6 bg-gradient-to-r from-emerald-50 via-amber-50/40 to-orange-50 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <PhoneCall className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-gray-900">
+                    {sessions.length === 0 ? t('freeIntroCallAvailable') : t('readyToActivateTitle')}
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-1 max-w-xl">
+                    {sessions.length === 0
+                      ? t('freeIntroCallDesc')
+                      : t('readyToActivateDesc')}
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap"
-              >
-                Proceed to Payment
-              </button>
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+                {sessions.length === 0 && (
+                  <button
+                    onClick={() => router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mentorship.id}`)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {t('bookFreeIntroCall')}
+                  </button>
+                )}
+                <button
+                  onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorship.id}/checkout`)}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex-nowrap shrink-0 shadow-sm"
+                >
+                  {t('proceedToPaymentBtn')}
+                </button>
+              </div>
             </div>
           )}
 
           <div className="space-y-6">
             <div>
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                Mentor
+                {t('mentorHeading')}
               </h3>
-              <p className="mt-1 text-gray-900">{mentorship.mentor?.fullName || 'Unknown'}</p>
+              <p className="mt-1 text-gray-900">{mentorship.mentor?.fullName || t('mentorFallback')}</p>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                Plan Details
+                {t('planDetailsHeading')}
               </h3>
               <p className="mt-1 text-gray-900">{mentorship.plan?.title || '—'}</p>
               <p className="text-sm text-gray-600">
@@ -150,7 +184,7 @@ export default function MentorshipDetailPage({
             {mentorship.startedAt && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Started At
+                  {t('startedAtHeading')}
                 </h3>
                 <p className="mt-1 text-gray-900">
                   {new Date(mentorship.startedAt).toLocaleString()}
@@ -161,7 +195,7 @@ export default function MentorshipDetailPage({
             {mentorship.endedAt && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Ended At
+                  {t('endedAtHeading')}
                 </h3>
                 <p className="mt-1 text-gray-900">
                   {new Date(mentorship.endedAt).toLocaleString()}
@@ -171,10 +205,10 @@ export default function MentorshipDetailPage({
 
             <div className="pt-6 border-t border-gray-200">
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-                Session History
+                {t('sessionHistoryHeading')}
               </h3>
               {sessions.length === 0 ? (
-                <p className="text-sm text-gray-500">No sessions scheduled yet.</p>
+                <p className="text-sm text-gray-500">{t('noSessionsScheduled')}</p>
               ) : (
                 <div className="space-y-3">
                   {sessions.map((session) => (
@@ -187,7 +221,10 @@ export default function MentorshipDetailPage({
                           {new Date(session.scheduledAt).toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {session.durationMinutes} min • {session.status}
+                          {t('sessionDurationAndStatus', {
+                            min: session.durationMinutes,
+                            status: session.status,
+                          })}
                         </p>
                       </div>
                       {session.meetingLink && (
@@ -195,9 +232,9 @@ export default function MentorshipDetailPage({
                           href={session.meetingLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                          className="text-orange-600 hover:text-orange-700 text-sm font-medium whitespace-nowrap flex-nowrap shrink-0"
                         >
-                          Join
+                          {t('joinSession')}
                         </a>
                       )}
                     </div>
@@ -206,17 +243,31 @@ export default function MentorshipDetailPage({
               )}
             </div>
 
-            <div className="pt-6 border-t border-gray-200">
+            <div className="pt-6 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
               <button
-                onClick={() => router.push('/messages')}
-                className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 font-medium transition-colors"
+                onClick={() => router.push('/mentee/dashboard/messages')}
+                className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 font-medium transition-colors whitespace-nowrap flex-nowrap shrink-0"
               >
-                Go to Messages
+                {t('goToMessagesBtn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisputeModalOpen(true)}
+                className="border border-red-200 text-red-600 hover:bg-red-50 px-5 py-3 rounded-xl font-medium text-sm transition-colors whitespace-nowrap flex-nowrap shrink-0"
+              >
+                {t('raiseDisputeBtn')}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      <DisputeModal
+        isOpen={disputeModalOpen}
+        onClose={() => setDisputeModalOpen(false)}
+        mentorshipId={mentorship.id}
+        contextLabel={`${t('planFallback')}: ${mentorship.plan?.title || t('planFallback')}`}
+      />
     </div>
   );
 }

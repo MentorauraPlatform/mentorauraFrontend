@@ -2,6 +2,7 @@
 
 import type { OnboardingData } from '../hooks/useMenteeOnboarding';
 import type { Availability, TimeSlot } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   data: OnboardingData;
@@ -23,6 +24,13 @@ const TIMEZONES = [
 
 export function Step6Availability({ data, onUpdateAvailability }: Props) {
   const availability = data.availability;
+  const t = useTranslations('menteeOnboarding.step6');
+  const tCommon = useTranslations('common');
+
+  const getDayLabel = (day: string) => {
+    const cap = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+    return tCommon(cap);
+  };
 
   const updateSlot = (index: number, updates: Partial<TimeSlot>) => {
     const slots = availability.slots.map((slot, i) => (i === index ? { ...slot, ...updates } : slot));
@@ -46,13 +54,13 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">When are you available?</h2>
-        <p className="text-[#64748B] text-base">Set your timezone and the times you&apos;re generally free for mentorship sessions.</p>
+        <h2 className="text-2xl font-extrabold text-[#172033] mb-2">{t('heading')}</h2>
+        <p className="text-[#64748B] text-base">{t('subheading')}</p>
       </div>
 
       <div className="max-w-2xl space-y-6">
         <div>
-          <label className="block text-sm font-bold text-[#172033] mb-2">Timezone</label>
+          <label className="block text-sm font-bold text-[#172033] mb-2">{t('timezoneLabel')}</label>
           <select
             value={availability.timezone}
             onChange={(e) => onUpdateAvailability({ ...availability, timezone: e.target.value })}
@@ -65,7 +73,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-[#172033] mb-3">Available Time Slots</label>
+          <label className="block text-sm font-bold text-[#172033] mb-3">{t('availableSlotsLabel')}</label>
           <div className="space-y-3">
             {availability.slots.map((slot, index) => (
               <div key={index} className="flex flex-wrap items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl">
@@ -75,7 +83,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
                   className="px-3 py-2 bg-[#FFFCF9] border border-[#E5E7EB] rounded-lg text-sm text-[#172033]"
                 >
                   {DAYS.map((day) => (
-                    <option key={day} value={day}>{day.charAt(0) + day.slice(1).toLowerCase()}</option>
+                    <option key={day} value={day}>{getDayLabel(day)}</option>
                   ))}
                 </select>
                 <input
@@ -84,7 +92,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
                   onChange={(e) => updateSlot(index, { startTime: e.target.value })}
                   className="px-3 py-2 bg-[#FFFCF9] border border-[#E5E7EB] rounded-lg text-sm text-[#172033]"
                 />
-                <span className="text-[#94A3B8] text-sm">to</span>
+                <span className="text-[#94A3B8] text-sm">{t('to')}</span>
                 <input
                   type="time"
                   value={slot.endTime}
@@ -95,7 +103,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
                   type="button"
                   onClick={() => removeSlot(index)}
                   className="ml-auto text-[#94A3B8] hover:text-red-500 text-sm font-bold px-2"
-                  aria-label="Remove slot"
+                  aria-label={t('removeSlotAria')}
                 >
                   x
                 </button>
@@ -107,7 +115,7 @@ export function Step6Availability({ data, onUpdateAvailability }: Props) {
             onClick={addSlot}
             className="mt-3 text-sm font-bold text-[#F97316] hover:text-[#ea580c]"
           >
-            + Add another slot
+            {t('addAnotherSlot')}
           </button>
         </div>
       </div>

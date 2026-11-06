@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { schedulingApi } from '@/lib/api/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ const TIMEZONES = [
 
 export default function MentorAvailabilityPage() {
   const router = useRouter();
+  const t = useTranslations('mentorSubpages');
   const { user, isLoading: authLoading } = useAuth();
   const [availability, setAvailability] = useState<Record<string, Array<{ start: string; end: string }>>>({});
   const [timezone, setTimezone] = useState('UTC');
@@ -32,7 +34,11 @@ export default function MentorAvailabilityPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'mentor') {
+    const isMentor = Boolean(
+      (user as unknown as { isMentor?: boolean })?.isMentor ||
+      String(user?.role ?? '').trim().toLowerCase() === 'mentor'
+    );
+    if (!user || !isMentor) {
       router.replace('/');
       return;
     }
@@ -43,19 +49,41 @@ export default function MentorAvailabilityPage() {
         const availRes = await schedulingApi.getAvailability();
         const blackoutsRes = await schedulingApi.listBlackouts();
         const avail = (availRes.data as Record<string, unknown>) || {};
-        setAvailability(
-          Object.fromEntries(
-            DAYS.map((day) => [day, Array.isArray((avail as Record<string, unknown>)[day]) ? (avail as Record<string, unknown>)[day] as Array<{ start: string; end: string }> : []]),
-          ) as Record<string, Array<{ start: string; end: string }>>,
+        if (typeof avail.timezone === 'string' && avail.timezone) {
+          setTimezone(avail.timezone);
+        }
+        const parsedDays: Record<string, Array<{ start: string; end: string }>> = Object.fromEntries(
+          DAYS.map((day) => [day, [] as Array<{ start: string; end: string }>]),
         );
+        if (Array.isArray(avail.slots)) {
+          for (const slot of avail.slots as Array<{ day?: string; startTime?: string; endTime?: string; start?: string; end?: string }>) {
+            const dayKey = String(slot.day ?? '').toLowerCase();
+            if (parsedDays[dayKey]) {
+              parsedDays[dayKey].push({
+                start: slot.startTime || slot.start || '09:00',
+                end: slot.endTime || slot.end || '12:00',
+              });
+            }
+          }
+        } else {
+          for (const day of DAYS) {
+            if (Array.isArray(avail[day])) {
+              parsedDays[day] = (avail[day] as Array<{ start?: string; end?: string; startTime?: string; endTime?: string }>).map((s) => ({
+                start: s.start || s.startTime || '09:00',
+                end: s.end || s.endTime || '12:00',
+              }));
+            }
+          }
+        }
+        setAvailability(parsedDays);
         setBlackouts((blackoutsRes.data as Array<{ id: string; date: string; reason?: string }>).map((b) => ({ id: b.id, date: b.date, reason: b.reason })));
       } catch {
-        toast.error('Failed to load availability');
+        toast.error(t('availabilitySaveErrorToast'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, t]);
 
   const updateDaySlots = (day: string, slots: Array<{ start: string; end: string }>) => {
     setAvailability((prev) => ({ ...prev, [day]: slots }));
@@ -78,26 +106,33 @@ export default function MentorAvailabilityPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const payload: Record<string, unknown> = { ...availability, timezone };
+      const slots = DAYS.flatMap((day) =>
+        (availability[day] ?? []).map((slot) => ({
+          day: day.toUpperCase(),
+          startTime: slot.start,
+          endTime: slot.end,
+        })),
+      );
+      const payload: Record<string, unknown> = { ...availability, timezone, slots };
       await schedulingApi.updateAvailability(payload);
-      toast.success('Availability saved');
+      toast.success(t('availabilitySavedToast'));
     } catch {
-      toast.error('Failed to save availability');
+      toast.error(t('availabilitySaveErrorToast'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleAddBlackout = async () => {
-    const date = prompt('Blackout date (YYYY-MM-DD)');
+    const date = prompt(t('blackoutDatePrompt'));
     if (!date) return;
-    const reason = prompt('Reason (optional)') || undefined;
+    const reason = prompt(t('blackoutReasonPrompt')) || undefined;
     try {
       const res = await schedulingApi.createBlackout({ date, reason });
       setBlackouts((prev) => [...prev, { id: res.data.id, date: res.data.date, reason: res.data.reason }]);
-      toast.success('Blackout date added');
+      toast.success(t('blackoutAddedToast'));
     } catch {
-      toast.error('Failed to add blackout date');
+      toast.error(t('blackoutAddErrorToast'));
     }
   };
 
@@ -105,36 +140,36 @@ export default function MentorAvailabilityPage() {
     try {
       await schedulingApi.deleteBlackout(id);
       setBlackouts((prev) => prev.filter((b) => b.id !== id));
-      toast.success('Blackout date removed');
+      toast.success(t('blackoutRemovedToast'));
     } catch {
-      toast.error('Failed to remove blackout date');
+      toast.error(t('blackoutRemoveErrorToast'));
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-sm text-gray-600">Loading availability...</div>
+        <div className="text-sm text-gray-600">{t('loadingAvailability')}</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="max-w-5xl mx-auto px-4 space-y-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Availability & Schedule</h1>
-            <p className="text-sm text-gray-600">Manage your weekly recurring hours and blackout dates.</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('availabilityTitle')}</h1>
+            <p className="text-sm text-gray-600">{t('availabilitySubtitle')}</p>
           </div>
-          <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save Changes'}
+          <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0">
+            {saving ? t('savingBtn') : t('saveChangesBtn')}
           </button>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <label className="text-xs font-bold text-gray-700">Timezone</label>
+            <label className="text-xs font-bold text-gray-700">{t('timezoneLabel')}</label>
             <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="h-10 px-3 border border-gray-200 rounded-xl text-xs bg-white">
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>{tz.replace('_', ' ')}</option>
@@ -147,18 +182,22 @@ export default function MentorAvailabilityPage() {
               <div key={day} className="border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-gray-900 capitalize">{day}</h3>
-                  <button onClick={() => addSlot(day)} className="text-xs font-bold text-orange-600 hover:text-orange-700">+ Add slot</button>
+                  <button onClick={() => addSlot(day)} className="text-xs font-bold text-orange-600 hover:text-orange-700 whitespace-nowrap flex-nowrap shrink-0">
+                    {t('addSlotBtn')}
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {(availability[day] ?? []).map((slot, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <input type="time" value={slot.start} onChange={(e) => updateSlot(day, idx, 'start', e.target.value)} className="h-9 px-2 border border-gray-200 rounded-lg text-xs" />
-                      <span className="text-xs text-gray-400">to</span>
+                      <span className="text-xs text-gray-400">{t('to')}</span>
                       <input type="time" value={slot.end} onChange={(e) => updateSlot(day, idx, 'end', e.target.value)} className="h-9 px-2 border border-gray-200 rounded-lg text-xs" />
-                      <button onClick={() => removeSlot(day, idx)} className="text-xs text-red-600 font-medium">Remove</button>
+                      <button onClick={() => removeSlot(day, idx)} className="text-xs text-red-600 font-medium whitespace-nowrap flex-nowrap shrink-0">
+                        {t('removeBtn')}
+                      </button>
                     </div>
                   ))}
-                  {(availability[day] ?? []).length === 0 && <p className="text-[11px] text-gray-400">No availability set</p>}
+                  {(availability[day] ?? []).length === 0 && <p className="text-[11px] text-gray-400">{t('noAvailabilitySet')}</p>}
                 </div>
               </div>
             ))}
@@ -167,8 +206,10 @@ export default function MentorAvailabilityPage() {
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Blackout Dates</h3>
-            <button onClick={handleAddBlackout} className="text-xs font-bold text-orange-600 hover:text-orange-700">+ Add blackout</button>
+            <h3 className="text-sm font-bold text-gray-900">{t('blackoutDatesTitle')}</h3>
+            <button onClick={handleAddBlackout} className="text-xs font-bold text-orange-600 hover:text-orange-700 whitespace-nowrap flex-nowrap shrink-0">
+              {t('addBlackoutBtn')}
+            </button>
           </div>
           <div className="space-y-2">
             {blackouts.map((b) => (
@@ -177,10 +218,12 @@ export default function MentorAvailabilityPage() {
                   <p className="text-sm font-medium text-gray-900">{b.date}</p>
                   {b.reason && <p className="text-xs text-gray-500">{b.reason}</p>}
                 </div>
-                <button onClick={() => handleDeleteBlackout(b.id)} className="text-xs text-red-600 font-medium">Remove</button>
+                <button onClick={() => handleDeleteBlackout(b.id)} className="text-xs text-red-600 font-medium whitespace-nowrap flex-nowrap shrink-0">
+                  {t('removeBtn')}
+                </button>
               </div>
             ))}
-            {blackouts.length === 0 && <p className="text-xs text-gray-500">No blackout dates.</p>}
+            {blackouts.length === 0 && <p className="text-xs text-gray-500">{t('noBlackouts')}</p>}
           </div>
         </div>
       </div>

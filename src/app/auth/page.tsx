@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
@@ -32,13 +32,29 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { authService } from '@/services/auth.service';
 import { mentorApi, authApi } from '@/lib/api/client';
+import { marketplaceService, PlatformStats } from '@/services/marketplace.service';
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tAuth = useTranslations('auth');
+  const tFooter = useTranslations('footer');
   const { refetchUser } = useAuth();
   const { showToast } = useToast();
+  const [stats, setStats] = useState<PlatformStats>({
+    activeMentors: 0,
+    completedSessions: 0,
+    satisfactionRate: 0,
+  });
+
+  useEffect(() => {
+    marketplaceService
+      .getPlatformStats()
+      .then((data) => {
+        if (data) setStats(data);
+      })
+      .catch(() => {});
+  }, []);
 
   // Mode state: 'register' or 'login'
   const [mode, setMode] = useState<'login' | 'register'>(() => {
@@ -82,10 +98,10 @@ export default function AuthPage() {
 
     try {
       await authService.resendVerification(email);
-      setResendMessage('Verification email resent successfully!');
-      showToast('Verification email sent!', 'info');
+      setResendMessage(tAuth('verificationSentSuccess'));
+      showToast(tAuth('verificationSentSuccess'), 'info');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred while resending.');
+      setError(err instanceof Error ? err.message : tAuth('verificationResendError'));
     } finally {
       setResendLoading(false);
     }
@@ -130,7 +146,7 @@ export default function AuthPage() {
     try {
       const res = await authService.login({ email, password });
       await refetchUser();
-      showToast('Logged in successfully!', 'success');
+      showToast(tAuth('loggedInToast'), 'success');
 
       const userObj = res as {
         user?: { isMentor?: boolean; role?: string };
@@ -144,6 +160,12 @@ export default function AuthPage() {
         userObj?.role ||
         ''
       ).toLowerCase();
+
+      const redirectParam = searchParams.get('redirect');
+      if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+        router.push(redirectParam);
+        return;
+      }
 
       if (userRole === 'admin' || userRole === 'super_admin') {
         router.push('/admin');
@@ -182,7 +204,7 @@ export default function AuthPage() {
       const apiErr = err as { message?: string | string[] };
       const msg = Array.isArray(apiErr?.message)
         ? apiErr.message.join(', ')
-        : apiErr?.message || (err instanceof Error ? err.message : 'An unexpected error occurred.');
+        : apiErr?.message || (err instanceof Error ? err.message : tAuth('authFailedError'));
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -196,15 +218,13 @@ export default function AuthPage() {
 
     // Password validation rules check
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(tAuth('passwordsDoNotMatch'));
       return;
     }
 
     const passwordRegex = /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/;
     if (!passwordRegex.test(password)) {
-      setError(
-        'Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number or special character.',
-      );
+      setError(tAuth('passwordRequirementsError'));
       return;
     }
 
@@ -219,13 +239,13 @@ export default function AuthPage() {
         role,
       });
 
-      showToast('Account created!', 'success');
+      showToast(tAuth('accountCreatedToast'), 'success');
       router.push('/verify-email');
     } catch (err: unknown) {
       const apiErr = err as { message?: string | string[] };
       const msg = Array.isArray(apiErr?.message)
         ? apiErr.message.join(', ')
-        : apiErr?.message || (err instanceof Error ? err.message : 'An unexpected error occurred.');
+        : apiErr?.message || (err instanceof Error ? err.message : tAuth('authFailedError'));
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -277,22 +297,22 @@ export default function AuthPage() {
       />
 
       {/* Main Container - Split Layout on Desktop */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8 flex-1 flex items-center">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-4 lg:py-8 flex-1 flex items-center">
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* LEFT SECTION (Desktop App Details & Branding Showcase) */}
           <div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-8 pr-4">
             <Badge variant="orange" size="md" className="gap-2 shadow-xs inline-flex py-1.5 px-3.5 w-fit">
-              <Sparkles className="w-4 h-4 text-[#F97316]" /> World-Class 1-on-1 Mentorship
+              <Sparkles className="w-4 h-4 text-[#F97316]" /> {tAuth('showcaseBadge')}
             </Badge>
 
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-5xl font-black text-[#172033] tracking-tight leading-[1.15]">
-                Accelerate your career with{' '}
-                <span className="text-[#F97316]">top-tier experts.</span>
+                {tAuth('showcaseTitlePart1')}{' '}
+                <span className="text-[#F97316]">{tAuth('showcaseTitleHighlight')}</span>
               </h1>
               <p className="text-lg text-[#64748B] leading-relaxed max-w-lg">
-                Join thousands of software engineers, product managers, and leaders receiving personalized 1-on-1 coaching, code reviews, and career roadmaps.
+                {tAuth('showcaseSubtitle')}
               </p>
             </div>
 
@@ -303,8 +323,8 @@ export default function AuthPage() {
                   <Star className="w-5 h-5 fill-[#F97316]" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-[#172033]">Vetted 1% Tech Mentors</h3>
-                  <p className="text-sm text-[#64748B]">Learn directly from senior staff engineers and heads of product at top tech companies.</p>
+                  <h3 className="font-bold text-base text-[#172033]">{tAuth('feature1Title')}</h3>
+                  <p className="text-sm text-[#64748B]">{tAuth('feature1Desc')}</p>
                 </div>
               </div>
 
@@ -313,8 +333,8 @@ export default function AuthPage() {
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-[#172033]">Structured 1-on-1 Sessions</h3>
-                  <p className="text-sm text-[#64748B]">Weekly video calls, async code reviews, and continuous guidance tailored to your goals.</p>
+                  <h3 className="font-bold text-base text-[#172033]">{tAuth('feature2Title')}</h3>
+                  <p className="text-sm text-[#64748B]">{tAuth('feature2Desc')}</p>
                 </div>
               </div>
             </div>
@@ -322,18 +342,18 @@ export default function AuthPage() {
             {/* Social Proof Footer */}
             <div className="pt-4 flex items-center gap-6 border-t border-[#E5E7EB]">
               <div>
-                <div className="text-2xl font-black text-[#172033]">500+</div>
-                <div className="text-xs text-[#64748B] font-semibold">Active Mentors</div>
+                <div className="text-2xl font-black text-[#172033]">{stats.activeMentors.toLocaleString()}+</div>
+                <div className="text-xs text-[#64748B] font-semibold">{tAuth('activeMentorsStat')}</div>
               </div>
               <div className="h-8 w-px bg-gray-200" />
               <div>
-                <div className="text-2xl font-black text-[#172033]">20,000+</div>
-                <div className="text-xs text-[#64748B] font-semibold">Sessions Held</div>
+                <div className="text-2xl font-black text-[#172033]">{stats.completedSessions.toLocaleString()}+</div>
+                <div className="text-xs text-[#64748B] font-semibold">{tAuth('sessionsDoneStat')}</div>
               </div>
               <div className="h-8 w-px bg-gray-200" />
               <div>
-                <div className="text-2xl font-black text-[#F97316]">99%</div>
-                <div className="text-xs text-[#64748B] font-semibold">Satisfaction Rate</div>
+                <div className="text-2xl font-black text-[#F97316]">{stats.satisfactionRate}%</div>
+                <div className="text-xs text-[#64748B] font-semibold">{tAuth('satisfactionStat')}</div>
               </div>
             </div>
           </div>
@@ -353,7 +373,7 @@ export default function AuthPage() {
                       : 'text-[#64748B] hover:text-[#172033]'
                   }`}
                 >
-                  Log In
+                  {tAuth('loginTab')}
                 </button>
                 <button
                   type="button"
@@ -364,7 +384,7 @@ export default function AuthPage() {
                       : 'text-[#64748B] hover:text-[#172033]'
                   }`}
                 >
-                  Sign Up
+                  {tAuth('signUpTab')}
                 </button>
               </div>
 
@@ -381,10 +401,10 @@ export default function AuthPage() {
                 >
                   <div className="space-y-2 mb-6 text-left">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#172033]">
-                      Welcome back
+                      {tAuth('welcomeBack')}
                     </h2>
                     <p className="text-sm text-[#64748B]">
-                      Enter your credentials to access your mentorship portal.
+                      {tAuth('loginSubtitle')}
                     </p>
                   </div>
 
@@ -400,16 +420,16 @@ export default function AuthPage() {
                           onClick={async () => {
                             try {
                               await authApi.resendVerification(email);
-                              showToast('New verification link sent to your email!', 'success');
+                              showToast(tAuth('verificationSentSuccess'), 'success');
                             } catch (err: unknown) {
                               const apiErr = err as { message?: string };
-                              showToast(apiErr?.message || 'Failed to send verification email.', 'error');
+                              showToast(apiErr?.message || tAuth('verificationResendError'), 'error');
                             }
                           }}
                           className="ml-7 text-xs font-bold text-[#FF6B00] hover:underline flex items-center gap-1.5"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Resend Verification Link to {email}</span>
+                          <span>{tAuth('resendToEmail', { email })}</span>
                         </button>
                       )}
                     </div>
@@ -442,22 +462,22 @@ export default function AuthPage() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Continue with Google</span>
+                    <span>{tAuth('continueGoogle')}</span>
                   </button>
 
                   {/* Divider */}
                   <div className="relative flex items-center justify-center mb-5">
                     <div className="border-t border-gray-200 w-full" />
                     <span className="bg-white px-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider absolute">
-                      or
+                      {tAuth('or')}
                     </span>
                   </div>
 
                   <form onSubmit={handleLogin} className="space-y-5">
                     <Input
-                      label="Email Address"
+                      label={tAuth('emailLabel')}
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={tAuth('emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -466,9 +486,9 @@ export default function AuthPage() {
 
                     <div className="space-y-1.5">
                       <Input
-                        label="Password"
+                        label={tAuth('passwordLabel')}
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                        placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -478,7 +498,7 @@ export default function AuthPage() {
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="p-1 hover:text-[#172033] focus:outline-none transition-colors"
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            aria-label={showPassword ? tAuth('hidePassword') : tAuth('showPassword')}
                           >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
@@ -489,7 +509,7 @@ export default function AuthPage() {
                           href="/auth/forgot-password"
                           className="text-xs sm:text-sm font-semibold text-[#64748B] hover:text-[#F97316] transition-colors"
                         >
-                          Forgot password?
+                          {tAuth('forgotPassword')}
                         </Link>
                       </div>
                     </div>
@@ -502,7 +522,7 @@ export default function AuthPage() {
                       isLoading={isLoading}
                       rightIcon={<ArrowRight className="w-5 h-5" />}
                     >
-                      Sign In
+                      {tAuth('signInBtn')}
                     </Button>
                   </form>
                 </div>
@@ -522,11 +542,12 @@ export default function AuthPage() {
                       </div>
                       <div className="space-y-2">
                         <h2 className="text-2xl font-black text-[#172033]">
-                          Check your email!
+                          {tAuth('checkEmailTitle')}
                         </h2>
                         <p className="text-sm text-[#64748B] leading-relaxed">
-                          We sent a verification link to{' '}
-                          <strong className="text-[#172033]">{maskEmail(email)}</strong>. Please check your inbox and click the link to activate your account.
+                          {tAuth('checkEmailSub')}{' '}
+                          <strong className="text-[#172033]">{maskEmail(email)}</strong>
+                          {tAuth('checkEmailSubPart2')}
                         </p>
                       </div>
 
@@ -547,7 +568,7 @@ export default function AuthPage() {
                       <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 text-left font-semibold flex items-start gap-2.5">
                         <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <span>
-                          <strong>Note:</strong> You must verify your email before logging in. If you don&apos;t see it, check your spam or junk folder.
+                          <strong>{tAuth('noteLabel')}</strong> {tAuth('checkEmailNote')}
                         </span>
                       </div>
 
@@ -561,7 +582,7 @@ export default function AuthPage() {
                           isLoading={resendLoading}
                         >
                           <RefreshCw className={`w-4 h-4 ${resendLoading ? 'animate-spin' : ''}`} />
-                          Resend Verification Email
+                          {tAuth('resendEmailBtn')}
                         </Button>
 
                         <Button
@@ -574,7 +595,7 @@ export default function AuthPage() {
                             switchMode('login');
                           }}
                         >
-                          Proceed to Login
+                          {tAuth('proceedLoginBtn')}
                         </Button>
                       </div>
                     </div>
@@ -582,10 +603,10 @@ export default function AuthPage() {
                     <>
                       <div className="space-y-2 mb-6 text-left">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#172033]">
-                      Create your account
+                      {tAuth('createAccount')}
                     </h2>
                     <p className="text-sm text-[#64748B]">
-                      Join MentorAura to start learning or teaching.
+                      {tAuth('signupSubtitle')}
                     </p>
                   </div>
 
@@ -623,14 +644,14 @@ export default function AuthPage() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Continue with Google</span>
+                    <span>{tAuth('continueGoogle')}</span>
                   </button>
 
                   {/* Divider */}
                   <div className="relative flex items-center justify-center mb-5">
                     <div className="border-t border-gray-200 w-full" />
                     <span className="bg-white px-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider absolute">
-                      or
+                      {tAuth('or')}
                     </span>
                   </div>
 
@@ -638,7 +659,7 @@ export default function AuthPage() {
                     {/* Role Selector */}
                     <div className="space-y-1.5 text-left">
                       <label className="text-sm font-semibold text-[#172033]">
-                        I am joining as a:
+                        {tAuth('joiningAs')}
                       </label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
@@ -652,7 +673,7 @@ export default function AuthPage() {
                         >
                           <div className="flex items-center gap-2">
                             <UserCheck className={`w-4 h-4 ${role === 'MENTEE' ? 'text-[#F97316]' : 'text-[#64748B]'}`} />
-                            <span className="font-bold text-sm">Mentee</span>
+                            <span className="font-bold text-sm">{tAuth('mentee')}</span>
                           </div>
                           {role === 'MENTEE' && <CheckCircle2 className="w-4 h-4 text-[#F97316]" />}
                         </button>
@@ -668,7 +689,7 @@ export default function AuthPage() {
                         >
                           <div className="flex items-center gap-2">
                             <div className={`w-5 h-5 flex items-center justify-center font-bold text-xs rounded ${role === 'MENTOR' ? 'bg-[#F97316] text-white' : 'bg-slate-200 text-slate-700'}`}>M</div>
-                            <span className="font-bold text-sm">Mentor</span>
+                            <span className="font-bold text-sm">{tAuth('mentor')}</span>
                           </div>
                           {role === 'MENTOR' && <CheckCircle2 className="w-4 h-4 text-[#F97316]" />}
                         </button>
@@ -676,9 +697,9 @@ export default function AuthPage() {
                     </div>
 
                     <Input
-                      label="Full Name"
+                      label={tAuth('fullNameLabel')}
                       type="text"
-                      placeholder="e.g. Alex Morgan"
+                      placeholder={tAuth('fullNamePlaceholder')}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -686,9 +707,9 @@ export default function AuthPage() {
                     />
 
                     <Input
-                      label="Email Address"
+                      label={tAuth('emailLabel')}
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={tAuth('emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -696,9 +717,9 @@ export default function AuthPage() {
                     />
 
                     <Input
-                      label="Password"
+                      label={tAuth('passwordLabel')}
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="At least 8 characters"
+                      placeholder={tAuth('passMinChar')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -708,7 +729,7 @@ export default function AuthPage() {
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="p-1 hover:text-[#172033] focus:outline-none transition-colors"
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          aria-label={showPassword ? tAuth('hidePassword') : tAuth('showPassword')}
                         >
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
@@ -717,35 +738,35 @@ export default function AuthPage() {
 
                     {/* Real-time Password Strength Checklist */}
                     <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-2 text-xs font-semibold">
-                      <div className="text-[#64748B] font-bold mb-1">Password must contain:</div>
+                      <div className="text-[#64748B] font-bold mb-1">{tAuth('passRequirementsTitle')}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         <div className={`flex items-center gap-1.5 transition-colors ${passwordChecks.hasMinLength ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                           {passwordChecks.hasMinLength ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0 text-gray-300" />}
-                          <span>At least 8 characters</span>
+                          <span>{tAuth('passMinChar')}</span>
                         </div>
                         <div className={`flex items-center gap-1.5 transition-colors ${passwordChecks.hasUppercase ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                           {passwordChecks.hasUppercase ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0 text-gray-300" />}
-                          <span>1 Uppercase letter (A-Z)</span>
+                          <span>{tAuth('passUpper')}</span>
                         </div>
                         <div className={`flex items-center gap-1.5 transition-colors ${passwordChecks.hasLowercase ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                           {passwordChecks.hasLowercase ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0 text-gray-300" />}
-                          <span>1 Lowercase letter (a-z)</span>
+                          <span>{tAuth('passLower')}</span>
                         </div>
                         <div className={`flex items-center gap-1.5 transition-colors ${passwordChecks.hasNumberOrSymbol ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                           {passwordChecks.hasNumberOrSymbol ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0 text-gray-300" />}
-                          <span>1 Number or symbol</span>
+                          <span>{tAuth('passNumberSymbol')}</span>
                         </div>
                         <div className={`col-span-1 sm:col-span-2 flex items-center gap-1.5 transition-colors ${passwordChecks.isMatching ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                           {passwordChecks.isMatching ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0 text-gray-300" />}
-                          <span>Passwords match</span>
+                          <span>{tAuth('passMatch')}</span>
                         </div>
                       </div>
                     </div>
 
                     <Input
-                      label="Confirm Password"
+                      label={tAuth('confirmPasswordLabel')}
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Re-enter your password"
+                      placeholder={tAuth('reenterPasswordPlaceholder')}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
@@ -763,13 +784,13 @@ export default function AuthPage() {
                         className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]/30 cursor-pointer"
                       />
                       <label htmlFor="terms-checkbox" className="text-xs sm:text-sm text-[#64748B] leading-snug cursor-pointer select-none">
-                        I agree to MentorAura&apos;s{' '}
+                        {tAuth('agreeTerms')}{' '}
                         <Link href="/terms" target="_blank" className="font-bold text-[#F97316] underline hover:text-[#EA580C]">
-                          Terms of Service
+                          {tAuth('termsOfService')}
                         </Link>{' '}
-                        and{' '}
+                        {tAuth('and')}{' '}
                         <Link href="/privacy" target="_blank" className="font-bold text-[#F97316] underline hover:text-[#EA580C]">
-                          Privacy Policy
+                          {tAuth('privacyPolicy')}
                         </Link>.
                       </label>
                     </div>
@@ -782,7 +803,7 @@ export default function AuthPage() {
                       isLoading={isLoading}
                       disabled={!acceptedTerms || !passwordChecks.allValid}
                     >
-                      Create Account
+                      {tAuth('signUpBtn')}
                     </Button>
                   </form>
                     </>
@@ -793,7 +814,7 @@ export default function AuthPage() {
 
               <div className="pt-4 mt-2 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-500 font-medium">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Secure 256-bit encrypted authentication</span>
+                <span>{tAuth('secureAuthBadge')}</span>
               </div>
             </div>
           </div>
@@ -803,9 +824,18 @@ export default function AuthPage() {
 
       {/* Footer */}
       <footer className="py-5 text-center text-xs text-gray-400 font-medium">
-        Â© {new Date().getFullYear()} MentorAura Inc. All rights reserved.
+        © {new Date().getFullYear()} MentorAura Inc. {tFooter('rights')}
       </footer>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  const tAuth = useTranslations('auth');
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FFFCF9] flex items-center justify-center text-[#64748B]">{tAuth('loading')}</div>}>
+      <AuthPageContent />
+    </Suspense>
   );
 }
 

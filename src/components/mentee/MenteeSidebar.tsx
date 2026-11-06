@@ -17,6 +17,7 @@ import {
   Briefcase,
 } from 'lucide-react';
 import type { MeResponse } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 export type MenteeTab = 'overview' | 'sessions' | 'mentors' | 'messages' | 'goals' | 'settings';
 
@@ -39,22 +40,23 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
   onLogout,
   unreadMessagesCount,
 }) => {
-  const menteeName = user?.menteeProfile?.fullName || user?.email?.split('@')[0] || 'Mentee';
+  const t = useTranslations('menteeSidebar');
+  const menteeName = user?.menteeProfile?.fullName || user?.email?.split('@')[0] || t('menteeFallback');
   const menteeInitial = menteeName.charAt(0).toUpperCase();
   const isMentor = user?.isMentor ?? (user?.role === 'mentor' || user?.role === 'MENTOR' || !!user?.mentorProfile);
 
   const navItems: { id: MenteeTab; label: string; icon: React.ElementType; badge?: string }[] = [
-    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'sessions', label: 'My Sessions', icon: Calendar },
-    { id: 'mentors', label: 'My Mentors', icon: Users },
+    { id: 'overview', label: t('overview'), icon: LayoutDashboard },
+    { id: 'sessions', label: t('mySessions'), icon: Calendar },
+    { id: 'mentors', label: t('myMentors'), icon: Users },
     {
       id: 'messages',
-      label: 'Messages',
+      label: t('messages'),
       icon: MessageSquare,
       badge: unreadMessagesCount && unreadMessagesCount > 0 ? String(unreadMessagesCount) : undefined,
     },
-    { id: 'goals', label: 'Learning Goals', icon: Target },
-    { id: 'settings', label: 'Account Settings', icon: Settings },
+    { id: 'goals', label: t('learningGoals'), icon: Target },
+    { id: 'settings', label: t('accountSettings'), icon: Settings },
   ];
 
   return (
@@ -85,7 +87,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
                   Mentor<span className="text-[#FF6B00]">Aura</span>
                 </span>
                 <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                  Mentee Hub
+                  {t('portalBadge')}
                 </span>
               </div>
             </Link>
@@ -101,7 +103,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
           {/* Navigation Links */}
           <nav className="p-4 space-y-1.5">
             <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Main Menu
+              {t('mainMenu')}
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -143,7 +145,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
             })}
 
             <div className="pt-6 px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Explore & Connect
+              {t('exploreConnect')}
             </div>
             {isMentor && (
               <Link
@@ -152,10 +154,10 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <Briefcase className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
-                  <span>Mentor Portal</span>
+                  <span>{t('mentorPortal')}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-orange-500 text-white">
-                  Switch
+                  {t('switchBadge')}
                 </span>
               </Link>
             )}
@@ -165,7 +167,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
             >
               <div className="flex items-center gap-3">
                 <Compass className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
-                <span>Find Mentors</span>
+                <span>{t('findMentors')}</span>
               </div>
               <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
             </Link>
@@ -178,16 +180,16 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
           <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-700/60 shadow-lg">
             <div className="flex items-center gap-2 text-xs font-bold text-orange-400 mb-1">
               <Award className="w-4 h-4" />
-              <span>Career Growth</span>
+              <span>{t('needHelpTitle')}</span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed mb-3">
-              Book 1-on-1 calls with top tech leaders to accelerate your goals.
+              {t('needHelpDesc')}
             </p>
             <Link
               href="/mentors"
               className="block w-full text-center py-2 px-3 bg-white/10 hover:bg-white/20 text-white font-medium text-xs rounded-lg transition-colors border border-white/10"
             >
-              Explore Directory
+              {t('exploreDirectory')}
             </Link>
           </div>
 
@@ -209,7 +211,7 @@ export const MenteeSidebar: React.FC<MenteeSidebarProps> = ({
 
             <button
               onClick={onLogout}
-              title="Sign Out"
+              title={t('signOut')}
               className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shrink-0"
             >
               <LogOut className="w-5 h-5" />

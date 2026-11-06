@@ -108,7 +108,7 @@ export default function MentorPlansPage() {
     <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-10 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <Badge variant="orange" size="md" className="mb-2">

@@ -49,14 +49,15 @@ export default function Home() {
   const tCat = useTranslations('categories');
   const tFeatured = useTranslations('featuredSection');
   const tHow = useTranslations('howItWorks');
+  const tPricing = useTranslations('pricingSection');
   const tTeams = useTranslations('teams');
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [featuredMentors, setFeaturedMentors] = useState<MentorCardData[]>([]);
   const [stats, setStats] = useState<PlatformStats>({
-    activeMentors: 500,
-    completedSessions: 20000,
-    satisfactionRate: 99,
+    activeMentors: 0,
+    completedSessions: 0,
+    satisfactionRate: 0,
   });
   const [loadingMentors, setLoadingMentors] = useState(true);
 
@@ -106,7 +107,7 @@ export default function Home() {
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#F97316]/10 rounded-full blur-3xl -z-10 pointer-events-none" />
           <div className="absolute bottom-10 left-10 w-[350px] h-[350px] bg-orange-100/50 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center lg:text-left">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
               
               {/* Left Content Column */}
@@ -185,70 +186,111 @@ export default function Home() {
                     <Badge variant="success" size="sm">{tMentor('availableNow')}</Badge>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-[#172033] text-[#F97316] font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0 border-2 border-orange-100">
-                      {heroMentor?.fullName
-                        ? heroMentor.fullName
+                  {heroMentor ? (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-[#172033] text-[#F97316] font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0 border-2 border-orange-100">
+                          {heroMentor.fullName
                             .split(' ')
                             .map((n) => n[0])
                             .slice(0, 2)
-                            .join('')
-                        : 'AM'}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-bold text-[#172033] truncate">
-                        {heroMentor?.fullName || 'Amina Mansoor'}
-                      </h3>
-                      <p className="text-xs font-medium text-[#64748B] truncate">
-                        {heroMentor?.title || 'Senior Staff Engineer'} {heroMentor?.company ? `@ ${heroMentor.company}` : '@ TechCorp'}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Star className="w-4 h-4 fill-[#F59E0B] text-[#F59E0B]" />
-                        <span className="text-xs font-bold text-[#172033]">
-                          {heroMentor?.avgRating || '4.9'}
-                        </span>
-                        <span className="text-xs text-[#64748B]">
-                          ({heroMentor?.reviewCount ?? 124} {tMentor('mentorshipSessions')})
-                        </span>
+                            .join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-[#172033] truncate">
+                            {heroMentor.fullName}
+                          </h3>
+                          <p className="text-xs font-medium text-[#64748B] truncate">
+                            {heroMentor.title} {heroMentor.company ? `@ ${heroMentor.company}` : ''}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <Star className="w-4 h-4 fill-[#F59E0B] text-[#F59E0B]" />
+                            <span className="text-xs font-bold text-[#172033]">
+                              {heroMentor.avgRating || '5.0'}
+                            </span>
+                            <span className="text-xs text-[#64748B]">
+                              ({heroMentor.reviewCount ?? 0} {tMentor('mentorshipSessions')})
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {heroMentor && heroMentor.skills?.length > 0 ? (
-                      heroMentor.skills.map((s) => (
-                        <Badge key={s.id} variant="slate" size="sm">{s.name}</Badge>
-                      ))
-                    ) : (
-                      <>
-                        <Badge variant="slate" size="sm">System Architecture</Badge>
-                        <Badge variant="slate" size="sm">Career Transition</Badge>
-                        <Badge variant="slate" size="sm">Tech Leadership</Badge>
-                      </>
-                    )}
-                  </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {heroMentor.skills?.map((s) => (
+                          <Badge key={s.id} variant="slate" size="sm">{s.name}</Badge>
+                        ))}
+                      </div>
 
-                  <div className="p-3.5 rounded-xl bg-[#FFF7ED]/70 border border-orange-100 text-xs text-[#172033] flex items-center gap-2.5">
-                    <ShieldCheck className="w-5 h-5 text-[#F97316] shrink-0" />
-                    <span className="font-semibold">{tMentor('includesNote')}</span>
-                  </div>
+                      <div className="p-3.5 rounded-xl bg-[#FFF7ED]/70 border border-orange-100 text-xs text-[#172033] flex items-center gap-2.5">
+                        <ShieldCheck className="w-5 h-5 text-[#F97316] shrink-0" />
+                        <span className="font-semibold">{tMentor('includesNote')}</span>
+                      </div>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      <span className="text-xs text-gray-500 block">{tMentor('startingFrom')}</span>
-                      <span className="text-xl font-black text-[#172033]">
-                        {heroMentor?.startingPrice
-                          ? `${heroMentor.startingPrice.toLocaleString()} ${heroMentor.currency}`
-                          : '$120'}{' '}
-                        <span className="text-xs font-normal text-gray-500">{tMentor('perMonth')}</span>
-                      </span>
-                    </div>
-                    <Link href={heroMentor ? `/mentors/${heroMentor.slug}` : '/mentors'}>
-                      <Button variant="primary" size="md" className="shadow-sm font-bold">
-                        {tMentor('bookSession')}
-                      </Button>
-                    </Link>
-                  </div>
+                      <div className="flex items-center justify-between pt-2">
+                        <div>
+                          <span className="text-xs text-gray-500 block">{tMentor('startingFrom')}</span>
+                          <span className="text-xl font-black text-[#172033]">
+                            {heroMentor.startingPrice
+                              ? `${heroMentor.startingPrice.toLocaleString()} ${heroMentor.currency}`
+                              : tFeatured('customPrice')}{' '}
+                            {heroMentor.startingPrice && (
+                              <span className="text-xs font-normal text-gray-500">{tMentor('perMonth')}</span>
+                            )}
+                          </span>
+                        </div>
+                        <Link href={`/mentors/${heroMentor.slug}`}>
+                          <Button variant="primary" size="md" className="shadow-sm font-bold">
+                            {tMentor('bookSession')}
+                          </Button>
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-[#172033] text-[#F97316] font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0 border-2 border-orange-100">
+                          MA
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-[#172033]">
+                            {tMentor('emptyCardTitle')}
+                          </h3>
+                          <p className="text-xs font-medium text-[#64748B]">
+                            {tMentor('verifiedMentorRole')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[#475569] leading-relaxed">
+                        {tMentor('emptyCardSubtitle')}
+                      </p>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="slate" size="sm">{tMentor('emptyCardSkill1')}</Badge>
+                        <Badge variant="slate" size="sm">{tMentor('emptyCardSkill2')}</Badge>
+                        <Badge variant="slate" size="sm">{tMentor('emptyCardSkill3')}</Badge>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-[#FFF7ED]/70 border border-orange-100 text-xs text-[#172033] flex items-center gap-2.5">
+                        <ShieldCheck className="w-5 h-5 text-[#F97316] shrink-0" />
+                        <span className="font-semibold">{tMentor('includesNote')}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div>
+                          <span className="text-xs text-gray-500 block">{tMentor('startingFrom')}</span>
+                          <span className="text-base font-black text-[#172033]">
+                            {tMentor('flexiblePlans')}
+                          </span>
+                        </div>
+                        <Link href="/mentors">
+                          <Button variant="primary" size="md" className="shadow-sm font-bold">
+                            {tMentor('exploreDirectory')}
+                          </Button>
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </Card>
               </div>
 
@@ -258,7 +300,7 @@ export default function Home() {
 
         {/* Category Browser Section (MentorCruise Style Grid) */}
         <section id="categories" aria-labelledby="categories-heading" className="py-16 sm:py-24 bg-white border-y border-[#E5E7EB]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-10">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
               <div>
                 <Badge variant="navy" size="md" className="mb-2">{tCat('badge')}</Badge>
@@ -278,10 +320,7 @@ export default function Home() {
               {categories.length > 0 ? (
                 categories.map((cat) => {
                   const IconComponent = CATEGORY_ICON_MAP[cat.slug] || Code2;
-                  const countLabel =
-                    cat.mentorCount && cat.mentorCount > 0
-                      ? `${cat.mentorCount}+ ${tCat('activeMentorsCount')}`
-                      : `50+ ${tCat('activeMentorsCount')}`;
+                  const countLabel = `${cat.mentorCount ?? 0} ${tCat('activeMentorsCount')}`;
 
                   return (
                     <Link key={cat.id} href={`/mentors?category=${cat.slug}`} className="group">
@@ -304,12 +343,12 @@ export default function Home() {
                 })
               ) : (
                 [
-                  { name: tCat('softwareEngineering'), slug: 'engineering', count: `180+ ${tCat('activeMentorsCount')}` },
-                  { name: tCat('productManagement'), slug: 'product', count: `120+ ${tCat('activeMentorsCount')}` },
-                  { name: tCat('uxDesign'), slug: 'design', count: `95+ ${tCat('activeMentorsCount')}` },
-                  { name: tCat('dataScience'), slug: 'ai-data', count: `75+ ${tCat('activeMentorsCount')}` },
-                  { name: tCat('startups'), slug: 'career', count: `60+ ${tCat('activeMentorsCount')}` },
-                  { name: tCat('leadership'), slug: 'leadership', count: `50+ ${tCat('activeMentorsCount')}` },
+                  { name: tCat('softwareEngineering'), slug: 'engineering' },
+                  { name: tCat('productManagement'), slug: 'product' },
+                  { name: tCat('uxDesign'), slug: 'design' },
+                  { name: tCat('dataScience'), slug: 'ai-data' },
+                  { name: tCat('startups'), slug: 'career' },
+                  { name: tCat('leadership'), slug: 'leadership' },
                 ].map((cat, idx) => {
                   const IconComponent = CATEGORY_ICON_MAP[cat.slug] || Code2;
                   return (
@@ -323,7 +362,9 @@ export default function Home() {
                             <h3 className="text-base font-bold text-[#172033] group-hover:text-[#F97316] transition-colors truncate">
                               {cat.name}
                             </h3>
-                            <p className="text-xs text-[#64748B] font-medium truncate">{cat.count}</p>
+                            <p className="text-xs text-[#64748B] font-medium truncate">
+                              0 {tCat('activeMentorsCount')}
+                            </p>
                           </div>
                         </div>
                         <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#F97316] transition-transform group-hover:translate-x-1 shrink-0 ml-2" />
@@ -338,7 +379,7 @@ export default function Home() {
 
         {/* Featured Mentors Carousel/Grid Section */}
         <section id="mentors" aria-labelledby="mentors-heading" className="py-16 sm:py-24 bg-[#FFFCF9]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-10">
             <div className="text-center max-w-2xl mx-auto space-y-3">
               <Badge variant="orange" size="md">{tFeatured('badge')}</Badge>
               <h2 id="mentors-heading" className="text-2xl sm:text-4xl font-extrabold text-[#172033] tracking-tight">
@@ -353,28 +394,22 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-[#F97316] animate-spin" />
               </div>
+            ) : featuredMentors.length === 0 ? (
+              <Card padding="lg" className="p-10 bg-white border-[#E5E7EB] text-center max-w-xl mx-auto space-y-4">
+                <p className="text-sm text-[#64748B] leading-relaxed">
+                  {tFeatured('noMentorsYet')}
+                </p>
+                <div>
+                  <Link href="/mentors">
+                    <Button variant="primary" size="md" className="font-bold">
+                      {tFeatured('browseDirectory')}
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {(featuredMentors.length > 0
-                  ? featuredMentors
-                  : [
-                      {
-                        id: '1',
-                        slug: 'amina-mansoor',
-                        fullName: 'Amina Mansoor',
-                        title: 'Senior Staff Engineer',
-                        company: 'TechCorp',
-                        avgRating: '4.9',
-                        reviewCount: 124,
-                        skills: [
-                          { id: 's1', name: 'System Architecture', level: 'EXPERT' },
-                          { id: 's2', name: 'Tech Leadership', level: 'EXPERT' },
-                        ],
-                        startingPrice: 120,
-                        currency: 'USD',
-                      },
-                    ]
-                ).slice(0, 6).map((m) => {
+                {featuredMentors.slice(0, 6).map((m) => {
                   const initials = m.fullName
                     .split(' ')
                     .map((n) => n[0])
@@ -417,7 +452,7 @@ export default function Home() {
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-gray-400 block font-semibold">{tFeatured('monthlyPlan')}</span>
                           <span className="text-lg font-black text-[#172033]">
-                            {m.startingPrice ? `${m.startingPrice.toLocaleString()} ${m.currency}` : 'Custom'}
+                            {m.startingPrice ? `${m.startingPrice.toLocaleString()} ${m.currency}` : tFeatured('customPrice')}
                           </span>
                         </div>
                         <Link href={`/mentors/${m.slug || m.id}`}>
@@ -436,7 +471,7 @@ export default function Home() {
 
         {/* How It Works Section */}
         <section id="how-it-works" aria-labelledby="how-heading" className="py-16 sm:py-24 bg-white border-y border-[#E5E7EB]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-12">
             <div className="text-center max-w-2xl mx-auto space-y-3">
               <Badge variant="navy" size="md">{tHow('badge')}</Badge>
               <h2 id="how-heading" className="text-2xl sm:text-4xl font-extrabold text-[#172033] tracking-tight">
@@ -481,9 +516,29 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Flexible Pricing Anchor Section */}
+        <section id="pricing" aria-labelledby="pricing-heading" className="py-16 sm:py-20 bg-[#FFFCF9] border-b border-[#E5E7EB]">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center space-y-6">
+            <Badge variant="orange" size="md">{tPricing('badge')}</Badge>
+            <h2 id="pricing-heading" className="text-2xl sm:text-4xl font-extrabold text-[#172033] tracking-tight">
+              {tPricing('title')}
+            </h2>
+            <p className="text-[#64748B] text-sm sm:text-base max-w-2xl mx-auto">
+              {tPricing('subtitle')}
+            </p>
+            <div>
+              <Link href="/mentors">
+                <Button variant="primary" size="lg" className="shadow-md font-bold">
+                  {tPricing('browsePlansCta')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* MentorAura For Teams Section */}
         <section id="teams" aria-labelledby="teams-heading" className="py-16 sm:py-24 bg-[#172033] text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center lg:text-left">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               <div className="lg:col-span-7 space-y-5">
                 <Badge variant="orange" size="md" className="bg-[#F97316] text-white border-none">

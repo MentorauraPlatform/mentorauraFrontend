@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, use, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -31,7 +31,7 @@ export default function MentorApplicationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const router = useRouter();
+  const t = useTranslations('admin.applications');
   const resolvedParams = use(params);
   const applicationId = resolvedParams.id;
 
@@ -41,7 +41,7 @@ export default function MentorApplicationDetailPage({
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const fetchDetail = () => {
+  const fetchDetail = useCallback(() => {
     setLoading(true);
     adminApi
       .getMentorApplicationDetail(applicationId)
@@ -54,24 +54,24 @@ export default function MentorApplicationDetailPage({
       })
       .catch((err) => {
         console.error('Failed to load application details:', err);
-        toast.error('Failed to load mentor application details');
+        toast.error(t('detailLoading'));
       })
       .finally(() => setLoading(false));
-  };
+  }, [applicationId, t]);
 
   useEffect(() => {
     fetchDetail();
-  }, [applicationId]);
+  }, [fetchDetail]);
 
   const handleApprove = async () => {
     if (!application) return;
     setActionLoading(true);
     try {
       await adminApi.approveMentorApplication(application.id);
-      toast.success('Mentor application approved and published to the marketplace!');
+      toast.success(t('approveSuccessToast'));
       fetchDetail();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to approve application';
+      const msg = err instanceof Error ? err.message : t('approveSuccessToast');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -81,18 +81,18 @@ export default function MentorApplicationDetailPage({
   const handleRejectSubmit = async () => {
     if (!application) return;
     if (!rejectionReason.trim()) {
-      toast.error('Please specify a rejection reason');
+      toast.error(t('rejectPlaceholder'));
       return;
     }
 
     setActionLoading(true);
     try {
       await adminApi.rejectMentorApplication(application.id, rejectionReason.trim());
-      toast.success('Mentor application rejected.');
+      toast.success(t('rejectSuccessToast'));
       setRejectionModalOpen(false);
       fetchDetail();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to reject application';
+      const msg = err instanceof Error ? err.message : t('rejectSuccessToast');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -102,22 +102,21 @@ export default function MentorApplicationDetailPage({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-3">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
-        <p className="text-sm font-semibold text-slate-500">Loading Application Review...</p>
+        <Loader2 className="w-8 h-8 text-orange-500 animate-spin shrink-0" />
+        <p className="text-sm font-semibold text-slate-500">{t('detailLoading')}</p>
       </div>
     );
   }
 
   if (!application) {
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
-        <Link href="/admin/applications" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900">
-          <ArrowLeft className="w-4 h-4" /> Back to Queue
+      <div className="w-full space-y-4">
+        <Link href="/admin/applications" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 whitespace-nowrap flex-nowrap shrink-0">
+          <ArrowLeft className="w-4 h-4 shrink-0" /> {t('backToApplications')}
         </Link>
         <Card padding="lg" className="p-12 text-center bg-white border border-slate-200 rounded-2xl">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-slate-900">Application Not Found</h2>
-          <p className="text-xs text-slate-500 mt-1">This mentor profile may have been removed or does not exist.</p>
+          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3 shrink-0" />
+          <h2 className="text-lg font-bold text-slate-900">{t('notFound')}</h2>
         </Card>
       </div>
     );
@@ -127,26 +126,26 @@ export default function MentorApplicationDetailPage({
   const isRejected = application.onboardingStatus === 'REJECTED';
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-16 font-sans">
+    <div className="w-full space-y-8 pb-16 font-sans">
       {/* Top Navigation & Status Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <Link
             href="/admin/applications"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap flex-nowrap shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" /> Return to Vetting Queue
+            <ArrowLeft className="w-4 h-4 shrink-0" /> {t('returnToQueue')}
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Review: {application.fullName}
+              {t('reviewTitle', { name: application.fullName })}
             </h1>
             <Badge
               variant={
                 isApproved ? 'success' : isRejected ? 'error' : 'orange'
               }
               size="md"
-              className="capitalize"
+              className="capitalize whitespace-nowrap flex-nowrap shrink-0"
             >
               {application.onboardingStatus.toLowerCase()}
             </Badge>
@@ -160,18 +159,18 @@ export default function MentorApplicationDetailPage({
             size="md"
             disabled={actionLoading || isRejected}
             onClick={() => setRejectionModalOpen(true)}
-            className="gap-2 font-bold"
+            className="gap-2 font-bold whitespace-nowrap flex-nowrap shrink-0"
           >
-            <XCircle className="w-4 h-4" /> Reject Profile
+            <XCircle className="w-4 h-4 shrink-0" /> {t('rejectBtn')}
           </Button>
           <Button
             variant="primary"
             size="md"
             disabled={actionLoading || isApproved}
             onClick={handleApprove}
-            className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700"
+            className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 whitespace-nowrap flex-nowrap shrink-0"
           >
-            <CheckCircle2 className="w-4 h-4" /> Approve & Publish Mentor
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> {t('ApproveBtn')}
           </Button>
         </div>
       </div>
@@ -189,7 +188,7 @@ export default function MentorApplicationDetailPage({
                 <p className="text-xs font-semibold text-slate-500">{application.title}</p>
                 {application.company && (
                   <p className="text-xs text-orange-600 font-medium flex items-center justify-center gap-1 mt-0.5">
-                    <Building className="w-3.5 h-3.5" /> {application.company}
+                    <Building className="w-3.5 h-3.5 shrink-0" /> {application.company}
                   </p>
                 )}
               </div>
@@ -197,29 +196,25 @@ export default function MentorApplicationDetailPage({
 
             <div className="space-y-3 text-xs text-slate-600">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">Registered Email:</span>
+                <span className="text-slate-400 font-medium">{t('applicant')}:</span>
                 <span className="font-bold text-slate-800">{application.user?.email}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">Years of Experience:</span>
+                <span className="text-slate-400 font-medium">{t('experienceHeading')}:</span>
                 <span className="font-bold text-slate-800">
-                  {application.yearsOfExperience ? `${application.yearsOfExperience}+ Years` : 'Self-Reported'}
+                  {application.yearsOfExperience ? t('yearsExp', { years: application.yearsOfExperience }) : t('selfReported')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">Verification Status:</span>
+                <span className="text-slate-400 font-medium">{t('status')}:</span>
                 <span className={`font-bold ${application.isVerified ? 'text-emerald-600' : 'text-amber-600'}`}>
-                  {application.isVerified ? 'Verified' : 'Pending Verification'}
+                  {application.isVerified ? t('verified') : t('pendingVerification')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">Application Date:</span>
+                <span className="text-slate-400 font-medium">{t('submitted')}:</span>
                 <span className="font-bold text-slate-800">
-                  {new Date(application.createdAt).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                  {new Date(application.createdAt).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -227,7 +222,7 @@ export default function MentorApplicationDetailPage({
             {/* Professional Links */}
             <div className="pt-4 border-t border-slate-100 space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                Professional Proof & Links
+                {t('professionalProof')}
               </span>
               <div className="flex flex-col gap-2">
                 {application.linkedinUrl ? (
@@ -235,16 +230,16 @@ export default function MentorApplicationDetailPage({
                     href={application.linkedinUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl text-xs font-semibold text-blue-700 hover:bg-blue-100/70 transition-all"
+                    className="flex items-center justify-between p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl text-xs font-semibold text-blue-700 hover:bg-blue-100/70 transition-all whitespace-nowrap flex-nowrap shrink-0"
                   >
                     <span className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-blue-600" /> LinkedIn Profile
+                      <Globe className="w-4 h-4 text-blue-600 shrink-0" /> LinkedIn
                     </span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   </a>
                 ) : (
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-400 italic">
-                    No LinkedIn link provided
+                    {t('noLinkedIn')}
                   </div>
                 )}
 
@@ -253,16 +248,16 @@ export default function MentorApplicationDetailPage({
                     href={application.githubUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 hover:bg-slate-200 transition-all"
+                    className="flex items-center justify-between p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 hover:bg-slate-200 transition-all whitespace-nowrap flex-nowrap shrink-0"
                   >
                     <span className="flex items-center gap-2">
-                      <Code className="w-4 h-4 text-slate-800" /> GitHub Profile
+                      <Code className="w-4 h-4 text-slate-800 shrink-0" /> GitHub
                     </span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   </a>
                 ) : (
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-400 italic">
-                    No GitHub link provided
+                    {t('noGithub')}
                   </div>
                 )}
               </div>
@@ -273,7 +268,7 @@ export default function MentorApplicationDetailPage({
           {application.rejectionReason && (
             <Card padding="md" className="p-5 bg-rose-50 border border-rose-200 rounded-2xl space-y-2">
               <span className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4" /> Recorded Rejection Reason
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {t('recordedRejection')}
               </span>
               <p className="text-xs text-rose-700 whitespace-pre-line leading-relaxed">
                 {application.rejectionReason}
@@ -287,7 +282,7 @@ export default function MentorApplicationDetailPage({
           {/* Biography & Professional Statement */}
           <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <User className="w-4 h-4 text-orange-500" /> Professional Bio & Headline
+              <User className="w-4 h-4 text-orange-500 shrink-0" /> {t('bioHeading')}
             </h3>
             {application.headline && (
               <p className="font-semibold text-xs text-slate-700 italic border-l-2 border-orange-500 pl-3 py-1 bg-orange-50/50 rounded-r-lg">
@@ -295,36 +290,36 @@ export default function MentorApplicationDetailPage({
               </p>
             )}
             <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-100">
-              {application.bio || 'No detailed biography submitted.'}
+              {application.bio || '—'}
             </p>
           </Card>
 
           {/* Professional Experience & Career History */}
           <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-orange-500" /> Career History & Experience Claims
+              <Briefcase className="w-4 h-4 text-orange-500 shrink-0" /> {t('experienceHeading')}
             </h3>
             <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-100">
-              {application.experience || 'No experience summary submitted.'}
+              {application.experience || '—'}
             </div>
           </Card>
 
           {/* Skills & Expertise */}
           <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-4 h-4 text-orange-500" /> Skills & Domain Claims
+              <Award className="w-4 h-4 text-orange-500 shrink-0" /> {t('skillsHeading')}
             </h3>
 
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                Self-Reported Platform Skills
+                {t('skillsHeading')}
               </span>
               {application.user?.userSkills && application.user.userSkills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {application.user.userSkills.map((us) => (
                     <div
                       key={us.id}
-                      className="px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2"
+                      className="px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2 whitespace-nowrap flex-nowrap shrink-0"
                     >
                       <span className="text-xs font-bold text-slate-800">{us.skill.name}</span>
                       <span className="text-[10px] uppercase font-bold text-orange-600 bg-orange-100/60 px-1.5 py-0.5 rounded">
@@ -334,20 +329,20 @@ export default function MentorApplicationDetailPage({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic">No platform skills attached.</p>
+                <p className="text-xs text-slate-400 italic">—</p>
               )}
             </div>
 
             {application.areasOfExpertise && application.areasOfExpertise.length > 0 && (
               <div className="pt-3 border-t border-slate-100">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                  Areas of Expertise / Topics
+                  {t('skillsHeading')}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {application.areasOfExpertise.map((area, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold border border-orange-100"
+                      className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold border border-orange-100 whitespace-nowrap flex-nowrap shrink-0"
                     >
                       {area}
                     </span>
@@ -360,19 +355,19 @@ export default function MentorApplicationDetailPage({
           {/* Identity & Verification Documents */}
           <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <FileCheck2 className="w-4 h-4 text-orange-500" /> Identity Proof & Documents
+              <FileCheck2 className="w-4 h-4 text-orange-500 shrink-0" /> {t('identityProof')}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-slate-500" /> Government ID / Passport
+                    <FileText className="w-4 h-4 text-slate-500 shrink-0" /> {t('govId')}
                   </span>
                   {application.idDocumentUrl ? (
-                    <Badge variant="success" size="sm">Attached</Badge>
+                    <Badge variant="success" size="sm" className="whitespace-nowrap flex-nowrap shrink-0">{t('attached')}</Badge>
                   ) : (
-                    <Badge variant="slate" size="sm">None</Badge>
+                    <Badge variant="slate" size="sm" className="whitespace-nowrap flex-nowrap shrink-0">{t('none')}</Badge>
                   )}
                 </div>
                 {application.idDocumentUrl ? (
@@ -380,24 +375,24 @@ export default function MentorApplicationDetailPage({
                     href={application.idDocumentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 pt-1"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 pt-1 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    View Document <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{t('viewDocument')}</span> <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   </a>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">No government ID upload provided.</p>
+                  <p className="text-[11px] text-slate-400 italic">—</p>
                 )}
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-slate-500" /> Resume / CV Attachment
+                    <FileText className="w-4 h-4 text-slate-500 shrink-0" /> {t('resumeCv')}
                   </span>
                   {application.cvUrl ? (
-                    <Badge variant="success" size="sm">Attached</Badge>
+                    <Badge variant="success" size="sm" className="whitespace-nowrap flex-nowrap shrink-0">{t('attached')}</Badge>
                   ) : (
-                    <Badge variant="slate" size="sm">None</Badge>
+                    <Badge variant="slate" size="sm" className="whitespace-nowrap flex-nowrap shrink-0">{t('none')}</Badge>
                   )}
                 </div>
                 {application.cvUrl ? (
@@ -405,12 +400,12 @@ export default function MentorApplicationDetailPage({
                     href={application.cvUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 pt-1"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 pt-1 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    View Resume / CV <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{t('viewDocument')}</span> <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   </a>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">No curriculum vitae attached.</p>
+                  <p className="text-[11px] text-slate-400 italic">—</p>
                 )}
               </div>
             </div>
@@ -422,15 +417,15 @@ export default function MentorApplicationDetailPage({
       {rejectionModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900">Reject Mentor Application</h3>
+            <h3 className="text-lg font-bold text-slate-900">{t('rejectModalTitle')}</h3>
             <p className="text-xs text-slate-500">
-              Please enter the specific reason for rejecting <span className="font-bold text-slate-800">{application.fullName}</span>. This feedback will be sent directly to the applicant and recorded in platform audit logs.
+              {t('rejectModalDesc', { name: application.fullName })}
             </p>
             <textarea
               rows={4}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. Please provide a verified LinkedIn profile link or additional proof of senior engineering experience..."
+              placeholder={t('rejectPlaceholder')}
               className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -441,17 +436,18 @@ export default function MentorApplicationDetailPage({
                   setRejectionModalOpen(false);
                   setRejectionReason('');
                 }}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="danger"
                 size="sm"
                 isLoading={actionLoading}
                 onClick={handleRejectSubmit}
-                className="font-bold"
+                className="font-bold whitespace-nowrap flex-nowrap shrink-0"
               >
-                Confirm Rejection
+                {t('confirmRejectionBtn')}
               </Button>
             </div>
           </div>

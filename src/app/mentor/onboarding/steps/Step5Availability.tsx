@@ -28,6 +28,12 @@ interface Step5AvailabilityProps {
 
 export function Step5Availability({ data, saving, onUpdateAvailability }: Step5AvailabilityProps) {
   const t = useTranslations('onboarding');
+  const tCommon = useTranslations('common');
+
+  const getDayLabel = (day: string) => {
+    const cap = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+    return tCommon(cap);
+  };
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -76,7 +82,7 @@ export function Step5Availability({ data, saving, onUpdateAvailability }: Step5A
                   className="flex flex-wrap gap-4 items-center bg-[#F8FAFC] p-5 rounded-xl border border-[#E5E7EB]"
                 >
                   <span className="flex-shrink-0 w-11 h-11 rounded-full bg-[#F97316] text-white text-sm font-bold flex items-center justify-center">
-                    {DAY_LABELS[slot.day as keyof typeof DAY_LABELS] || slot.day.slice(0, 3)}
+                    {getDayLabel(slot.day).slice(0, 3)}
                   </span>
                   <select
                     value={slot.day}
@@ -88,7 +94,7 @@ export function Step5Availability({ data, saving, onUpdateAvailability }: Step5A
                     className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316]"
                   >
                     {DAYS.map((day) => (
-                      <option key={day} value={day}>{day}</option>
+                      <option key={day} value={day}>{getDayLabel(day)}</option>
                     ))}
                   </select>
                   <input
@@ -101,7 +107,7 @@ export function Step5Availability({ data, saving, onUpdateAvailability }: Step5A
                     }}
                     className="border border-[#E5E7EB] rounded-lg px-4 py-2.5 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] w-32"
                   />
-                  <span className="text-[#64748B] font-medium">to</span>
+                  <span className="text-[#64748B] font-medium">{tCommon('timeRangeTo')}</span>
                   <input
                     type="time"
                     value={slot.endTime}

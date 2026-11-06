@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,15 +14,14 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  Filter,
-  ArrowRight,
   ShieldAlert,
 } from 'lucide-react';
 
 export default function AdminPayoutsPage() {
+  const t = useTranslations('admin.payouts');
   const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [stats, setStats] = useState<PayoutStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,7 +103,7 @@ export default function AdminPayoutsPage() {
     try {
       setActionLoading(true);
       const res = await adminApi.approvePayout(id);
-      showToast('success', res.message || 'Payout successfully approved and released');
+      showToast('success', res.message || t('payoutProcessedSuccess'));
       fetchPayoutData();
     } catch (err: any) {
       showToast('error', err?.message || 'Failed to approve payout');
@@ -116,13 +116,13 @@ export default function AdminPayoutsPage() {
   const handleRejectSubmit = async () => {
     if (!targetPayout) return;
     if (!rejectionReason.trim()) {
-      alert('Please provide a reason for the rejection');
+      alert(t('rejectPrompt'));
       return;
     }
     try {
       setActionLoading(true);
       const res = await adminApi.rejectPayout(targetPayout.id, rejectionReason);
-      showToast('success', res.message || 'Payout request rejected');
+      showToast('success', res.message || t('payoutRejectedSuccess'));
       setRejectModalOpen(false);
       setTargetPayout(null);
       setRejectionReason('');
@@ -158,24 +158,28 @@ export default function AdminPayoutsPage() {
   const filteredPayouts = payouts.filter((p) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const mentorName = p.mentor?.fullName || p.mentor?.name || '';
+    const mentorEmail = p.mentor?.email || '';
+    const accountNumber = p.accountNumber || '';
+    const provider = p.provider || '';
     return (
-      p.mentor.fullName.toLowerCase().includes(term) ||
-      p.mentor.email.toLowerCase().includes(term) ||
-      p.accountNumber.toLowerCase().includes(term) ||
-      p.provider.toLowerCase().includes(term)
+      mentorName.toLowerCase().includes(term) ||
+      mentorEmail.toLowerCase().includes(term) ||
+      accountNumber.toLowerCase().includes(term) ||
+      provider.toLowerCase().includes(term)
     );
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PAID':
-        return <Badge variant="success">Paid / Released</Badge>;
+        return <Badge variant="success" className="whitespace-nowrap flex-nowrap shrink-0">Paid</Badge>;
       case 'PENDING':
-        return <Badge variant="warning">Awaiting Review</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap flex-nowrap shrink-0">Pending</Badge>;
       case 'REJECTED':
-        return <Badge variant="error">Rejected</Badge>;
+        return <Badge variant="error" className="whitespace-nowrap flex-nowrap shrink-0">Rejected</Badge>;
       default:
-        return <Badge variant="slate">{status}</Badge>;
+        return <Badge variant="slate" className="whitespace-nowrap flex-nowrap shrink-0">{status}</Badge>;
     }
   };
 
@@ -211,10 +215,10 @@ export default function AdminPayoutsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Payout Management & Batch Approval
+            {t('pageTitle')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Review mentor withdrawal requests, verify payment details, and release payouts individually or in batches.
+            {t('pageSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -224,9 +228,9 @@ export default function AdminPayoutsPage() {
               variant="primary"
               size="sm"
               onClick={() => setBatchModalOpen(true)}
-              className="bg-[#F97316] hover:bg-[#ea580c] text-white flex items-center gap-2 shadow-sm"
+              className="bg-[#F97316] hover:bg-[#ea580c] text-white flex items-center gap-2 shadow-sm whitespace-nowrap flex-nowrap shrink-0"
             >
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>Release Selected ({selectedIds.length})</span>
             </Button>
           )}
@@ -236,9 +240,9 @@ export default function AdminPayoutsPage() {
             size="sm"
             onClick={fetchPayoutData}
             disabled={refreshing}
-            className="flex items-center gap-2 border-slate-300"
+            className="flex items-center gap-2 border-slate-300 whitespace-nowrap flex-nowrap shrink-0"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
         </div>
@@ -248,22 +252,22 @@ export default function AdminPayoutsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Review</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-              <Clock className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('pendingPayoutsTitle')}</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+              <Clock className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.pendingCount || 0}</p>
           <p className="text-xs text-amber-600 font-semibold mt-1">
-            {formatCurrency(stats?.pendingAmount || 0, stats?.currency)} pending release
+            {formatCurrency(stats?.pendingAmount || 0, stats?.currency)}
           </p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Released</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <CheckCircle2 className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('payoutHistoryTitle')}</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-emerald-600 mt-2">
@@ -274,24 +278,24 @@ export default function AdminPayoutsPage() {
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Rejected Requests</span>
-            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
-              <XCircle className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('rejectBtn')}</span>
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+              <XCircle className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.rejectedCount || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Declined or flagged withdrawals</p>
+          <p className="text-xs text-slate-500 mt-1">{t('subtitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">All-Time Requests</span>
-            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700">
-              <Wallet className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('title')}</span>
+            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+              <Wallet className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.totalCount || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Lifetime mentor payout volume</p>
+          <p className="text-xs text-slate-500 mt-1">{t('pageSubtitle')}</p>
         </Card>
       </div>
 
@@ -304,24 +308,24 @@ export default function AdminPayoutsPage() {
               <button
                 key={st || 'ALL'}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-nowrap shrink-0 ${
                   statusFilter === st
                     ? 'bg-[#172033] text-white shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {st === '' ? 'All Payouts' : st === 'PENDING' ? 'Pending Approval' : st}
+                {st === '' ? t('allMethods') : st === 'PENDING' ? t('pendingPayoutsTitle') : st}
               </button>
             ))}
           </div>
 
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 shrink-0" />
               <input
                 type="text"
                 id="search-payouts-input"
-                placeholder="Search mentor or account..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316] w-60"
@@ -345,15 +349,15 @@ export default function AdminPayoutsPage() {
                         filteredPayouts.filter((p) => p.status === 'PENDING').length
                     }
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded text-[#F97316] focus:ring-[#F97316] h-4 w-4"
+                    className="rounded text-[#F97316] focus:ring-[#F97316] h-4 w-4 shrink-0"
                   />
                 </th>
-                <th className="py-3 px-3">Mentor</th>
-                <th className="py-3 px-3">Provider & Account</th>
-                <th className="py-3 px-3 text-right">Amount</th>
-                <th className="py-3 px-3">Date Requested</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-3 text-right">Actions</th>
+                <th className="py-3 px-3">{t('mentorCol')}</th>
+                <th className="py-3 px-3">{t('methodCol')}</th>
+                <th className="py-3 px-3 text-right">{t('amountCol')}</th>
+                <th className="py-3 px-3">{t('requestedCol')}</th>
+                <th className="py-3 px-3 text-center">{t('statusCol')}</th>
+                <th className="py-3 px-3 text-right">{t('actionsCol')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -375,13 +379,13 @@ export default function AdminPayoutsPage() {
                             type="checkbox"
                             checked={isChecked}
                             onChange={(e) => handleSelectOne(payout.id, e.target.checked)}
-                            className="rounded text-[#F97316] focus:ring-[#F97316] h-4 w-4"
+                            className="rounded text-[#F97316] focus:ring-[#F97316] h-4 w-4 shrink-0"
                           />
                         ) : null}
                       </td>
                       <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900">{payout.mentor.fullName}</div>
-                        <div className="text-[11px] text-slate-400">{payout.mentor.email}</div>
+                        <div className="font-bold text-slate-900">{payout.mentor?.fullName || payout.mentor?.name || 'Mentor'}</div>
+                        <div className="text-[11px] text-slate-400">{payout.mentor?.email}</div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-semibold text-slate-800">{payout.provider}</div>
@@ -417,9 +421,9 @@ export default function AdminPayoutsPage() {
                               variant="primary"
                               disabled={actionLoading}
                               onClick={() => handleApprove(payout.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1 px-2.5 h-auto rounded-lg"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1 px-2.5 h-auto rounded-lg whitespace-nowrap flex-nowrap shrink-0"
                             >
-                              Approve
+                              {t('markPaidBtn')}
                             </Button>
                             <Button
                               id={`reject-payout-${payout.id}`}
@@ -430,9 +434,9 @@ export default function AdminPayoutsPage() {
                                 setTargetPayout(payout);
                                 setRejectModalOpen(true);
                               }}
-                              className="border-rose-200 text-rose-600 hover:bg-rose-50 text-xs py-1 px-2.5 h-auto rounded-lg"
+                              className="border-rose-200 text-rose-600 hover:bg-rose-50 text-xs py-1 px-2.5 h-auto rounded-lg whitespace-nowrap flex-nowrap shrink-0"
                             >
-                              Reject
+                              {t('rejectBtn')}
                             </Button>
                           </div>
                         ) : payout.status === 'PAID' && payout.transactionRef ? (
@@ -447,7 +451,7 @@ export default function AdminPayoutsPage() {
               ) : (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    No payout requests found in this view
+                    {t('noPendingPayouts')}
                   </td>
                 </tr>
               )}
@@ -462,26 +466,22 @@ export default function AdminPayoutsPage() {
           <Card padding="lg" className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3 text-rose-600">
               <ShieldAlert className="w-6 h-6 shrink-0" />
-              <h3 className="text-lg font-bold text-slate-900">Reject Payout Request</h3>
+              <h3 className="text-lg font-bold text-slate-900">{t('rejectModalTitle')}</h3>
             </div>
             <p className="text-xs text-slate-500">
-              You are about to decline withdrawal of{' '}
-              <span className="font-bold text-slate-800">
-                {formatCurrency(targetPayout.amount, targetPayout.currency)}
-              </span>{' '}
-              for mentor <span className="font-semibold text-slate-800">{targetPayout.mentor.fullName}</span>.
+              {formatCurrency(targetPayout.amount, targetPayout.currency)} — {targetPayout.mentor?.fullName || targetPayout.mentor?.name || 'Mentor'}.
             </p>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Rejection Reason (Sent to Mentor)
+                {t('rejectReasonLabel')}
               </label>
               <textarea
                 id="rejection-reason-textarea"
                 rows={3}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g. Account details mismatch, insufficient completed sessions, or KYC incomplete..."
+                placeholder={t('rejectReasonPlaceholder')}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
               />
             </div>
@@ -494,6 +494,7 @@ export default function AdminPayoutsPage() {
                   setRejectModalOpen(false);
                   setTargetPayout(null);
                 }}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
                 Cancel
               </Button>
@@ -503,9 +504,9 @@ export default function AdminPayoutsPage() {
                 size="sm"
                 onClick={handleRejectSubmit}
                 disabled={actionLoading || !rejectionReason.trim()}
-                className="bg-rose-600 hover:bg-rose-700 text-white"
+                className="bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap flex-nowrap shrink-0"
               >
-                Confirm Rejection
+                {t('confirmRejectBtn')}
               </Button>
             </div>
           </Card>
@@ -518,24 +519,19 @@ export default function AdminPayoutsPage() {
           <Card padding="lg" className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3 text-emerald-600">
               <CheckCircle2 className="w-6 h-6 shrink-0" />
-              <h3 className="text-lg font-bold text-slate-900">Confirm Batch Release</h3>
+              <h3 className="text-lg font-bold text-slate-900">{t('processModalTitle')}</h3>
             </div>
             <p className="text-xs text-slate-500">
-              You have selected{' '}
-              <span className="font-bold text-slate-900">{selectedIds.length} payout(s)</span> totalling{' '}
+              <span className="font-bold text-slate-900">{selectedIds.length} payout(s)</span> —{' '}
               <span className="font-black text-emerald-600">{formatCurrency(batchTotalAmount)}</span>.
             </p>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600 space-y-1">
-              <p>• Unique transaction references will be generated.</p>
-              <p>• Statuses will change to <span className="font-bold text-emerald-600">PAID</span>.</p>
-              <p>• Action will be permanently logged in administrative audit trails.</p>
-            </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setBatchModalOpen(false)}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
                 Cancel
               </Button>
@@ -545,9 +541,9 @@ export default function AdminPayoutsPage() {
                 size="sm"
                 onClick={handleBatchApprove}
                 disabled={actionLoading}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap flex-nowrap shrink-0"
               >
-                Release {formatCurrency(batchTotalAmount)}
+                {t('confirmProcessBtn')}
               </Button>
             </div>
           </Card>

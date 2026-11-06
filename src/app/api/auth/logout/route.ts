@@ -6,7 +6,9 @@ export async function POST() {
     message: 'Logged out successfully',
   });
 
+  response.cookies.delete('accessToken');
   response.cookies.delete('access_token');
+  response.cookies.delete('refreshToken');
   response.cookies.delete('refresh_token');
 
   return response;

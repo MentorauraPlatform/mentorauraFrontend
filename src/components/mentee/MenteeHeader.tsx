@@ -3,8 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Menu, Search, Bell, Compass, Briefcase } from 'lucide-react';
+import { Menu, Search, Compass, Briefcase } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import type { MeResponse } from '@/lib/types';
 
 interface MenteeHeaderProps {
@@ -72,10 +73,7 @@ export const MenteeHeader: React.FC<MenteeHeaderProps> = ({
         <LanguageSwitcher />
 
         {/* Notifications Button */}
-        <button className="relative p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-xs">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white animate-pulse" />
-        </button>
+        <NotificationBell />
 
         {/* Find Mentors CTA Button */}
         <Link

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -13,20 +13,22 @@ import { Step5Experience } from './steps/Step5Experience';
 import { Step6Availability } from './steps/Step6Availability';
 import { Step7Review } from './steps/Step7Review';
 import { Step8Complete } from './steps/Step8Complete';
-
-const STEPS = [
-  { id: 1, title: 'Basic Info' },
-  { id: 2, title: 'Skills' },
-  { id: 3, title: 'Interests' },
-  { id: 4, title: 'Goals' },
-  { id: 5, title: 'Experience' },
-  { id: 6, title: 'Availability' },
-  { id: 7, title: 'Review' },
-];
+import { useTranslations } from 'next-intl';
 
 export default function MenteeOnboardingPage() {
   const onboarding = useMenteeOnboarding();
   const [saving, setSaving] = useState(false);
+  const t = useTranslations('menteeOnboarding');
+
+  const STEPS = [
+    { id: 1, title: t('steps.step1') },
+    { id: 2, title: t('steps.step2') },
+    { id: 3, title: t('steps.step3') },
+    { id: 4, title: t('steps.step4') },
+    { id: 5, title: t('steps.step5') },
+    { id: 6, title: t('steps.step6') },
+    { id: 7, title: t('steps.step7') },
+  ];
 
   const handleNext = async () => {
     setSaving(true);
@@ -39,7 +41,7 @@ export default function MenteeOnboardingPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full border-4 border-[#E5E7EB] border-t-[#F97316] animate-spin" />
-          <span className="text-lg text-[#64748B] font-medium">Loading your profile...</span>
+          <span className="text-lg text-[#64748B] font-medium">{t('loading')}</span>
         </div>
       </div>
     );
@@ -49,7 +51,7 @@ export default function MenteeOnboardingPage() {
     <div className="min-h-screen bg-[#FFFCF9] font-sans text-[#172033]">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12 lg:py-16">
         <div className="bg-white rounded-3xl shadow-xl border border-[#E5E7EB] overflow-hidden">
           {/* Header */}
           <div className="bg-[#172033] px-8 sm:px-10 py-8 sm:py-10">
@@ -58,10 +60,13 @@ export default function MenteeOnboardingPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 2 2.5 3 6 3s6-1 6-3v-5"/></svg>
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold text-white tracking-tight">Mentee Onboarding</h1>
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">{t('title')}</h1>
                 {onboarding.currentStep <= 7 && (
                   <p className="text-sm text-white/60 font-medium">
-                    Step {onboarding.currentStep} of 7: {STEPS[onboarding.currentStep - 1]?.title}
+                    {t('stepCounter', {
+                      step: onboarding.currentStep,
+                      title: STEPS[onboarding.currentStep - 1]?.title || '',
+                    })}
                   </p>
                 )}
               </div>
@@ -123,7 +128,7 @@ export default function MenteeOnboardingPage() {
                     disabled={onboarding.loading}
                     className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-bold text-sm transition-colors"
                   >
-                    Retry
+                    {t('retry')}
                   </button>
                 )}
               </div>
@@ -185,7 +190,7 @@ export default function MenteeOnboardingPage() {
                   className="w-full sm:w-auto px-8 py-4 border border-[#E5E7EB] rounded-xl hover:bg-[#FFFCF9] font-bold text-base transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[#172033] flex items-center justify-center gap-3"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                  Previous
+                  {t('previous')}
                 </button>
                 {onboarding.currentStep === 7 ? (
                   <button
@@ -193,7 +198,7 @@ export default function MenteeOnboardingPage() {
                     disabled={onboarding.loading}
                     className="w-full sm:w-auto px-10 py-4 bg-[#F97316] text-white rounded-xl hover:bg-[#ea580c] disabled:opacity-50 font-bold text-base transition-colors flex items-center justify-center gap-3"
                   >
-                    {onboarding.loading ? 'Submitting...' : 'Complete Onboarding'}
+                    {onboarding.loading ? t('submitting') : t('completeOnboarding')}
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                   </button>
                 ) : (
@@ -206,7 +211,7 @@ export default function MenteeOnboardingPage() {
                         : 'bg-[#F97316] text-white hover:bg-[#ea580c]'
                     }`}
                   >
-                    {saving ? 'Saving...' : 'Next'}
+                    {saving ? t('saving') : t('next')}
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                   </button>
                 )}

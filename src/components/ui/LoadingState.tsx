@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 interface LoadingStateProps {
   message?: string;
@@ -9,10 +10,13 @@ interface LoadingStateProps {
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
-  message = 'Loading...',
+  message,
   fullScreen = true,
   className = '',
 }) => {
+  const t = useTranslations('common');
+  const displayMessage = message ?? t('loading');
+
   return (
     <div
       className={`${
@@ -22,7 +26,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF6B00] to-[#FFA048] animate-spin flex items-center justify-center text-white font-black text-xl shadow-lg shadow-orange-500/20">
         M
       </div>
-      <p className="text-sm font-semibold text-slate-600 animate-pulse">{message}</p>
+      <p className="text-sm font-semibold text-slate-600 animate-pulse">{displayMessage}</p>
     </div>
   );
 };

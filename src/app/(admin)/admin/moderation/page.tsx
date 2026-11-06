@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +12,6 @@ import {
   User,
   Star,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   RefreshCw,
   Trash2,
@@ -20,9 +20,10 @@ import {
 } from 'lucide-react';
 
 export default function AdminModerationPage() {
+  const t = useTranslations('admin.moderation');
   const [reports, setReports] = useState<ModerationReport[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [typeFilter, setTypeFilter] = useState('');
@@ -90,7 +91,7 @@ export default function AdminModerationPage() {
         notes: actionNotes || undefined,
       });
 
-      showToast('success', res.message || 'Moderation action executed');
+      showToast('success', res.message || t('actionSuccessToast'));
       setSelectedReport(null);
       setSelectedAction(null);
       fetchModerationData();
@@ -104,26 +105,26 @@ export default function AdminModerationPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'MESSAGE':
-        return <MessageSquare className="w-4 h-4 text-blue-500" />;
+        return <MessageSquare className="w-4 h-4 text-blue-500 shrink-0" />;
       case 'USER_PROFILE':
-        return <User className="w-4 h-4 text-purple-500" />;
+        return <User className="w-4 h-4 text-purple-500 shrink-0" />;
       case 'REVIEW':
-        return <Star className="w-4 h-4 text-amber-500" />;
+        return <Star className="w-4 h-4 text-amber-500 shrink-0" />;
       default:
-        return <Flag className="w-4 h-4 text-slate-500" />;
+        return <Flag className="w-4 h-4 text-slate-500 shrink-0" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return <Badge variant="warning">Pending Review</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap flex-nowrap shrink-0">Pending Review</Badge>;
       case 'ACTION_TAKEN':
-        return <Badge variant="error">Action Taken</Badge>;
+        return <Badge variant="error" className="whitespace-nowrap flex-nowrap shrink-0">Action Taken</Badge>;
       case 'DISMISSED':
-        return <Badge variant="slate">Dismissed</Badge>;
+        return <Badge variant="slate" className="whitespace-nowrap flex-nowrap shrink-0">Dismissed</Badge>;
       default:
-        return <Badge variant="slate">{status}</Badge>;
+        return <Badge variant="slate" className="whitespace-nowrap flex-nowrap shrink-0">{status}</Badge>;
     }
   };
 
@@ -149,10 +150,10 @@ export default function AdminModerationPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Content & Chat Moderation Tools
+            {t('pageTitle')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Investigate reported messages, toxic behavior, abusive profiles, and fraudulent reviews across the platform.
+            {t('pageSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -162,9 +163,9 @@ export default function AdminModerationPage() {
             size="sm"
             onClick={fetchModerationData}
             disabled={refreshing}
-            className="flex items-center gap-2 border-slate-300"
+            className="flex items-center gap-2 border-slate-300 whitespace-nowrap flex-nowrap shrink-0"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
         </div>
@@ -174,42 +175,42 @@ export default function AdminModerationPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Flags</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-              <Flag className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('flaggedTitle')}</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+              <Flag className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-amber-600 mt-2">{stats?.pending || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Awaiting moderator triage</p>
+          <p className="text-xs text-slate-500 mt-1">{t('subtitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sanctions Applied</span>
-            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
-              <UserX className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('suspendUserBtn')}</span>
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+              <UserX className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-rose-600 mt-2">{stats?.actionTaken || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Suspended users / deleted items</p>
+          <p className="text-xs text-slate-500 mt-1">{t('historyTitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Dismissed Reports</span>
-            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700">
-              <CheckCircle2 className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('dismissFlagBtn')}</span>
+            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.dismissed || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Cleared / no violation detected</p>
+          <p className="text-xs text-slate-500 mt-1">{t('approveKeepBtn')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Flagged Categories</span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-              <ShieldAlert className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('title')}</span>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+              <ShieldAlert className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-2 text-xs font-semibold text-slate-700 space-y-0.5">
@@ -234,7 +235,7 @@ export default function AdminModerationPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-nowrap shrink-0 ${
                   statusFilter === tab.value
                     ? 'bg-[#172033] text-white shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -271,7 +272,7 @@ export default function AdminModerationPage() {
                 {/* Report Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <div className="p-2 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                       {getTypeIcon(report.targetType)}
                     </div>
                     <div>
@@ -283,7 +284,7 @@ export default function AdminModerationPage() {
                         <span className="text-xs font-bold text-rose-600">{report.reason}</span>
                       </div>
                       <div className="text-[11px] text-slate-400">
-                        Reported by <span className="font-semibold text-slate-600">{report.reporter.name}</span> ({report.reporter.email}) on{' '}
+                        {t('reportedBy')} <span className="font-semibold text-slate-600">{report.reporter.name}</span> ({report.reporter.email}) on{' '}
                         {new Date(report.createdAt).toLocaleString()}
                       </div>
                     </div>
@@ -302,7 +303,7 @@ export default function AdminModerationPage() {
                 {report.targetPreview ? (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Offending Item Preview
+                      {t('contentLabel')}
                     </span>
 
                     {report.targetPreview.type === 'MESSAGE' && (
@@ -330,7 +331,7 @@ export default function AdminModerationPage() {
                           )}
                         </div>
                         <div>
-                          <Badge variant={report.targetPreview.isActive ? 'success' : 'error'}>
+                          <Badge variant={report.targetPreview.isActive ? 'success' : 'error'} className="whitespace-nowrap flex-nowrap shrink-0">
                             {report.targetPreview.isActive ? 'Active Account' : 'Suspended'}
                           </Badge>
                         </div>
@@ -343,7 +344,7 @@ export default function AdminModerationPage() {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-3.5 h-3.5 ${
+                              className={`w-3.5 h-3.5 shrink-0 ${
                                 i < (report.targetPreview?.rating || 0) ? 'fill-current' : 'text-slate-300'
                               }`}
                             />
@@ -366,18 +367,18 @@ export default function AdminModerationPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleOpenActionModal(report, 'WARN_USER')}
-                      className="text-xs py-1 px-3 border-amber-300 text-amber-700 hover:bg-amber-50"
+                      className="text-xs py-1 px-3 border-amber-300 text-amber-700 hover:bg-amber-50 whitespace-nowrap flex-nowrap shrink-0"
                     >
-                      Log Official Warning
+                      {t('warnUserBtn')}
                     </Button>
                     <Button
                       id={`dismiss-report-${report.id}`}
                       size="sm"
                       variant="outline"
                       onClick={() => handleOpenActionModal(report, 'DISMISS')}
-                      className="text-xs py-1 px-3 text-slate-600 hover:bg-slate-100"
+                      className="text-xs py-1 px-3 text-slate-600 hover:bg-slate-100 whitespace-nowrap flex-nowrap shrink-0"
                     >
-                      Dismiss Flag
+                      {t('dismissFlagBtn')}
                     </Button>
                     {report.targetType !== 'USER_PROFILE' && (
                       <Button
@@ -385,10 +386,10 @@ export default function AdminModerationPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleOpenActionModal(report, 'DELETE_CONTENT')}
-                        className="text-xs py-1 px-3 border-rose-200 text-rose-600 hover:bg-rose-50 flex items-center gap-1"
+                        className="text-xs py-1 px-3 border-rose-200 text-rose-600 hover:bg-rose-50 flex items-center gap-1 whitespace-nowrap flex-nowrap shrink-0"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete Content</span>
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>{t('deleteMessageBtn')}</span>
                       </Button>
                     )}
                     <Button
@@ -396,17 +397,17 @@ export default function AdminModerationPage() {
                       size="sm"
                       variant="primary"
                       onClick={() => handleOpenActionModal(report, 'SUSPEND_USER')}
-                      className="text-xs py-1 px-3 bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1"
+                      className="text-xs py-1 px-3 bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1 whitespace-nowrap flex-nowrap shrink-0"
                     >
-                      <UserX className="w-3.5 h-3.5" />
-                      <span>Suspend Author Account</span>
+                      <UserX className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t('suspendUserBtn')}</span>
                     </Button>
                   </div>
                 )}
 
                 {report.status === 'ACTION_TAKEN' && report.actionTaken && (
                   <div className="flex items-center gap-2 text-xs text-rose-600 font-semibold pt-1">
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>Action executed: {report.actionTaken}</span>
                     {report.notes && <span className="text-slate-400 font-normal">({report.notes})</span>}
                   </div>
@@ -415,7 +416,7 @@ export default function AdminModerationPage() {
             ))
           ) : (
             <div className="py-16 text-center text-slate-400 text-xs">
-              No moderation reports found matching this criteria
+              {t('noFlaggedFound')}
             </div>
           )}
         </div>
@@ -460,6 +461,7 @@ export default function AdminModerationPage() {
                   setSelectedReport(null);
                   setSelectedAction(null);
                 }}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
                 Cancel
               </Button>
@@ -469,7 +471,7 @@ export default function AdminModerationPage() {
                 size="sm"
                 onClick={handleActionSubmit}
                 disabled={actionLoading}
-                className={selectedAction === 'DISMISS' ? 'bg-slate-800 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'}
+                className={`whitespace-nowrap flex-nowrap shrink-0 ${selectedAction === 'DISMISS' ? 'bg-slate-800 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'}`}
               >
                 Confirm Action
               </Button>

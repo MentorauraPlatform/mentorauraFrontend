@@ -14,41 +14,6 @@ export interface RegisterPayload {
   role: 'MENTEE' | 'MENTOR';
 }
 
-async function apiAuthGet<T>(path: string): Promise<T> {
-  const res = await fetch(path, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ statusCode: res.status, message: res.statusText }));
-    throw err;
-  }
-
-  return res.json() as Promise<T>;
-}
-
-async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-    credentials: 'include',
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ statusCode: res.status, message: res.statusText }));
-    throw err;
-  }
-
-  return res.json() as Promise<T>;
-}
-
 export const authService = {
   async login(payload: LoginPayload): Promise<LoginResponse> {
     return authApi.login(payload);
@@ -71,7 +36,7 @@ export const authService = {
   },
 
   async resendVerification(email: string) {
-    return authApi.register({ fullName: '', email, password: '', role: 'MENTEE' });
+    return authApi.resendVerification(email);
   },
 
   async requestForgotPasswordOtp(email: string) {

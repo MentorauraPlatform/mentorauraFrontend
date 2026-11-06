@@ -11,7 +11,6 @@ import {
   LogOut,
   Sparkles,
   X,
-  Compass,
   CheckCircle2,
   AlertCircle,
   Users,
@@ -19,6 +18,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import type { MeResponse, MentorProfile } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings' | 'messages';
 
@@ -43,11 +43,12 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
   onClose,
   unreadMessagesCount,
 }) => {
+  const t = useTranslations('mentorSidebar');
   const mentorName =
     profile?.fullName ||
     user?.mentorProfile?.fullName ||
     user?.email?.split('@')[0] ||
-    'Mentor';
+    t('mentorFallback');
 
   const mentorInitial = mentorName.charAt(0).toUpperCase();
   const isVerified = profile?.isVerified ?? user?.mentorProfile?.isVerified ?? false;
@@ -55,43 +56,43 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
   const navItems = [
     {
       id: 'overview' as MentorTab,
-      label: 'Overview',
+      label: t('overview'),
       icon: LayoutDashboard,
       badge: undefined,
     },
     {
       id: 'profile' as MentorTab,
-      label: 'Profile & Bio',
+      label: t('profileBio'),
       icon: User,
       badge: undefined,
     },
     {
       id: 'skills' as MentorTab,
-      label: 'Skills & Expertise',
+      label: t('skillsExpertise'),
       icon: Award,
       badge: profile?.user?.userSkills?.length ? `${profile.user.userSkills.length}` : undefined,
     },
     {
       id: 'availability' as MentorTab,
-      label: 'Availability Slots',
+      label: t('availabilitySlots'),
       icon: Clock,
       badge: undefined,
     },
     {
       id: 'plans' as MentorTab,
-      label: 'Mentorship Plans',
+      label: t('mentorshipPlans'),
       icon: Package,
-      badge: 'Manage',
+      badge: t('manageBadge'),
     },
     {
       id: 'bookings' as MentorTab,
-      label: 'Calendar & Sessions',
+      label: t('calendarSessions'),
       icon: Calendar,
       badge: undefined,
     },
     {
       id: 'messages' as MentorTab,
-      label: 'Messages',
+      label: t('messages'),
       icon: MessageSquare,
       badge: unreadMessagesCount && unreadMessagesCount > 0 ? String(unreadMessagesCount) : undefined,
     },
@@ -125,7 +126,7 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
                   Mentor<span className="text-[#FF6B00]">Aura</span>
                 </span>
                 <span className="text-[10px] font-semibold tracking-wider text-orange-400 uppercase">
-                  Mentor Portal
+                  {t('portalBadge')}
                 </span>
               </div>
             </Link>
@@ -141,7 +142,7 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
           {/* Navigation Links */}
           <nav className="p-4 space-y-1.5">
             <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Mentor Controls
+              {t('mentorControls')}
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -183,18 +184,30 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
             })}
 
             <div className="pt-6 px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Quick Shortcuts
+              {t('quickShortcuts')}
             </div>
+            <Link
+              href="/mentor/mentees"
+              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <span>{t('menteesApplications')}</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-orange-400 border border-orange-500/20">
+                {t('queueBadge')}
+              </span>
+            </Link>
             <Link
               href="/mentee/dashboard"
               className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"
             >
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
-                <span>Mentee Dashboard</span>
+                <span>{t('menteeDashboard')}</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-orange-400 border border-orange-500/20">
-                Switch
+                {t('switchBadge')}
               </span>
             </Link>
             <Link
@@ -203,7 +216,7 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
             >
               <div className="flex items-center gap-3">
                 <Package className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
-                <span>Pricing Plans</span>
+                <span>{t('pricingPlans')}</span>
               </div>
               <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
             </Link>
@@ -218,19 +231,17 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
               {isVerified ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Verified Mentor</span>
+                  <span className="text-emerald-400">{t('verifiedMentor')}</span>
                 </>
               ) : (
                 <>
                   <AlertCircle className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400">Application Pending</span>
+                  <span className="text-amber-400">{t('applicationPending')}</span>
                 </>
               )}
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              {isVerified
-                ? 'Your profile is live on the public directory.'
-                : 'Under admin review. We will notify you once approved.'}
+              {isVerified ? t('verifiedDesc') : t('pendingDesc')}
             </p>
           </div>
 
@@ -252,7 +263,7 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
 
             <button
               onClick={onLogout}
-              title="Sign Out"
+              title={t('signOut')}
               className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shrink-0"
             >
               <LogOut className="w-5 h-5" />

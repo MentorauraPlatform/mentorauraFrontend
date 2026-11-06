@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -9,21 +10,19 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  XCircle,
   RefreshCw,
   Search,
-  Filter,
   Eye,
   DollarSign,
-  User,
   ShieldCheck,
   Calendar,
 } from 'lucide-react';
 
 export default function AdminDisputesPage() {
+  const t = useTranslations('admin.disputes');
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [stats, setStats] = useState<DisputeStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [reasonFilter, setReasonFilter] = useState('');
@@ -75,14 +74,6 @@ export default function AdminDisputesPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const formatCurrency = (amount: number, currency = 'XAF') => {
-    return new Intl.NumberFormat('fr-CM', {
-      style: 'currency',
-      currency: currency || 'XAF',
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
   const handleOpenResolveModal = (dispute: AdminDispute) => {
     setSelectedDispute(dispute);
     setResolutionStatus('RESOLVED_REFUNDED');
@@ -93,7 +84,7 @@ export default function AdminDisputesPage() {
   const handleResolveSubmit = async () => {
     if (!selectedDispute) return;
     if (!resolutionNotes.trim()) {
-      alert('Please provide resolution notes explaining this determination');
+      alert(t('notesPlaceholder'));
       return;
     }
 
@@ -105,7 +96,7 @@ export default function AdminDisputesPage() {
         refundAmount: resolutionStatus === 'RESOLVED_REFUNDED' && refundAmount ? Number(refundAmount) : undefined,
       });
 
-      showToast('success', res.message || 'Dispute updated successfully');
+      showToast('success', res.message || t('disputeResolvedSuccess'));
       setSelectedDispute(null);
       fetchDisputeData();
     } catch (err: any) {
@@ -118,19 +109,19 @@ export default function AdminDisputesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <Badge variant="warning">Open Ticket</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap flex-nowrap shrink-0">Open Ticket</Badge>;
       case 'UNDER_REVIEW':
-        return <Badge variant="navy">Under Investigation</Badge>;
+        return <Badge variant="navy" className="whitespace-nowrap flex-nowrap shrink-0">Under Investigation</Badge>;
       case 'RESOLVED_REFUNDED':
-        return <Badge variant="success">Resolved: Refunded</Badge>;
+        return <Badge variant="success" className="whitespace-nowrap flex-nowrap shrink-0">Resolved: Refunded</Badge>;
       case 'RESOLVED_REJECTED':
-        return <Badge variant="error">Resolved: Rejected</Badge>;
+        return <Badge variant="error" className="whitespace-nowrap flex-nowrap shrink-0">Resolved: Rejected</Badge>;
       case 'RESOLVED_RESCHEDULED':
-        return <Badge variant="orange">Rescheduled</Badge>;
+        return <Badge variant="orange" className="whitespace-nowrap flex-nowrap shrink-0">Rescheduled</Badge>;
       case 'CLOSED':
-        return <Badge variant="slate">Closed</Badge>;
+        return <Badge variant="slate" className="whitespace-nowrap flex-nowrap shrink-0">Closed</Badge>;
       default:
-        return <Badge variant="slate">{status}</Badge>;
+        return <Badge variant="slate" className="whitespace-nowrap flex-nowrap shrink-0">{status}</Badge>;
     }
   };
 
@@ -173,10 +164,10 @@ export default function AdminDisputesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Dispute Resolution Center
+            {t('pageTitle')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Arbitrate refund requests, session no-shows, cancellation disputes, and mentee dissatisfaction claims.
+            {t('pageSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -186,9 +177,9 @@ export default function AdminDisputesPage() {
             size="sm"
             onClick={fetchDisputeData}
             disabled={refreshing}
-            className="flex items-center gap-2 border-slate-300"
+            className="flex items-center gap-2 border-slate-300 whitespace-nowrap flex-nowrap shrink-0"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
         </div>
@@ -198,46 +189,46 @@ export default function AdminDisputesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Open Cases</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-              <AlertTriangle className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('openCasesTitle')}</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-amber-600 mt-2">{stats?.open || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Pending admin investigation</p>
+          <p className="text-xs text-slate-500 mt-1">{t('subtitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Under Review</span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-              <Clock className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+              <Clock className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.underReview || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Gathering mentor/mentee evidence</p>
+          <p className="text-xs text-slate-500 mt-1">{t('subtitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Refunds Granted</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <DollarSign className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('actionRefund')}</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+              <DollarSign className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-emerald-600 mt-2">{stats?.resolvedRefunded || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Resolved in favor of mentee</p>
+          <p className="text-xs text-slate-500 mt-1">{t('resolvedCasesTitle')}</p>
         </Card>
 
         <Card padding="lg" className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Claims Rejected</span>
-            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700">
-              <ShieldCheck className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('actionDismiss')}</span>
+            <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+              <ShieldCheck className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <p className="text-3xl font-black text-slate-900 mt-2">{stats?.resolvedRejected || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Disputes decided in mentor favor</p>
+          <p className="text-xs text-slate-500 mt-1">{t('resolvedCasesTitle')}</p>
         </Card>
       </div>
 
@@ -256,7 +247,7 @@ export default function AdminDisputesPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-nowrap shrink-0 ${
                   statusFilter === tab.value
                     ? 'bg-[#172033] text-white shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -275,7 +266,7 @@ export default function AdminDisputesPage() {
               onChange={(e) => setReasonFilter(e.target.value)}
               className="text-xs py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316] text-slate-700"
             >
-              <option value="">All Reasons</option>
+              <option value="">{t('allReasons')}</option>
               <option value="SESSION_NO_SHOW">Session No-Show</option>
               <option value="POOR_QUALITY">Poor Quality</option>
               <option value="UNAUTHORIZED_CHARGE">Unauthorized Charge</option>
@@ -286,11 +277,11 @@ export default function AdminDisputesPage() {
 
             {/* Search */}
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 shrink-0" />
               <input
                 type="text"
                 id="search-disputes-input"
-                placeholder="Search ticket title or party..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316] w-56"
@@ -305,7 +296,7 @@ export default function AdminDisputesPage() {
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
                 <th className="py-3 px-3">Ticket / Subject</th>
-                <th className="py-3 px-3">Raised By</th>
+                <th className="py-3 px-3">{t('reporter')}</th>
                 <th className="py-3 px-3">Target Party</th>
                 <th className="py-3 px-3">Dispute Reason</th>
                 <th className="py-3 px-3">Created</th>
@@ -336,7 +327,7 @@ export default function AdminDisputesPage() {
                       )}
                     </td>
                     <td className="py-3 px-3">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap">
+                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap flex-nowrap shrink-0">
                         {getReasonLabel(dispute.reason)}
                       </span>
                     </td>
@@ -356,10 +347,10 @@ export default function AdminDisputesPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleOpenResolveModal(dispute)}
-                        className="text-xs py-1 px-2.5 h-auto rounded-lg border-slate-300 hover:border-slate-400"
+                        className="text-xs py-1 px-2.5 h-auto rounded-lg border-slate-300 hover:border-slate-400 whitespace-nowrap flex-nowrap shrink-0"
                       >
-                        <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                        <span>Arbitrate</span>
+                        <Eye className="w-3.5 h-3.5 mr-1 text-slate-500 shrink-0" />
+                        <span>{t('investigateBtn')}</span>
                       </Button>
                     </td>
                   </tr>
@@ -367,7 +358,7 @@ export default function AdminDisputesPage() {
               ) : (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    No dispute cases in this queue
+                    {t('noDisputesFound')}
                   </td>
                 </tr>
               )}
@@ -383,7 +374,7 @@ export default function AdminDisputesPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-[#F97316]">
-                  Case Arbitration #{selectedDispute.id.slice(0, 8)}
+                  {t('modalTitle')} #{selectedDispute.id.slice(0, 8)}
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 mt-0.5">{selectedDispute.title}</h3>
               </div>
@@ -393,12 +384,12 @@ export default function AdminDisputesPage() {
             {/* Case Details */}
             <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">
               <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px]">Claimant (Raised By)</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px]">{t('reporter')}</span>
                 <p className="font-bold text-slate-900 mt-0.5">{selectedDispute.raisedBy.name}</p>
                 <p className="text-slate-500">{selectedDispute.raisedBy.email} ({selectedDispute.raisedBy.role})</p>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px]">Respondent (Target)</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px]">Respondent</span>
                 <p className="font-bold text-slate-900 mt-0.5">{selectedDispute.targetUser?.name || 'Assigned Mentor'}</p>
                 <p className="text-slate-500">{selectedDispute.targetUser?.email || 'N/A'}</p>
               </div>
@@ -411,7 +402,7 @@ export default function AdminDisputesPage() {
               </div>
               {selectedDispute.booking && (
                 <div className="col-span-2 text-slate-500 flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>
                     Linked Session: {new Date(selectedDispute.booking.scheduledAt).toLocaleString()} ({selectedDispute.booking.status})
                   </span>
@@ -421,21 +412,21 @@ export default function AdminDisputesPage() {
 
             {/* Arbitration Decision Form */}
             <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Administrative Ruling</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">{t('resolutionActionLabel')}</h4>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Select Outcome</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t('resolutionActionLabel')}</label>
                 <select
                   id="dispute-outcome-select"
                   value={resolutionStatus}
                   onChange={(e) => setResolutionStatus(e.target.value)}
                   className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316] font-semibold text-slate-800"
                 >
-                  <option value="RESOLVED_REFUNDED">Resolve & Grant Refund to Mentee</option>
-                  <option value="RESOLVED_REJECTED">Resolve & Dismiss Claim (In Mentor&apos;s Favor)</option>
-                  <option value="UNDER_REVIEW">Keep Under Active Investigation</option>
-                  <option value="RESOLVED_RESCHEDULED">Resolve & Permit Reschedule</option>
-                  <option value="CLOSED">Close Without Further Action</option>
+                  <option value="RESOLVED_REFUNDED">{t('actionRefund')}</option>
+                  <option value="RESOLVED_REJECTED">{t('actionReleaseMentor')}</option>
+                  <option value="UNDER_REVIEW">{t('investigateBtn')}</option>
+                  <option value="RESOLVED_RESCHEDULED">{t('actionSplit')}</option>
+                  <option value="CLOSED">{t('actionDismiss')}</option>
                 </select>
               </div>
 
@@ -450,20 +441,20 @@ export default function AdminDisputesPage() {
                     placeholder="Enter refund amount in XAF..."
                     className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Cancels linked booking and logs refund transaction</p>
+                  <p className="text-[11px] text-slate-400 mt-1">{t('subtitle')}</p>
                 </div>
               )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Determination Notes & Justification (Recorded in Audit Trail)
+                  {t('adminNotesLabel')}
                 </label>
                 <textarea
                   id="dispute-resolution-notes"
                   rows={3}
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
-                  placeholder="Detail the rationale for this determination, session logs checked, or communications reviewed..."
+                  placeholder={t('adminNotesPlaceholder')}
                   className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
                 />
               </div>
@@ -475,8 +466,9 @@ export default function AdminDisputesPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDispute(null)}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
-                Close
+                {t('cancel')}
               </Button>
               <Button
                 id="submit-dispute-ruling-btn"
@@ -484,9 +476,9 @@ export default function AdminDisputesPage() {
                 size="sm"
                 onClick={handleResolveSubmit}
                 disabled={actionLoading || !resolutionNotes.trim()}
-                className="bg-[#F97316] hover:bg-[#ea580c] text-white"
+                className="bg-[#F97316] hover:bg-[#ea580c] text-white whitespace-nowrap flex-nowrap shrink-0"
               >
-                Apply Ruling
+                {t('confirmResolutionBtn')}
               </Button>
             </div>
           </Card>

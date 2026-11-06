@@ -1,23 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { adminApi, AdminMentorApplication } from '@/lib/api/client';
 import {
-  ShieldCheck,
   XCircle,
   CheckCircle2,
   Search,
-  Filter,
   Loader2,
   ExternalLink,
   Briefcase,
   AlertCircle,
-  FileText,
   Eye,
   ArrowRight,
 } from 'lucide-react';
@@ -26,6 +24,7 @@ import { toast } from 'sonner';
 type VettingTab = 'SUBMITTED' | 'COMPLETE' | 'REJECTED' | 'ALL';
 
 export default function AdminMentorApplicationsPage() {
+  const t = useTranslations('admin.applications');
   const [activeTab, setActiveTab] = useState<VettingTab>('SUBMITTED');
   const [search, setSearch] = useState<string>('');
   const [applications, setApplications] = useState<AdminMentorApplication[]>([]);
@@ -35,7 +34,7 @@ export default function AdminMentorApplicationsPage() {
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  const fetchApplications = () => {
+  const fetchApplications = useCallback(() => {
     setLoading(true);
     const statusParam = activeTab === 'ALL' ? undefined : activeTab;
     adminApi
@@ -54,14 +53,14 @@ export default function AdminMentorApplicationsPage() {
       })
       .catch((err) => {
         console.error('Failed to load applications:', err);
-        toast.error('Failed to load mentor applications');
+        toast.error(t('loading'));
       })
       .finally(() => setLoading(false));
-  };
+  }, [activeTab, search, t]);
 
   useEffect(() => {
     fetchApplications();
-  }, [activeTab]);
+  }, [fetchApplications]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,11 +71,11 @@ export default function AdminMentorApplicationsPage() {
     setActionLoading(true);
     try {
       await adminApi.approveMentorApplication(id);
-      toast.success('Mentor application approved and published to marketplace!');
+      toast.success(t('approveSuccessToast'));
       setSelectedApp(null);
       fetchApplications();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to approve application';
+      const msg = err instanceof Error ? err.message : t('approveSuccessToast');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -86,20 +85,20 @@ export default function AdminMentorApplicationsPage() {
   const handleRejectSubmit = async () => {
     if (!selectedApp) return;
     if (!rejectionReason.trim()) {
-      toast.error('Please enter a reason for rejection');
+      toast.error(t('notesPlaceholder'));
       return;
     }
 
     setActionLoading(true);
     try {
       await adminApi.rejectMentorApplication(selectedApp.id, rejectionReason);
-      toast.success('Mentor application rejected.');
+      toast.success(t('rejectSuccessToast'));
       setRejectionModalOpen(false);
       setSelectedApp(null);
       setRejectionReason('');
       fetchApplications();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to reject application';
+      const msg = err instanceof Error ? err.message : t('rejectSuccessToast');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -107,13 +106,13 @@ export default function AdminMentorApplicationsPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 w-full">
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-          Mentor Application Vetting Workspace
+          {t('vettingWorkspaceTitle')}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Review onboarding details, verify professional credentials, and approve or reject mentor applications.
+          {t('vettingWorkspaceSubtitle')}
         </p>
       </div>
 
@@ -122,52 +121,52 @@ export default function AdminMentorApplicationsPage() {
         <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl overflow-x-auto shrink-0">
           <button
             onClick={() => setActiveTab('SUBMITTED')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex-nowrap shrink-0 ${
               activeTab === 'SUBMITTED'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Pending Review
+            {t('filterPending')}
           </button>
           <button
             onClick={() => setActiveTab('COMPLETE')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex-nowrap shrink-0 ${
               activeTab === 'COMPLETE'
                 ? 'bg-white text-emerald-700 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Verified Mentors
+            {t('verifiedMentorsTab')}
           </button>
           <button
             onClick={() => setActiveTab('REJECTED')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex-nowrap shrink-0 ${
               activeTab === 'REJECTED'
                 ? 'bg-white text-rose-700 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Rejected Submissions
+            {t('rejectedSubmissionsTab')}
           </button>
           <button
             onClick={() => setActiveTab('ALL')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex-nowrap shrink-0 ${
               activeTab === 'ALL'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Submissions
+            {t('allSubmissionsTab')}
           </button>
         </div>
 
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-sm w-full">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
             <input
               type="text"
-              placeholder="Search by name, email, role..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full text-xs bg-white border border-slate-200 rounded-xl pl-10 pr-3 h-10 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs"
@@ -175,9 +174,9 @@ export default function AdminMentorApplicationsPage() {
           </div>
           <button
             type="submit"
-            className="h-10 px-4 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow transition-all flex items-center justify-center shrink-0 active:scale-[0.98]"
+            className="h-10 px-4 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow transition-all flex items-center justify-center shrink-0 active:scale-[0.98] whitespace-nowrap flex-nowrap"
           >
-            Search
+            {t('searchBtn')}
           </button>
         </form>
       </div>
@@ -185,15 +184,15 @@ export default function AdminMentorApplicationsPage() {
       {/* Applications Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-3">
-          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
-          <p className="text-xs font-semibold text-slate-500">Loading Vetting Queue...</p>
+          <Loader2 className="w-8 h-8 text-orange-500 animate-spin shrink-0" />
+          <p className="text-xs font-semibold text-slate-500">{t('loadingVettingQueue')}</p>
         </div>
       ) : applications.length === 0 ? (
         <Card padding="lg" className="p-12 text-center bg-white border border-slate-200 rounded-2xl space-y-3">
-          <AlertCircle className="w-10 h-10 text-slate-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800">No Mentor Applications Found</h3>
+          <AlertCircle className="w-10 h-10 text-slate-400 mx-auto shrink-0" />
+          <h3 className="text-base font-bold text-slate-800">{t('noMentorAppsFound')}</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            There are currently no mentor onboarding submissions matching this filter.
+            {t('noMentorAppsDesc')}
           </p>
         </Card>
       ) : (
@@ -222,7 +221,7 @@ export default function AdminMentorApplicationsPage() {
                         : 'orange'
                     }
                     size="sm"
-                    className="capitalize"
+                    className="capitalize whitespace-nowrap flex-nowrap shrink-0"
                   >
                     {app.onboardingStatus.toLowerCase()}
                   </Badge>
@@ -244,7 +243,7 @@ export default function AdminMentorApplicationsPage() {
                 {app.user?.userSkills && app.user.userSkills.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {app.user.userSkills.slice(0, 3).map((us) => (
-                      <Badge key={us.id} variant="slate" size="sm" className="text-[10px]">
+                      <Badge key={us.id} variant="slate" size="sm" className="text-[10px] whitespace-nowrap flex-nowrap shrink-0">
                         {us.skill.name} ({us.level.toLowerCase()})
                       </Badge>
                     ))}
@@ -256,15 +255,15 @@ export default function AdminMentorApplicationsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedApp(app)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all active:scale-[0.98]"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all active:scale-[0.98] whitespace-nowrap flex-nowrap shrink-0"
                 >
-                  <Eye className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Quick View</span>
+                  <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span>{t('quickView')}</span>
                 </button>
                 <Link href={`/admin/applications/${app.id}`} className="flex-1">
                   <button
                     type="button"
-                    className={`w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white shadow-xs transition-all active:scale-[0.98] group ${
+                    className={`w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white shadow-xs transition-all active:scale-[0.98] group whitespace-nowrap flex-nowrap shrink-0 ${
                       app.onboardingStatus === 'COMPLETE'
                         ? 'bg-slate-900 hover:bg-slate-800 hover:shadow-md shadow-slate-900/10'
                         : app.onboardingStatus === 'REJECTED'
@@ -274,12 +273,12 @@ export default function AdminMentorApplicationsPage() {
                   >
                     <span>
                       {app.onboardingStatus === 'COMPLETE'
-                        ? 'Review Profile'
+                        ? t('reviewProfile')
                         : app.onboardingStatus === 'REJECTED'
-                        ? 'View Details'
-                        : 'Review Application'}
+                        ? t('viewDetails')
+                        : t('reviewBtn')}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 shrink-0" />
                   </button>
                 </Link>
               </div>
@@ -304,7 +303,7 @@ export default function AdminMentorApplicationsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedApp(null)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 whitespace-nowrap flex-nowrap shrink-0"
               >
                 ✕
               </Button>
@@ -313,11 +312,11 @@ export default function AdminMentorApplicationsPage() {
             <div className="space-y-4 text-xs text-slate-700">
               <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Role & Title</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('titleCompany')}</span>
                   <span className="font-bold text-slate-800 text-sm">{selectedApp.title}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Company</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('titleCompany')}</span>
                   <span className="font-bold text-slate-800 text-sm">{selectedApp.company || 'N/A'}</span>
                 </div>
               </div>
@@ -325,7 +324,7 @@ export default function AdminMentorApplicationsPage() {
               {selectedApp.bio && (
                 <div className="space-y-1">
                   <h4 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider text-slate-400">
-                    Professional Biography
+                    {t('bioHeading')}
                   </h4>
                   <p className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line">
                     {selectedApp.bio}
@@ -336,7 +335,7 @@ export default function AdminMentorApplicationsPage() {
               {selectedApp.experience && (
                 <div className="space-y-1">
                   <h4 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider text-slate-400">
-                    Background & Experience Claims
+                    {t('experienceHeading')}
                   </h4>
                   <p className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-700 leading-relaxed whitespace-pre-line">
                     {selectedApp.experience}
@@ -347,11 +346,11 @@ export default function AdminMentorApplicationsPage() {
               {selectedApp.areasOfExpertise.length > 0 && (
                 <div className="space-y-1">
                   <h4 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider text-slate-400">
-                    Areas of Expertise
+                    {t('skillsHeading')}
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedApp.areasOfExpertise.map((area, idx) => (
-                      <span key={idx} className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium">
+                      <span key={idx} className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium whitespace-nowrap flex-nowrap shrink-0">
                         {area}
                       </span>
                     ))}
@@ -367,17 +366,17 @@ export default function AdminMentorApplicationsPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedApp(null)}
-                    className="h-10 px-4 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
+                    className="h-10 px-4 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    Close Preview
+                    {t('closePreview')}
                   </button>
                   <Link href={`/admin/applications/${selectedApp.id}`}>
                     <button
                       type="button"
-                      className="h-10 px-4 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5"
+                      className="h-10 px-4 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap flex-nowrap shrink-0"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Open Full Profile</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t('openFullProfile')}</span>
                     </button>
                   </Link>
                 </>
@@ -388,18 +387,18 @@ export default function AdminMentorApplicationsPage() {
                     size="md"
                     isLoading={actionLoading}
                     onClick={() => setRejectionModalOpen(true)}
-                    className="gap-1.5 font-semibold text-xs rounded-xl shadow-xs"
+                    className="gap-1.5 font-semibold text-xs rounded-xl shadow-xs whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    <XCircle className="w-4 h-4" /> Reject Submission
+                    <XCircle className="w-4 h-4 shrink-0" /> {t('rejectBtn')}
                   </Button>
                   <Button
                     variant="primary"
                     size="md"
                     isLoading={actionLoading}
                     onClick={() => handleApprove(selectedApp.id)}
-                    className="gap-1.5 font-semibold text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20"
+                    className="gap-1.5 font-semibold text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 whitespace-nowrap flex-nowrap shrink-0"
                   >
-                    <CheckCircle2 className="w-4 h-4" /> Approve & Publish Mentor
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> {t('ApproveBtn')}
                   </Button>
                 </>
               )}
@@ -412,15 +411,15 @@ export default function AdminMentorApplicationsPage() {
       {rejectionModalOpen && selectedApp && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900">Reject Mentor Application</h3>
+            <h3 className="text-lg font-bold text-slate-900">{t('rejectModalTitle')}</h3>
             <p className="text-xs text-slate-500">
-              Please specify the reason for rejecting <span className="font-bold text-slate-800">{selectedApp.fullName}</span>. This feedback will be logged in audit history and emailed to the applicant.
+              {t('rejectModalDesc', { name: selectedApp.fullName })}
             </p>
             <textarea
               rows={4}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. Incomplete proof of experience or generic profile details..."
+              placeholder={t('rejectPlaceholder')}
               className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -431,17 +430,18 @@ export default function AdminMentorApplicationsPage() {
                   setRejectionModalOpen(false);
                   setRejectionReason('');
                 }}
+                className="whitespace-nowrap flex-nowrap shrink-0"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="danger"
                 size="sm"
                 isLoading={actionLoading}
                 onClick={handleRejectSubmit}
-                className="font-bold"
+                className="font-bold whitespace-nowrap flex-nowrap shrink-0"
               >
-                Confirm Rejection
+                {t('confirmRejectionBtn')}
               </Button>
             </div>
           </div>

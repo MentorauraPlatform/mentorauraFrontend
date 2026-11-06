@@ -21,11 +21,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 type Step = 'EMAIL' | 'OTP' | 'NEW_PASSWORD' | 'SUCCESS';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const t = useTranslations('forgotPasswordPage');
   const [step, setStep] = useState<Step>('EMAIL');
 
   // Form states
@@ -64,20 +66,20 @@ export default function ForgotPasswordPage() {
   };
 
   const parseErrorMessage = (err: unknown): string => {
-    if (!err) return 'An unexpected error occurred.';
+    if (!err) return t('unexpectedError');
     if (typeof err === 'string') return err;
     if (err instanceof Error) return err.message;
     const apiErr = err as { message?: string | string[] };
     if (Array.isArray(apiErr?.message)) return apiErr.message.join(', ');
     if (typeof apiErr?.message === 'string') return apiErr.message;
-    return 'An unexpected error occurred.';
+    return t('unexpectedError');
   };
 
   // ── STEP 1: Submit Email for OTP ─────────────────────────────────────────────
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Please enter your email address.');
+      setError(t('enterEmailError'));
       return;
     }
 
@@ -86,7 +88,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const res = await authService.requestForgotPasswordOtp(email.trim());
-      toast.success(res.message || 'OTP verification code sent!');
+      toast.success(res.message || t('otpSentToast'));
       setStep('OTP');
       setTimerSeconds(600);
       setCanResend(false);
@@ -135,7 +137,7 @@ export default function ForgotPasswordPage() {
     const fullOtp = otp.join('');
 
     if (fullOtp.length !== 6) {
-      setError('Please enter all 6 digits of the OTP code.');
+      setError(t('enter6DigitsError'));
       return;
     }
 
@@ -144,7 +146,7 @@ export default function ForgotPasswordPage() {
 
     try {
       await authService.verifyOtp(email.trim(), fullOtp);
-      toast.success('OTP code verified successfully!');
+      toast.success(t('otpVerifiedToast'));
       setStep('NEW_PASSWORD');
     } catch (err) {
       setError(parseErrorMessage(err));
@@ -159,7 +161,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const res = await authService.requestForgotPasswordOtp(email.trim());
-      toast.success(res.message || 'New OTP verification code sent!');
+      toast.success(res.message || t('newOtpSentToast'));
       setTimerSeconds(600);
       setCanResend(false);
       setOtp(['', '', '', '', '', '']);
@@ -184,7 +186,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('passwordsMismatchError'));
       return;
     }
 
@@ -194,7 +196,7 @@ export default function ForgotPasswordPage() {
       !passwordChecks.hasLowercase ||
       !passwordChecks.hasNumberOrSymbol
     ) {
-      setError('Please fulfill all password security requirements.');
+      setError(t('fulfillRequirementsError'));
       return;
     }
 
@@ -204,7 +206,7 @@ export default function ForgotPasswordPage() {
     try {
       const fullOtp = otp.join('');
       const res = await authService.resetPassword(email.trim(), fullOtp, newPassword);
-      toast.success(res.message || 'Password reset successfully!');
+      toast.success(res.message || t('passwordResetSuccessToast'));
       setStep('SUCCESS');
     } catch (err) {
       setError(parseErrorMessage(err));
@@ -229,24 +231,21 @@ export default function ForgotPasswordPage() {
               <KeyRound className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-black text-[#172033] tracking-tight">
-              {step === 'EMAIL' && 'Forgot Password?'}
-              {step === 'OTP' && 'Verify 6-Digit OTP'}
-              {step === 'NEW_PASSWORD' && 'Set New Password'}
-              {step === 'SUCCESS' && 'Password Reset Complete!'}
+              {step === 'EMAIL' && t('forgotTitle')}
+              {step === 'OTP' && t('verifyOtpTitle')}
+              {step === 'NEW_PASSWORD' && t('setNewPasswordTitle')}
+              {step === 'SUCCESS' && t('resetCompleteTitle')}
             </h1>
             <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              {step === 'EMAIL' &&
-                'Enter your email address below and we will send you a 6-digit OTP code.'}
+              {step === 'EMAIL' && t('forgotSubtitle')}
               {step === 'OTP' && (
                 <>
-                  We sent a 6-digit verification code to{' '}
+                  {t('verifyOtpSubtitle')}{' '}
                   <span className="font-bold text-slate-800">{email}</span>
                 </>
               )}
-              {step === 'NEW_PASSWORD' &&
-                'Create a strong new password meeting all security standards.'}
-              {step === 'SUCCESS' &&
-                'Your password has been updated successfully. You can now log in.'}
+              {step === 'NEW_PASSWORD' && t('setNewPasswordSubtitle')}
+              {step === 'SUCCESS' && t('resetCompleteSubtitle')}
             </p>
           </div>
 
@@ -263,7 +262,7 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleRequestOtp} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Email Address
+                  {t('emailLabel')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -272,7 +271,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your registered email..."
+                    placeholder={t('emailPlaceholder')}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                   />
                 </div>
@@ -286,11 +285,11 @@ export default function ForgotPasswordPage() {
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Sending OTP Code...
+                    {t('sendingOtp')}
                   </>
                 ) : (
                   <>
-                    Send OTP Verification Code
+                    {t('sendOtpBtn')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -301,7 +300,7 @@ export default function ForgotPasswordPage() {
                   href="/auth?mode=login"
                   className="text-xs font-semibold text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Login
+                  <ArrowLeft className="w-3.5 h-3.5" /> {t('backToSignIn')}
                 </Link>
               </div>
             </form>
@@ -332,7 +331,7 @@ export default function ForgotPasswordPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 px-1">
                 <div className="flex items-center gap-1.5 font-medium">
                   <Clock className="w-3.5 h-3.5 text-orange-500" />
-                  <span>Expires in: {formatTimer(timerSeconds)}</span>
+                  <span>{t('expiresIn', { time: formatTimer(timerSeconds) })}</span>
                 </div>
 
                 <button
@@ -345,7 +344,7 @@ export default function ForgotPasswordPage() {
                       : 'text-slate-400 cursor-not-allowed'
                   }`}
                 >
-                  Resend Code
+                  {t('resendCode')}
                 </button>
               </div>
 
@@ -357,11 +356,11 @@ export default function ForgotPasswordPage() {
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Verifying OTP...
+                    {t('verifyingOtp')}
                   </>
                 ) : (
                   <>
-                    Verify & Continue
+                    {t('verifyContinueBtn')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -373,7 +372,7 @@ export default function ForgotPasswordPage() {
                   onClick={() => setStep('EMAIL')}
                   className="text-xs font-semibold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Change email address
+                  <ArrowLeft className="w-3.5 h-3.5" /> {t('changeEmailBtn')}
                 </button>
               </div>
             </form>
@@ -384,7 +383,7 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  New Password
+                  {t('newPasswordLabel')}
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -393,7 +392,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password..."
+                    placeholder={t('newPasswordPlaceholder')}
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                   />
                   <button
@@ -408,7 +407,7 @@ export default function ForgotPasswordPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Confirm New Password
+                  {t('confirmNewPasswordLabel')}
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -417,7 +416,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password..."
+                    placeholder={t('confirmNewPasswordPlaceholder')}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                   />
                 </div>
@@ -425,7 +424,7 @@ export default function ForgotPasswordPage() {
 
               {/* Password strength checklist */}
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1.5 text-[11px]">
-                <span className="font-bold text-slate-700 block mb-1">Password Requirements:</span>
+                <span className="font-bold text-slate-700 block mb-1">{t('passwordRequirements')}</span>
                 <div className="flex items-center gap-2">
                   <CheckCircle2
                     className={`w-3.5 h-3.5 ${
@@ -433,7 +432,7 @@ export default function ForgotPasswordPage() {
                     }`}
                   />
                   <span className={passwordChecks.hasMinLength ? 'text-slate-800' : 'text-slate-400'}>
-                    At least 8 characters
+                    {t('reqMinLength')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -443,7 +442,7 @@ export default function ForgotPasswordPage() {
                     }`}
                   />
                   <span className={passwordChecks.hasUppercase ? 'text-slate-800' : 'text-slate-400'}>
-                    At least 1 uppercase letter
+                    {t('reqUppercase')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -453,7 +452,7 @@ export default function ForgotPasswordPage() {
                     }`}
                   />
                   <span className={passwordChecks.hasLowercase ? 'text-slate-800' : 'text-slate-400'}>
-                    At least 1 lowercase letter
+                    {t('reqLowercase')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -467,7 +466,7 @@ export default function ForgotPasswordPage() {
                       passwordChecks.hasNumberOrSymbol ? 'text-slate-800' : 'text-slate-400'
                     }
                   >
-                    At least 1 number or special character
+                    {t('reqNumberSymbol')}
                   </span>
                 </div>
               </div>
@@ -480,11 +479,11 @@ export default function ForgotPasswordPage() {
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Resetting Password...
+                    {t('resettingPassword')}
                   </>
                 ) : (
                   <>
-                    Reset Password
+                    {t('resetPasswordBtn')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -499,13 +498,13 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Your password has been changed successfully. You can now log into your MentorAura account with your new credentials.
+                {t('successBody')}
               </p>
               <button
                 onClick={() => router.push('/auth?mode=login')}
                 className="w-full py-3 bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 hover:opacity-95 transition-all"
               >
-                Proceed to Login
+                {t('proceedToLoginBtn')}
               </button>
             </div>
           )}

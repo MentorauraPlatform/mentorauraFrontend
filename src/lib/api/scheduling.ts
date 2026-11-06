@@ -25,13 +25,19 @@ export const schedulingApi = {
     apiClient.get<unknown[]>('/bookings/mine'),
 
   getMentorBookings: () =>
-    apiClient.get<unknown[]>('/mentor/bookings'),
+    apiClient.get<unknown[]>('/bookings/mine'),
 
   getBooking: (id: string) =>
     apiClient.get<unknown>(`/bookings/${id}`),
 
   cancelBooking: (id: string, reason?: string) =>
     apiClient.patch<unknown>(`/bookings/${id}/cancel`, { reason }),
+
+  completeBooking: (id: string) =>
+    apiClient.patch<unknown>(`/bookings/${id}/complete`, {}),
+
+  reportNoShow: (id: string, reportedBy: 'MENTOR' | 'MENTEE', reason?: string) =>
+    apiClient.patch<unknown>(`/bookings/${id}/no-show`, { reportedBy, reason }),
 
   getAvailability: () =>
     apiClient.get<Record<string, unknown>>('/mentor/availability'),

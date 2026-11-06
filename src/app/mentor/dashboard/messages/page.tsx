@@ -9,10 +9,13 @@ import { ChatView } from '@/components/messaging/ChatView';
 import { messagingApi } from '@/lib/api/messaging';
 import { mentorApi } from '@/lib/api/client';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { useTranslations } from 'next-intl';
 import type { MentorProfile } from '@/lib/types';
 
 export default function MentorMessagesPage() {
   const router = useRouter();
+  const t = useTranslations('mentorSidebar');
+  const tCommon = useTranslations('common');
   const { user, isLoading: authLoading, logout } = useAuth();
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,7 +46,7 @@ export default function MentorMessagesPage() {
   }, [user]);
 
   if (authLoading || !user) {
-    return <LoadingState message="Loading messages..." />;
+    return <LoadingState message={tCommon('loading')} />;
   }
 
   return (
@@ -68,10 +71,10 @@ export default function MentorMessagesPage() {
           user={user}
           profile={profile}
           onToggleSidebar={() => setSidebarOpen(true)}
-          activeTabTitle="Direct Messaging"
+          activeTabTitle={t('messages')}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
           <ChatView currentUserId={user.id} userRole="MENTOR" />
         </main>
       </div>

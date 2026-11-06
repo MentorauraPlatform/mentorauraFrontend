@@ -16,7 +16,7 @@ export const SimpleHeader: React.FC<SimpleHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <header className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between gap-3 ${className}`}>
+    <header className={`w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 flex items-center justify-between gap-3 ${className}`}>
       <BrandLogo />
       
       <div className="flex items-center gap-3">

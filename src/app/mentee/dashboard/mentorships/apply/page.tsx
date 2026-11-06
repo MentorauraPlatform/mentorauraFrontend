@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { applicationsApi, plansApi } from '@/lib/api/client';
+import { useTranslations } from 'next-intl';
+import { applicationsApi, plansApi, mentorshipsApi } from '@/lib/api/client';
 import { marketplaceService, MentorDetailData } from '@/services/marketplace.service';
-import type { PlanSummary, MentorshipApplication } from '@/lib/types';
+import type { PlanSummary, MentorshipApplication, Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle2 } from 'lucide-react';
 
-export default function ApplyPage() {
+function ApplyContent() {
   const router = useRouter();
+  const t = useTranslations('menteeMentorships');
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
   const [planId, setPlanId] = useState(searchParams.get('planId') || '');
@@ -18,6 +20,7 @@ export default function ApplyPage() {
   const [message, setMessage] = useState('');
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [myApplications, setMyApplications] = useState<MentorshipApplication[]>([]);
+  const [myMentorships, setMyMentorships] = useState<Mentorship[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -48,10 +51,11 @@ export default function ApplyPage() {
 
         // 1. If mentorId is available, load that specific mentor and their plans
         if (pMentorId) {
-          const [mentorRes, plansRes, appsRes] = await Promise.all([
+          const [mentorRes, plansRes, appsRes, mentorshipsRes] = await Promise.all([
             marketplaceService.getMentorProfile(pMentorId).catch(() => null),
             plansApi.getMentorPlans(pMentorId).catch(() => null),
             applicationsApi.getMyApplications().catch(() => null),
+            mentorshipsApi.getMenteeMentorships().catch(() => null),
           ]);
 
           if (appsRes?.data) {
@@ -62,6 +66,16 @@ export default function ApplyPage() {
               ? ((rawApps as any).data as MentorshipApplication[])
               : [];
             setMyApplications(appList);
+          }
+
+          if (mentorshipsRes?.data) {
+            const rawM = mentorshipsRes.data as unknown;
+            const mList = Array.isArray(rawM)
+              ? (rawM as Mentorship[])
+              : Array.isArray((rawM as any)?.data)
+              ? ((rawM as any).data as Mentorship[])
+              : [];
+            setMyMentorships(mList);
           }
 
           if (mentorRes) {
@@ -104,9 +118,10 @@ export default function ApplyPage() {
         }
 
         // 2. If only planId is available, fetch all plans and filter to the selected plan's mentor
-        const [response, appsRes] = await Promise.all([
+        const [response, appsRes, mentorshipsRes] = await Promise.all([
           plansApi.list().catch(() => null),
           applicationsApi.getMyApplications().catch(() => null),
+          mentorshipsApi.getMenteeMentorships().catch(() => null),
         ]);
 
         if (appsRes?.data) {
@@ -117,6 +132,16 @@ export default function ApplyPage() {
             ? ((rawApps as any).data as MentorshipApplication[])
             : [];
           setMyApplications(appList);
+        }
+
+        if (mentorshipsRes?.data) {
+          const rawM = mentorshipsRes.data as unknown;
+          const mList = Array.isArray(rawM)
+            ? (rawM as Mentorship[])
+            : Array.isArray((rawM as any)?.data)
+            ? ((rawM as any).data as Mentorship[])
+            : [];
+          setMyMentorships(mList);
         }
 
         const raw = response as unknown;
@@ -151,19 +176,37 @@ export default function ApplyPage() {
         setPlans(allPlans);
       } catch (err: unknown) {
         const apiError = err as { message?: string };
-        setError(apiError.message || 'Failed to load plans');
+        setError(apiError.message || t('failedToLoadPlans'));
       } finally {
         setLoadingPlans(false);
       }
     })();
-  }, [user, searchParams]);
+  }, [user, searchParams, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!planId) return;
 
     if (!agreedTerms) {
-      setError('You must agree to the Terms of Service to apply.');
+      setError(t('termsRequiredError'));
+      return;
+    }
+
+    const hasExisting =
+      myApplications.some(
+        (a) =>
+          (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+          (a.status === 'PENDING' || a.status === 'ACCEPTED'),
+      ) ||
+      myMentorships.some(
+        (m) =>
+          mentor &&
+          m.mentorId === mentor.id &&
+          ['INTRO', 'ACTIVE', 'PAUSED'].includes(m.status),
+      );
+
+    if (hasExisting) {
+      setError(t('alreadyAppliedWithMentor'));
       return;
     }
 
@@ -174,7 +217,7 @@ export default function ApplyPage() {
       router.push('/mentee/dashboard/mentorships');
     } catch (err: unknown) {
       const apiError = err as { message?: string };
-      setError(apiError.message || 'Failed to submit application');
+      setError(apiError.message || t('withdrawError'));
     } finally {
       setLoading(false);
     }
@@ -182,7 +225,7 @@ export default function ApplyPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="max-w-2xl mx-auto px-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           {mentor ? (
             <div className="mb-6 pb-6 border-b border-gray-100 flex items-center gap-4">
@@ -191,7 +234,7 @@ export default function ApplyPage() {
               </div>
               <div>
                 <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">
-                  Applying for Mentorship with
+                  {t('applyingForMentorshipWith')}
                 </span>
                 <h1 className="text-2xl font-bold text-gray-900 mt-0.5">{mentor.fullName}</h1>
                 <p className="text-xs text-gray-500">
@@ -201,43 +244,99 @@ export default function ApplyPage() {
             </div>
           ) : (
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Mentorship</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('applyPageTitle')}</h1>
               <p className="text-gray-600">
-                Select a plan and submit your application to start the mentorship process.
+                {t('applyPageSubtitle')}
               </p>
             </div>
           )}
 
           {(() => {
-            const existing = myApplications.find(
-              (a) => (a.planId === planId || (mentor && a.mentorId === mentor.id)) && a.status === 'PENDING'
+            const existingPending = myApplications.find(
+              (a) =>
+                (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+                a.status === 'PENDING',
             );
-            if (!existing) return null;
+            const existingAccepted = myApplications.find(
+              (a) =>
+                (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+                a.status === 'ACCEPTED',
+            );
+            const existingMentorship = myMentorships.find(
+              (m) =>
+                mentor &&
+                m.mentorId === mentor.id &&
+                ['INTRO', 'ACTIVE', 'PAUSED'].includes(m.status),
+            );
 
-            return (
-              <div className="mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    Application Already Submitted
-                  </h3>
-                  <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                    You already submitted an application for this plan on{' '}
-                    <span className="font-semibold">
-                      {new Date(existing.createdAt).toLocaleDateString()}
-                    </span>
-                    . Your application is currently pending review by {mentor?.fullName || 'the mentor'}.
-                  </p>
+            if (existingPending) {
+              return (
+                <div className="mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{t('applicationAlreadySubmittedTitle')}</span>
+                    </h3>
+                    <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                      {t('applicationAlreadySubmittedDesc', {
+                        date: new Date(existingPending.createdAt).toLocaleDateString(),
+                        mentor: mentor?.fullName || t('mentorFallback'),
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/mentee/dashboard/mentorships')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap flex-nowrap shrink-0 shadow-sm"
+                  >
+                    {t('viewApplicationBtn')}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => router.push('/mentee/dashboard/mentorships')}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap shadow-sm"
-                >
-                  View Application
-                </button>
-              </div>
-            );
+              );
+            }
+
+            if (existingMentorship || existingAccepted) {
+              const isIntro =
+                existingMentorship?.status === 'INTRO' || Boolean(existingAccepted);
+              const mId = existingMentorship?.id;
+              return (
+                <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-950 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>
+                        {isIntro ? t('freeIntroCallAvailable') : t('alreadyAppliedWithMentor')}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-blue-800 mt-1 leading-relaxed">
+                      {isIntro ? t('freeIntroCallDesc') : t('alreadyAppliedWithMentor')}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {isIntro && mId && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(`/mentee/dashboard/bookings/new?mentorshipId=${mId}`)
+                        }
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+                      >
+                        {t('bookFreeIntroCall')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push('/mentee/dashboard/mentorships')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+                    >
+                      {t('viewMentorship')}
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
           })()}
 
           {error && (
@@ -249,7 +348,7 @@ export default function ApplyPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Plan <span className="text-red-500">*</span>
+                {t('planSelectLabel')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={planId}
@@ -258,7 +357,7 @@ export default function ApplyPage() {
                 className="w-full h-14 px-5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 bg-white"
               >
                 <option value="">
-                  {loadingPlans ? 'Loading plans...' : 'Select a plan'}
+                  {loadingPlans ? t('loadingPlans') : t('selectPlanPlaceholder')}
                 </option>
                 {(plans || []).map((plan) => (
                   <option key={plan.id} value={plan.id}>
@@ -267,20 +366,20 @@ export default function ApplyPage() {
                 ))}
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                Don’t see a plan?{' '}
+                {t('dontSeePlan')}{' '}
                 <button
                   type="button"
                   onClick={() => router.push('/mentee/dashboard/mentorships/plans')}
-                  className="text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-orange-600 hover:text-orange-700 font-medium whitespace-nowrap flex-nowrap shrink-0"
                 >
-                  Browse all plans
+                  {t('browseAllPlans')}
                 </button>
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Message (optional)
+                {t('messageOptionalLabel')}
               </label>
               <textarea
                 value={message}
@@ -288,9 +387,9 @@ export default function ApplyPage() {
                 maxLength={500}
                 rows={5}
                 className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 resize-none"
-                placeholder="Tell the mentor why you'd like to work together..."
+                placeholder={t('messagePlaceholder')}
               />
-              <p className="mt-1 text-sm text-gray-500">{message.length}/500 characters</p>
+              <p className="mt-1 text-sm text-gray-500">{t('charactersCount', { count: message.length })}</p>
             </div>
 
             <div className="flex items-start gap-3">
@@ -299,18 +398,18 @@ export default function ApplyPage() {
                 type="checkbox"
                 checked={agreedTerms}
                 onChange={(e) => setAgreedTerms(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 shrink-0"
                 required
               />
               <label htmlFor="terms" className="text-sm text-gray-600">
-                I have read and agree to the{' '}
+                {t('agreeTermsLabel')}{' '}
                 <a
                   href="/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-orange-600 hover:text-orange-700 underline font-medium"
                 >
-                  Mentorship Terms of Service
+                  {t('termsOfServiceLink')}
                 </a>
                 .
               </label>
@@ -318,36 +417,58 @@ export default function ApplyPage() {
 
             <div className="flex items-center gap-3">
               {(() => {
-                const isAlreadyApplied = Boolean(
-                  myApplications.find(
-                    (a) => (a.planId === planId || (mentor && a.mentorId === mentor.id)) && a.status === 'PENDING'
-                  )
-                );
+                const isAlreadyApplied =
+                  myApplications.some(
+                    (a) =>
+                      (a.planId === planId || (mentor && a.mentorId === mentor.id)) &&
+                      (a.status === 'PENDING' || a.status === 'ACCEPTED'),
+                  ) ||
+                  myMentorships.some(
+                    (m) =>
+                      mentor &&
+                      m.mentorId === mentor.id &&
+                      ['INTRO', 'ACTIVE', 'PAUSED'].includes(m.status),
+                  );
                 return (
                   <button
                     type="submit"
                     disabled={loading || !planId || !agreedTerms || isAlreadyApplied}
-                    className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 disabled:opacity-50 font-medium transition-colors"
+                    className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 disabled:opacity-50 font-medium transition-colors whitespace-nowrap flex-nowrap shrink-0"
                   >
                     {loading
-                      ? 'Submitting...'
+                      ? t('submittingApplication')
                       : isAlreadyApplied
-                      ? 'Application Already Submitted'
-                      : 'Submit Application'}
+                      ? t('alreadyAppliedBtn')
+                      : t('submitApplicationBtn')}
                   </button>
                 );
               })()}
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-colors whitespace-nowrap flex-nowrap shrink-0"
               >
-                Cancel
+                {t('cancelBtn')}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApplyPage() {
+  const t = useTranslations('menteeMentorships');
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
+          <div className="text-sm text-gray-600">{t('loadingForm')}</div>
+        </div>
+      }
+    >
+      <ApplyContent />
+    </Suspense>
   );
 }

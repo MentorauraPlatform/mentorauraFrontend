@@ -113,7 +113,7 @@ export default function PublicMentorProfilePage() {
     return (
       <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
         <Navbar />
-        <div className="flex-1 max-w-4xl mx-auto px-4 py-20 w-full text-center space-y-4">
+        <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-20 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-6 h-6" />
           </div>
@@ -228,7 +228,7 @@ export default function PublicMentorProfilePage() {
       )}
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-10 space-y-8">
         {/* Back Link */}
         <Link href="/mentors" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-orange-600 transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -264,7 +264,7 @@ export default function PublicMentorProfilePage() {
                 <div className="flex items-center gap-3 text-xs text-slate-500 pt-1">
                   <div className="flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
                     <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                    <span>{mentor.avgRating ? mentor.avgRating : 'New'}</span>
+                    <span>{mentor.avgRating ? mentor.avgRating : t('newRating')}</span>
                   </div>
                   <span>{t('reviews', { count: mentor.reviewCount })}</span>
                 </div>
@@ -280,7 +280,7 @@ export default function PublicMentorProfilePage() {
                   onClick={() => router.push('/mentee/dashboard/mentorships')}
                 >
                   <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  Application Pending
+                  {t('applicationPendingBtn')}
                 </Button>
               ) : mentorActiveOrIntro ? (
                 <Button
@@ -295,7 +295,7 @@ export default function PublicMentorProfilePage() {
                     }
                   }}
                 >
-                  {mentorActiveOrIntro.status === 'INTRO' ? 'Activate Mentorship' : 'View Mentorship'}
+                  {mentorActiveOrIntro.status === 'INTRO' ? t('activateMentorshipBtn') : t('viewMentorshipBtn')}
                 </Button>
               ) : (
                 <a href="#plans">
@@ -461,7 +461,7 @@ export default function PublicMentorProfilePage() {
                           <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
                             <div className="w-full py-2.5 px-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center gap-2 text-emerald-800 font-bold text-xs shadow-sm">
                               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span>Applied • Application Pending</span>
+                              <span>{t('appliedPendingBadge')}</span>
                             </div>
                             <Button
                               variant="outline"
@@ -469,7 +469,7 @@ export default function PublicMentorProfilePage() {
                               className="w-full text-xs font-semibold text-slate-700 hover:text-orange-600 border-slate-200 hover:bg-slate-50 transition-colors"
                               onClick={() => router.push('/mentee/dashboard/mentorships')}
                             >
-                              View Application in Dashboard
+                              {t('viewAppInDashboardBtn')}
                             </Button>
                           </div>
                         );
@@ -480,7 +480,7 @@ export default function PublicMentorProfilePage() {
                         return (
                           <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
                             <div className="w-full py-2 px-3 bg-amber-50 border border-amber-200 rounded-xl text-center text-amber-800 text-xs font-semibold">
-                              Application Accepted!
+                              {t('applicationAcceptedBadge')}
                             </div>
                             <Button
                               variant="primary"
@@ -494,7 +494,7 @@ export default function PublicMentorProfilePage() {
                                 }
                               }}
                             >
-                              Activate Plan & Pay
+                              {t('activatePlanPayBtn')}
                             </Button>
                           </div>
                         );
@@ -505,7 +505,7 @@ export default function PublicMentorProfilePage() {
                           <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
                             <div className="w-full py-2 px-3 bg-green-50 border border-green-200 rounded-xl text-center text-green-800 text-xs font-semibold flex items-center justify-center gap-1.5">
                               <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                              Active Mentorship
+                              {t('activeMentorshipBadge')}
                             </div>
                             <Button
                               variant="outline"
@@ -513,7 +513,7 @@ export default function PublicMentorProfilePage() {
                               className="w-full font-bold text-slate-800 hover:text-orange-600"
                               onClick={() => router.push(`/mentee/dashboard/mentorships/${planStatus.mentorship.id}`)}
                             >
-                              View Mentorship
+                              {t('viewMentorshipBtn')}
                             </Button>
                           </div>
                         );

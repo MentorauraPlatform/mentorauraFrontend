@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { schedulingApi } from '@/lib/api/scheduling';
+import { useTranslations } from 'next-intl';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 const TIMEZONES = [
@@ -49,6 +51,7 @@ function formatDate(date: Date) {
 }
 
 export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc }: Props) {
+  const t = useTranslations('common');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -57,30 +60,28 @@ export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
 
-  const loadSlots = async () => {
+  const loadSlots = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/proxy/mentors/${mentorId}/slots?from=${formatDate(weekStart)}&to=${formatDate(weekEnd)}&timezone=${encodeURIComponent(timezone)}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(err.message || 'Failed to load slots');
-      }
-      const json = await res.json();
-      setSlots(json.data ?? []);
+      const res = await schedulingApi.getSlots(
+        mentorId,
+        formatDate(weekStart),
+        formatDate(weekEnd),
+        timezone,
+      );
+      setSlots((res as any)?.data ?? res ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load slots';
+      const message = err instanceof Error ? err.message : t('failedToLoadSlots');
       setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [mentorId, weekStart, weekEnd, timezone, t]);
 
   React.useEffect(() => {
     loadSlots();
-  }, [mentorId, weekStart, weekEnd, timezone]);
+  }, [loadSlots]);
 
   const groupedByDay = useMemo(() => {
     const map = new Map<string, Slot[]>();
@@ -98,14 +99,14 @@ export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc
     const today = new Date();
     const todayStart = startOfWeek(today);
     const isCurrent = todayStart.getUTCDate() === weekStart.getUTCDate() && todayStart.getUTCMonth() === weekStart.getUTCMonth();
-    return isCurrent ? ' (This week)' : '';
-  }, [weekStart]);
+    return isCurrent ? t('thisWeek') : '';
+  }, [weekStart, t]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Available Slots</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('availableSlots')}</h3>
           <p className="text-xs text-gray-500">
             {weekStart.toLocaleDateString()} – {weekEnd.toLocaleDateString()}{todayLabel}
           </p>
@@ -133,7 +134,7 @@ export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc
               onClick={() => setWeekStart(startOfWeek(new Date()))}
               className="px-3 py-2 text-xs font-bold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50"
             >
-              Today
+              {t('today')}
             </button>
             <button
               onClick={() => setWeekStart((prev) => addDays(prev, 7))}
@@ -152,24 +153,25 @@ export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc
       )}
 
       {loading ? (
-        <div className="py-10 text-center text-sm text-gray-500">Loading slots...</div>
+        <div className="py-10 text-center text-sm text-gray-500">{t('loadingSlots')}</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
           {DAYS.map((day) => {
             const daySlots = groupedByDay.get(day) ?? [];
             const dateObj = addDays(weekStart, DAYS.indexOf(day));
             const isToday = dateObj.toDateString() === new Date().toDateString();
+            const capDay = day.charAt(0).toUpperCase() + day.slice(1);
 
             return (
               <div key={day} className={`rounded-xl border p-3 ${isToday ? 'border-orange-300 bg-orange-50/40' : 'border-gray-200 bg-gray-50/40'}`}>
                 <div className="text-center mb-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{day.slice(0, 3)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t(capDay).slice(0, 3)}</p>
                   <p className={`text-sm font-black ${isToday ? 'text-orange-600' : 'text-gray-900'}`}>{dateObj.getUTCDate()}</p>
                 </div>
 
                 <div className="space-y-2">
                   {daySlots.length === 0 && (
-                    <p className="text-[10px] text-gray-400 text-center">No slots</p>
+                    <p className="text-[10px] text-gray-400 text-center">{t('noSlots')}</p>
                   )}
                   {daySlots.map((slot) => {
                     const isSelected = slot.slotUtc === selectedSlotUtc;

@@ -8,9 +8,11 @@ import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { ChatView } from '@/components/messaging/ChatView';
 import { messagingApi } from '@/lib/api/messaging';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { useTranslations } from 'next-intl';
 
 export default function MenteeMessagesPage() {
   const router = useRouter();
+  const t = useTranslations('menteeDashboard');
   const { user, isLoading: authLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -33,7 +35,7 @@ export default function MenteeMessagesPage() {
   }, [user]);
 
   if (authLoading || !user) {
-    return <LoadingState message="Loading messages..." />;
+    return <LoadingState message={t('loadingDashboard')} />;
   }
 
   return (
@@ -56,10 +58,10 @@ export default function MenteeMessagesPage() {
         <MenteeHeader
           user={user}
           onToggleSidebar={() => setSidebarOpen(true)}
-          activeTabTitle="Direct Messaging"
+          activeTabTitle={t('tabMessages')}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
           <ChatView currentUserId={user.id} userRole="MENTEE" />
         </main>
       </div>

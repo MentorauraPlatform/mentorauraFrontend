@@ -569,3 +569,22 @@ html, body {
 .animate-fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Button Line and Fit Rules: ensure icon and text stay on the same line without breaking */
+button,
+[role="button"] {
+  white-space: nowrap;
+}
+
+button:not(.allow-wrap),
+[role="button"]:not(.allow-wrap) {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+button:not(.allow-wrap) svg,
+button:not(.allow-wrap) img,
+[role="button"]:not(.allow-wrap) svg,
+[role="button"]:not(.allow-wrap) img {
+  flex-shrink: 0;
+}
