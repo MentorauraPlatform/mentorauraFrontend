@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { mentorshipsApi, sessionsApi } from '@/lib/api/client';
 import type { Mentorship, MentorshipSession } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { DisputeModal } from '@/components/modals/DisputeModal';
 import { Calendar, PhoneCall, Video, CheckCircle2 } from 'lucide-react';
 
@@ -54,28 +56,33 @@ export default function MentorshipDetailPage({
     })();
   }, [user, authLoading, router, id, t]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-lg text-gray-600">{t('loadingMentorships')}</div>
-      </div>
-    );
-  }
-
-  if (error || !mentorship) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-red-600">{error || t('failedToLoad')}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
+    <MenteeDashboardLayout
+      activeTab="mentors"
+      activeTabTitle={mentorship?.plan?.title || t('myMentorshipsTitle')}
+    >
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingMentorships')} />
+        </div>
+      ) : error || !mentorship ? (
+        <div className="py-12 flex justify-center">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900">{t('failedToLoad')}</h2>
+            <p className="text-xs text-red-600">{error || t('failedToLoad')}</p>
+            <button
+              onClick={() => router.push('/mentee/dashboard/mentorships')}
+              className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700"
+            >
+              {t('backToMentorships') || 'Back to Mentorships'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-8">
+          <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 sm:p-8">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {mentorship.plan?.title || t('planFallback')}
               </h1>
@@ -261,13 +268,16 @@ export default function MentorshipDetailPage({
           </div>
         </div>
       </div>
+      )}
 
-      <DisputeModal
-        isOpen={disputeModalOpen}
-        onClose={() => setDisputeModalOpen(false)}
-        mentorshipId={mentorship.id}
-        contextLabel={`${t('planFallback')}: ${mentorship.plan?.title || t('planFallback')}`}
-      />
-    </div>
+      {mentorship && (
+        <DisputeModal
+          isOpen={disputeModalOpen}
+          onClose={() => setDisputeModalOpen(false)}
+          mentorshipId={mentorship.id}
+          contextLabel={`${t('planFallback')}: ${mentorship.plan?.title || t('planFallback')}`}
+        />
+      )}
+    </MenteeDashboardLayout>
   );
 }

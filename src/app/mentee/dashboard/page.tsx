@@ -71,6 +71,16 @@ export default function MenteeDashboardPage() {
     }
   }, [user, authLoading, router]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as MenteeTab;
+      if (tabParam && ['overview', 'sessions', 'mentors', 'messages', 'goals', 'settings'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [recommendedMentors, setRecommendedMentors] = useState<MentorCardData[]>([]);
   const [goalsList, setGoalsList] = useState<{ id: string; title: string; completed: boolean; targetDate: string }[]>([]);

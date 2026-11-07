@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { plansApi, applicationsApi } from '@/lib/api/client';
 import type { PlanSummary, MentorshipApplication } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function BrowsePlansPage() {
@@ -75,33 +77,29 @@ export default function BrowsePlansPage() {
     router.push(`/mentee/dashboard/mentorships/apply?planId=${planId}`);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-lg text-gray-600">{t('loadingPlans')}</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-red-600">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('plansHeading')}</h1>
-          <p className="text-gray-600 mt-1">
-            {t('plansSub')}
-          </p>
+    <MenteeDashboardLayout activeTab="mentors" activeTabTitle={t('plansHeading')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingPlans')} />
         </div>
+      ) : error ? (
+        <div className="py-12 flex justify-center">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900">{t('failedToLoad')}</h2>
+            <p className="text-xs text-red-600">{error}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('plansHeading')}</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              {t('plansSub')}
+            </p>
+          </div>
 
-        {plans.length === 0 ? (
+          {plans.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center text-gray-600">
             {t('noActivePlans')}
           </div>
@@ -165,6 +163,7 @@ export default function BrowsePlansPage() {
           </div>
         )}
       </div>
-    </div>
+      )}
+    </MenteeDashboardLayout>
   );
 }

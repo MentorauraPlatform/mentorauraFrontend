@@ -20,7 +20,7 @@ import {
 import type { MeResponse, MentorProfile } from '@/lib/types';
 import { useTranslations } from 'next-intl';
 
-export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings' | 'messages';
+export type MentorTab = 'overview' | 'profile' | 'skills' | 'availability' | 'plans' | 'bookings' | 'messages' | 'mentees';
 
 interface MentorSidebarProps {
   activeTab: MentorTab;
@@ -188,13 +188,27 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
             </div>
             <Link
               href="/mentor/mentees"
-              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm transition-all group ${
+                activeTab === 'mentees'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white shadow-md shadow-orange-500/20 font-semibold'
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+              }`}
             >
               <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <Users
+                  className={`w-5 h-5 transition-transform ${
+                    activeTab === 'mentees' ? 'scale-110 text-white' : 'text-orange-400 group-hover:scale-110'
+                  }`}
+                />
                 <span>{t('menteesApplications')}</span>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-orange-400 border border-orange-500/20">
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  activeTab === 'mentees'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-800 text-orange-400 border border-orange-500/20'
+                }`}
+              >
                 {t('queueBadge')}
               </span>
             </Link>
@@ -212,10 +226,18 @@ export const MentorSidebar: React.FC<MentorSidebarProps> = ({
             </Link>
             <Link
               href="/mentor/plans"
-              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all group"
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm transition-all group ${
+                activeTab === 'plans'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FF852D] text-white shadow-md shadow-orange-500/20 font-semibold'
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+              }`}
             >
               <div className="flex items-center gap-3">
-                <Package className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <Package
+                  className={`w-5 h-5 transition-transform ${
+                    activeTab === 'plans' ? 'scale-110 text-white' : 'text-orange-400 group-hover:scale-110'
+                  }`}
+                />
                 <span>{t('pricingPlans')}</span>
               </div>
               <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />

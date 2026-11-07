@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { applicationsApi, mentorshipsApi } from '@/lib/api/client';
 import type { MentorshipApplication, Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Calendar, PhoneCall, CheckCircle2, Video, RefreshCw, AlertCircle } from 'lucide-react';
 
 type Tab = 'applications' | 'mentorships';
@@ -95,52 +97,42 @@ export default function MenteeMentorshipsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="flex flex-col items-center gap-3 text-gray-600">
-          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm font-semibold">{t('loadingMentorships')}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] p-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <h2 className="text-lg font-bold text-gray-900">{t('failedToLoad')}</h2>
-          <p className="text-xs text-gray-600">{error}</p>
-          <button
-            onClick={() => void loadData()}
-            className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all"
-          >
-            <RefreshCw className="w-4 h-4" /> {t('tryAgain')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('myMentorshipsTitle')}</h1>
-            <p className="text-sm text-gray-600 mt-1">{t('myMentorshipsSubtitle')}</p>
-          </div>
-          <button
-            onClick={() => router.push('/mentee/dashboard/mentorships/plans')}
-            className="bg-orange-600 text-white px-5 py-2.5 rounded-xl hover:bg-orange-700 font-bold text-sm transition-all shadow-sm w-fit"
-          >
-            {t('browsePlansBtn')}
-          </button>
+    <MenteeDashboardLayout activeTab="mentors" activeTabTitle={t('myMentorshipsTitle')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingMentorships')} />
         </div>
+      ) : error ? (
+        <div className="py-12 flex justify-center">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">{t('failedToLoad')}</h2>
+            <p className="text-xs text-gray-600">{error}</p>
+            <button
+              onClick={() => void loadData()}
+              className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all"
+            >
+              <RefreshCw className="w-4 h-4" /> {t('tryAgain')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('myMentorshipsTitle')}</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('myMentorshipsSubtitle')}</p>
+            </div>
+            <button
+              onClick={() => router.push('/mentee/dashboard/mentorships/plans')}
+              className="bg-orange-600 text-white px-5 py-2.5 rounded-xl hover:bg-orange-700 font-bold text-sm transition-all shadow-sm w-fit"
+            >
+              {t('browsePlansBtn')}
+            </button>
+          </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="flex border-b border-gray-200">
@@ -441,6 +433,7 @@ export default function MenteeMentorshipsPage() {
           </div>
         </div>
       </div>
-    </div>
+      )}
+    </MenteeDashboardLayout>
   );
 }

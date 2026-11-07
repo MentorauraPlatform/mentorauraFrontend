@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { schedulingApi } from '@/lib/api/client';
 import { useAuth } from '@/context/AuthContext';
+import { MentorDashboardLayout } from '@/components/layout/MentorDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { toast } from 'sonner';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
@@ -146,26 +148,27 @@ export default function MentorAvailabilityPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-sm text-gray-600">{t('loadingAvailability')}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('availabilityTitle')}</h1>
-            <p className="text-sm text-gray-600">{t('availabilitySubtitle')}</p>
-          </div>
-          <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0">
-            {saving ? t('savingBtn') : t('saveChangesBtn')}
-          </button>
+    <MentorDashboardLayout activeTab="availability" activeTabTitle={t('availabilityTitle')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingAvailability')} />
         </div>
+      ) : (
+        <div className="w-full space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('availabilityTitle')}</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('availabilitySubtitle')}</p>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 disabled:opacity-50 whitespace-nowrap flex-nowrap shrink-0 transition-all shadow-sm"
+            >
+              {saving ? t('savingBtn') : t('saveChangesBtn')}
+            </button>
+          </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-3">
@@ -227,6 +230,7 @@ export default function MentorAvailabilityPage() {
           </div>
         </div>
       </div>
-    </div>
+      )}
+    </MentorDashboardLayout>
   );
 }

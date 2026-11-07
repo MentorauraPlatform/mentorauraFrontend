@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mentorshipsApi, schedulingApi } from '@/lib/api/client';
 import type { Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import TimeSlotPicker from '@/components/scheduling/TimeSlotPicker';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -69,31 +71,26 @@ function NewBookingContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-sm text-gray-600">{tCommon('loading')}</div>
-      </div>
-    );
-  }
-
-  if (error && !selectedMentorshipId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-red-600 text-sm">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-sm text-gray-600">{t('subtitle')}</p>
+    <MenteeDashboardLayout activeTab="sessions" activeTabTitle={t('title')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={tCommon('loading')} />
         </div>
+      ) : error && !selectedMentorshipId ? (
+        <div className="py-12 flex justify-center">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
+            <p className="text-red-600 text-sm font-semibold">{error}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('title')}</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+          </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">{t('selectMentorLabel')}</label>
             <select
@@ -162,7 +159,8 @@ function NewBookingContent() {
           </div>
         </div>
       </div>
-    </div>
+      )}
+    </MenteeDashboardLayout>
   );
 }
 

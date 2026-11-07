@@ -7,6 +7,8 @@ import { mentorshipsApi } from '@/lib/api/mentorships';
 import { paymentsApi, PaymentProvider, PaymentStatusResponse } from '@/lib/api/payments';
 import type { Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -200,47 +202,37 @@ function CheckoutContent({ mentorshipId }: { mentorshipId: string }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-orange-600 animate-spin shrink-0" />
-          <p className="text-sm font-medium text-gray-600">{t('loadingCheckout')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !mentorship) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9] px-4">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 shrink-0" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('checkoutErrorTitle')}</h2>
-          <p className="text-sm text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-            className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition whitespace-nowrap flex-nowrap shrink-0"
-          >
-            {t('backToMentorship')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const plan = mentorship?.plan;
   const mentor = mentorship?.mentor;
   const price = plan?.priceAmount || 0;
   const currency = plan?.currency || 'XAF';
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-10 px-4 sm:px-6 lg:px-8 xl:px-12">
-      <div className="w-full">
-        {/* Navigation Back */}
-        <button
-          onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition whitespace-nowrap flex-nowrap shrink-0"
+    <MenteeDashboardLayout activeTab="mentors" activeTabTitle={t('activatePlanHeading')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingCheckout')} />
+        </div>
+      ) : error && !mentorship ? (
+        <div className="py-12 flex justify-center">
+          <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 shrink-0" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{t('checkoutErrorTitle')}</h2>
+            <p className="text-sm text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
+              className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition whitespace-nowrap flex-nowrap shrink-0"
+            >
+              {t('backToMentorship')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-6">
+          {/* Navigation Back */}
+          <button
+            onClick={() => router.push(`/mentee/dashboard/mentorships/${mentorshipId}`)}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-2 transition whitespace-nowrap flex-nowrap shrink-0"
         >
           <ChevronLeft className="w-4 h-4 shrink-0" />
           <span>{t('backToDetails')}</span>
@@ -594,7 +586,8 @@ function CheckoutContent({ mentorshipId }: { mentorshipId: string }) {
           </div>
         </div>
       </div>
-    </div>
+      )}
+    </MenteeDashboardLayout>
   );
 }
 

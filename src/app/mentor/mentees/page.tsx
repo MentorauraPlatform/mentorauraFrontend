@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { applicationsApi, mentorshipsApi } from '@/lib/api/client';
 import type { MentorshipApplication, Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MentorDashboardLayout } from '@/components/layout/MentorDashboardLayout';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 type Tab = 'applications' | 'mentees';
 
@@ -152,36 +154,38 @@ export default function MentorMenteesPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-lg text-gray-600">{t('loadingData')}</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFCF9]">
-        <div className="text-red-600">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('menteesTitle')}</h1>
+    <MentorDashboardLayout activeTab="mentees" activeTabTitle={t('menteesTitle')}>
+      {loading ? (
+        <div className="py-20 flex justify-center items-center">
+          <LoadingState message={t('loadingData')} />
+        </div>
+      ) : error ? (
+        <div className="py-12 text-center text-red-600 bg-white rounded-2xl border border-red-200 p-6">
+          <p className="font-semibold">{error}</p>
           <button
-            onClick={() => router.push('/mentor/dashboard')}
-            className="text-sm font-medium text-orange-600 hover:text-orange-700 whitespace-nowrap flex-nowrap shrink-0"
+            onClick={() => void loadData()}
+            className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700"
           >
-            {t('backToDashboard')}
+            {t('retryBtn') || 'Try Again'}
           </button>
         </div>
+      ) : (
+        <div className="w-full space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('menteesTitle')}</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('menteesSubtitle')}</p>
+            </div>
+            <button
+              onClick={() => router.push('/mentor/dashboard')}
+              className="text-xs sm:text-sm font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap flex-nowrap shrink-0"
+            >
+              {t('backToDashboard')}
+            </button>
+          </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xs border border-gray-200 overflow-hidden">
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setTab('applications')}
@@ -369,6 +373,7 @@ export default function MentorMenteesPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Cancel Reason Modal */}
       {cancelModalId && (
@@ -405,6 +410,6 @@ export default function MentorMenteesPage() {
           </div>
         </div>
       )}
-    </div>
+    </MentorDashboardLayout>
   );
 }

@@ -179,6 +179,24 @@ export default function MentorDashboardPage() {
     }
   }, [user, authLoading, router]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as MentorTab;
+      if (tabParam && ['overview', 'profile', 'skills', 'availability', 'plans', 'bookings', 'messages'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: MentorTab) => {
+    if (tab === 'mentees') {
+      router.push('/mentor/mentees');
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
@@ -425,6 +443,7 @@ export default function MentorDashboardPage() {
     plans: t('tabPlans'),
     bookings: t('tabBookings'),
     messages: t('tabMessages'),
+    mentees: tSub('menteesTitle') || 'Mentees',
   };
 
   return (
@@ -432,7 +451,7 @@ export default function MentorDashboardPage() {
       {/* Responsive Desktop & Mobile Sidebar */}
       <MentorSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         user={user}
         profile={profile}
         onLogout={logout}

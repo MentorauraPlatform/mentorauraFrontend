@@ -7,6 +7,7 @@ import { applicationsApi, plansApi, mentorshipsApi } from '@/lib/api/client';
 import { marketplaceService, MentorDetailData } from '@/services/marketplace.service';
 import type { PlanSummary, MentorshipApplication, Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
 import { CheckCircle2 } from 'lucide-react';
 
 function ApplyContent() {
@@ -224,9 +225,9 @@ function ApplyContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] py-12">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+    <MenteeDashboardLayout activeTab="mentors" activeTabTitle={t('applyPageTitle')}>
+      <div className="w-full space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 sm:p-8">
           {mentor ? (
             <div className="mb-6 pb-6 border-b border-gray-100 flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#172033] to-slate-800 text-white font-black text-xl flex items-center justify-center shrink-0 shadow-md">
@@ -454,7 +455,7 @@ function ApplyContent() {
           </form>
         </div>
       </div>
-    </div>
+    </MenteeDashboardLayout>
   );
 }
 

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
+import { MentorDashboardLayout } from '@/components/layout/MentorDashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -105,10 +104,8 @@ export default function MentorPlansPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] flex flex-col font-sans">
-      <Navbar />
-
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-10 space-y-8">
+    <MentorDashboardLayout activeTab="plans" activeTabTitle={t('mentorPlansTitle')}>
+      <div className="w-full space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <Badge variant="orange" size="md" className="mb-2">
@@ -320,9 +317,7 @@ export default function MentorPlansPage() {
             ))}
           </div>
         )}
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </MentorDashboardLayout>
   );
 }

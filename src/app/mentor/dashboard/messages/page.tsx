@@ -1,83 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { MentorSidebar } from '@/components/mentor/MentorSidebar';
-import { MentorHeader } from '@/components/mentor/MentorHeader';
+import { MentorDashboardLayout } from '@/components/layout/MentorDashboardLayout';
 import { ChatView } from '@/components/messaging/ChatView';
-import { messagingApi } from '@/lib/api/messaging';
-import { mentorApi } from '@/lib/api/client';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { useTranslations } from 'next-intl';
-import type { MentorProfile } from '@/lib/types';
 
 export default function MentorMessagesPage() {
-  const router = useRouter();
   const t = useTranslations('mentorSidebar');
-  const tCommon = useTranslations('common');
-  const { user, isLoading: authLoading, logout } = useAuth();
-  const [profile, setProfile] = useState<MentorProfile | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user) {
-      mentorApi
-        .getMyProfile()
-        .then((res) => {
-          setProfile(res.data || null);
-        })
-        .catch(() => {});
-
-      messagingApi
-        .getUnreadCount()
-        .then((res) => {
-          setUnreadCount(res.data?.unreadCount ?? 0);
-        })
-        .catch(() => {});
-    }
-  }, [user]);
-
-  if (authLoading || !user) {
-    return <LoadingState message={tCommon('loading')} />;
-  }
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] font-sans antialiased text-[#172033]">
-      <MentorSidebar
-        activeTab="messages"
-        setActiveTab={(tab) => {
-          if (tab !== 'messages') {
-            router.push('/mentor/dashboard');
-          }
-        }}
-        user={user}
-        profile={profile}
-        onLogout={logout}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        unreadMessagesCount={unreadCount}
-      />
-
-      <div className="lg:pl-64 flex flex-col min-h-screen transition-all">
-        <MentorHeader
-          user={user}
-          profile={profile}
-          onToggleSidebar={() => setSidebarOpen(true)}
-          activeTabTitle={t('messages')}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
-          <ChatView currentUserId={user.id} userRole="MENTOR" />
-        </main>
+    <MentorDashboardLayout activeTab="messages" activeTabTitle={t('messages')}>
+      <div className="w-full h-[calc(100vh-140px)]">
+        {user && <ChatView currentUserId={user.id} userRole="MENTOR" />}
       </div>
-    </div>
+    </MentorDashboardLayout>
   );
 }
