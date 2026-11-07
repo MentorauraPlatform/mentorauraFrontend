@@ -113,7 +113,13 @@ export default function MenteeDashboardPage() {
       try {
         setLoadingBookings(true);
         const bookingsRes = await schedulingApi.getMyBookings();
-        setBookings((bookingsRes.data as unknown[]) ?? []);
+        const rawBookings = bookingsRes?.data as unknown;
+        const loadedBookings = Array.isArray(rawBookings)
+          ? rawBookings
+          : Array.isArray((rawBookings as any)?.data)
+          ? (rawBookings as any).data
+          : [];
+        setBookings(loadedBookings);
       } catch (error) {
         console.error('Failed to load bookings:', error);
         setBookings([]);
@@ -140,7 +146,13 @@ export default function MenteeDashboardPage() {
 
       try {
         const mentorshipsRes = await mentorshipsApi.getMenteeMentorships();
-        setMentorships(mentorshipsRes.data ?? []);
+        const rawMentorships = mentorshipsRes?.data as unknown;
+        const loadedMentorships = Array.isArray(rawMentorships)
+          ? (rawMentorships as Mentorship[])
+          : Array.isArray((rawMentorships as any)?.data)
+          ? ((rawMentorships as any).data as Mentorship[])
+          : [];
+        setMentorships(loadedMentorships);
       } catch (error) {
         console.error('Failed to load mentorships:', error);
         setMentorships([]);
@@ -150,7 +162,9 @@ export default function MenteeDashboardPage() {
     void loadDashboardData();
   }, [user]);
 
-  const activeMentorsCount = mentorships.filter((m) => (m as { status?: string }).status === 'ACTIVE').length;
+  const activeMentorsCount = mentorships.filter(
+    (m) => (m as { status?: string }).status === 'ACTIVE' || (m as { status?: string }).status === 'INTRO'
+  ).length;
   const upcomingSessionsCount = (bookings as { status: string }[]).filter((b) => b.status === 'SCHEDULED').length;
   const completedBookingsList = (bookings as { status: string; durationMinutes?: number }[]).filter(
     (b) => b.status === 'COMPLETED'
@@ -161,16 +175,43 @@ export default function MenteeDashboardPage() {
   const completedGoalsCount = goalsList.filter((g) => g.completed).length;
   const goalProgressPercent = goalsList.length > 0 ? Math.round((completedGoalsCount / goalsList.length) * 100) : 0;
 
-  const sortedUpcoming = (bookings as { id: string; scheduledAt: string; status: string; meetingLink?: string; mentorship?: { plan?: { title?: string }; mentor?: { fullName?: string } } }[])
-    .filter((b) => b.status === 'SCHEDULED')
+  const sortedUpcoming = (bookings as {
+    id: string;
+    scheduledAt: string;
+    durationMinutes?: number;
+    status: string;
+    meetingLink?: string;
+    mentorship?: {
+      id?: string;
+      plan?: { title?: string };
+      mentor?: { fullName?: string; title?: string; headline?: string; company?: string };
+    };
+  }[])
+    .filter((b) => b.status === 'SCHEDULED' && new Date(b.scheduledAt).getTime() >= Date.now() - 3600000)
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
   const nextBooking = sortedUpcoming[0];
   const nextBookingTime = nextBooking
-    ? new Date(nextBooking.scheduledAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' })
+    ? new Date(nextBooking.scheduledAt).toLocaleString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
     : '';
-  const nextBookingMentorName = nextBooking?.mentorship?.mentor?.fullName ?? '';
+  const nextBookingMentor = nextBooking?.mentorship?.mentor;
+  const nextBookingMentorName = nextBookingMentor?.fullName ?? '';
+  const nextBookingMentorRole =
+    nextBookingMentor?.headline ||
+    nextBookingMentor?.title ||
+    (nextBookingMentor?.company ? `Mentor at ${nextBookingMentor.company}` : '');
   const nextBookingInitials = nextBookingMentorName
-    ? nextBookingMentorName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+    ? nextBookingMentorName
+        .split(' ')
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
     : '';
 
   if (authLoading) {
@@ -347,40 +388,76 @@ export default function MenteeDashboardPage() {
                         <Clock className="w-3.5 h-3.5 animate-pulse shrink-0" />
                         {t('nextLiveCall')}
                       </span>
-                      <span className="text-xs text-slate-400">{nextBooking ? nextBookingTime : t('noUpcomingCalls')}</span>
+                      <span className="text-xs text-slate-300">
+                        {nextBooking ? nextBookingTime : t('noUpcomingCalls')}
+                      </span>
                     </div>
 
                     <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                      {nextBooking ? (nextBooking.mentorship?.plan?.title ?? t('mentorshipSession')) : t('noSessionScheduled')}
+                      {nextBooking
+                        ? nextBooking.mentorship?.plan?.title || t('mentorshipSession')
+                        : t('noSessionScheduled')}
                     </h2>
 
-                    {nextBooking && (
+                    {nextBooking ? (
                       <div className="flex items-center gap-3 pt-1">
-                        <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-md">
                           {nextBookingInitials}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">{nextBookingMentorName}</p>
+                          {nextBookingMentorRole && (
+                            <p className="text-xs text-slate-300 line-clamp-1">{nextBookingMentorRole}</p>
+                          )}
                         </div>
                       </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 max-w-md">
+                        {t('noUpcomingSessionsDesc')}
+                      </p>
                     )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-                    <button
-                      onClick={() => nextBooking?.meetingLink ? window.open(nextBooking.meetingLink, '_blank') : toast.info(t('noMeetingLink'))}
-                      disabled={!nextBooking}
-                      className="px-5 py-3 bg-[#FF6B00] text-white font-bold text-sm rounded-xl shadow-lg hover:opacity-95 transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <Video className="w-4 h-4 shrink-0" />
-                      <span>{t('joinMeeting')}</span>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('sessions')}
-                      className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm rounded-xl border border-white/10 transition-colors text-center inline-flex items-center justify-center whitespace-nowrap"
-                    >
-                      <span>{t('viewDetails')}</span>
-                    </button>
+                    {nextBooking ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            if (nextBooking.meetingLink) {
+                              window.open(nextBooking.meetingLink, '_blank');
+                            } else {
+                              toast.info(t('noMeetingLink'));
+                            }
+                          }}
+                          className="px-5 py-3 bg-[#FF6B00] hover:bg-[#EA580C] text-white font-bold text-sm rounded-xl shadow-lg transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap"
+                        >
+                          <Video className="w-4 h-4 shrink-0" />
+                          <span>{t('joinMeeting')}</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('sessions')}
+                          className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm rounded-xl border border-white/10 transition-colors text-center inline-flex items-center justify-center whitespace-nowrap"
+                        >
+                          <span>{t('viewDetails')}</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/mentee/dashboard/bookings/new"
+                          className="px-5 py-3 bg-[#FF6B00] hover:bg-[#EA580C] text-white font-bold text-sm rounded-xl shadow-lg transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap"
+                        >
+                          <Calendar className="w-4 h-4 shrink-0" />
+                          <span>{t('bookSessionBtn')}</span>
+                        </Link>
+                        <button
+                          onClick={() => setActiveTab('mentors')}
+                          className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-medium text-sm rounded-xl border border-white/10 transition-colors text-center inline-flex items-center justify-center whitespace-nowrap"
+                        >
+                          <span>{t('tabMentors')}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -614,32 +691,64 @@ export default function MenteeDashboardPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {mentorships.map((m) => {
-                    const mentorship = m as unknown as { id: string; status: string; mentor?: { fullName?: string; title?: string }; plan?: { title?: string; priceAmount?: number; currency?: string } };
+                    const mentorship = m as unknown as {
+                      id: string;
+                      status: string;
+                      mentor?: { fullName?: string; title?: string; company?: string; headline?: string };
+                      plan?: { title?: string; priceAmount?: number; currency?: string };
+                    };
                     const mentorName = mentorship.mentor?.fullName || 'Mentor';
-                    const initials = mentorName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+                    const initials = mentorName
+                      .split(' ')
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+                    const isIntro = mentorship.status === 'INTRO';
+
                     return (
-                      <div key={mentorship.id} className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+                      <div
+                        key={mentorship.id}
+                        className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between"
+                      >
                         <div className="space-y-3">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center font-bold text-lg shrink-0">
+                              <div className="w-12 h-12 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
                                 {initials}
                               </div>
                               <div>
                                 <h3 className="font-bold text-slate-900">{mentorName}</h3>
-                                <p className="text-xs text-slate-500">{mentorship.mentor?.title || ''}</p>
+                                <p className="text-xs text-slate-500">
+                                  {mentorship.mentor?.title || mentorship.mentor?.headline || ''}
+                                  {mentorship.mentor?.company ? ` • ${mentorship.mentor.company}` : ''}
+                                </p>
                               </div>
                             </div>
-                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[11px] font-bold whitespace-nowrap">
-                              {mentorship.status}
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${
+                                mentorship.status === 'ACTIVE'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : isIntro
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  : 'bg-slate-50 text-slate-600 border border-slate-200'
+                              }`}
+                            >
+                              {isIntro ? 'Intro Call' : mentorship.status}
                             </span>
                           </div>
 
                           <div className="p-3 bg-slate-50 rounded-xl space-y-1 text-xs">
                             <div className="flex justify-between font-medium">
-                              <span className="text-slate-500">{t('monthlyPlanLabel')} {mentorship.plan?.title || 'N/A'}</span>
+                              <span className="text-slate-500">
+                                {t('monthlyPlanLabel')} {mentorship.plan?.title || 'N/A'}
+                              </span>
                               <span className="font-bold text-slate-800">
-                                {mentorship.plan?.priceAmount != null ? `${mentorship.plan.currency ?? ''} ${mentorship.plan.priceAmount}` : ''}
+                                {isIntro
+                                  ? 'Complimentary Intro'
+                                  : mentorship.plan?.priceAmount != null
+                                  ? `${mentorship.plan.currency ?? ''} ${mentorship.plan.priceAmount}`
+                                  : ''}
                               </span>
                             </div>
                           </div>
@@ -661,10 +770,21 @@ export default function MenteeDashboardPage() {
                             <span>{t('messageMentor')}</span>
                           </button>
                           <Link
-                            href="/mentee/dashboard/bookings/new"
-                            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-colors inline-flex items-center justify-center whitespace-nowrap"
+                            href={`/mentee/dashboard/bookings/new?mentorshipId=${mentorship.id}`}
+                            className={`flex-1 py-2.5 font-bold text-xs rounded-xl text-center transition-colors inline-flex items-center justify-center whitespace-nowrap ${
+                              isIntro
+                                ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                            }`}
                           >
-                            <span>{t('bookNewSession')}</span>
+                            <span>{isIntro ? 'Book Free Call' : t('bookNewSession')}</span>
+                          </Link>
+                          <Link
+                            href={`/mentee/dashboard/mentorships/${mentorship.id}`}
+                            className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors inline-flex items-center justify-center"
+                            title="View Mentorship Details"
+                          >
+                            <ChevronRight className="w-4 h-4 shrink-0" />
                           </Link>
                         </div>
                       </div>
