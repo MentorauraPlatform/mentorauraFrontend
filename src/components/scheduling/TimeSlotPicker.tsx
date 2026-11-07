@@ -70,7 +70,15 @@ export default function TimeSlotPicker({ mentorId, onSelectSlot, selectedSlotUtc
         formatDate(weekEnd),
         timezone,
       );
-      setSlots((res as any)?.data ?? res ?? []);
+      const raw = (res as any)?.data;
+      const slotList: Slot[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(res)
+        ? res
+        : [];
+      setSlots(slotList);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('failedToLoadSlots');
       setError(message);

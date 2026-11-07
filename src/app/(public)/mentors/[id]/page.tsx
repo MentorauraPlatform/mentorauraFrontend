@@ -235,6 +235,33 @@ export default function PublicMentorProfilePage() {
           {t('backToDirectory')}
         </Link>
 
+        {/* Pending Application Notice Banner */}
+        {mentorPendingApp && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-amber-900">
+                  Application Sent • Awaiting Mentor Review
+                </p>
+                <p className="text-xs text-amber-700">
+                  You have already sent an application to {mentor.fullName}. Multiple applications to the same mentor are disabled.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-amber-300 text-amber-900 bg-white hover:bg-amber-100 shrink-0 font-bold"
+              onClick={() => router.push('/mentee/dashboard/mentorships')}
+            >
+              View Application
+            </Button>
+          </div>
+        )}
+
         {/* Hero Card */}
         <Card padding="lg" className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-6">
           <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
@@ -519,11 +546,37 @@ export default function PublicMentorProfilePage() {
                         );
                       }
 
+                      if (mentorPendingApp) {
+                        return (
+                          <div className="mt-2 pt-2 border-t border-slate-100">
+                            <button
+                              disabled
+                              className="w-full py-2.5 px-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 font-bold text-xs cursor-not-allowed text-center opacity-90"
+                            >
+                              Application Already Sent to this Mentor
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      if (mentorActiveOrIntro) {
+                        return (
+                          <div className="mt-2 pt-2 border-t border-slate-100">
+                            <button
+                              disabled
+                              className="w-full py-2.5 px-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold text-xs cursor-not-allowed text-center"
+                            >
+                              Already Engaged with this Mentor
+                            </button>
+                          </div>
+                        );
+                      }
+
                       return (
                         <Button
                           variant="primary"
                           size="md"
-                          className="w-full font-bold mt-2"
+                          className="w-full font-bold mt-2 shadow-sm"
                           onClick={() => {
                             if (!user) {
                               router.push(`/auth?mode=login&redirect=/mentors/${mentor.id}`);
