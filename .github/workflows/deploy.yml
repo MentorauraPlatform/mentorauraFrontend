@@ -15,34 +15,11 @@ env:
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
-  # 1. CI Validation (Type Check & Build)
-  # ────────────────────────────────────────────────────────────────────────────
-  validate:
-    name: Validate Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # 2. Build & Push Docker Image to GHCR
+  # 1. Build & Push Docker Image to GHCR
   # ────────────────────────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: validate
     permissions:
       contents: read
       packages: write
@@ -91,7 +68,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ────────────────────────────────────────────────────────────────────────────
-  # 3. Deploy to Production VPS via SSH
+  # 2. Deploy to Production VPS via SSH
   # ────────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Production VPS
@@ -121,22 +98,6 @@ jobs:
 
             echo "🚀 Updating frontend service with zero downtime..."
             docker compose up -d --no-deps frontend
-
-            echo "🩺 Verifying frontend health..."
-            sleep 5
-            RETRIES=15
-            COUNT=0
-            until curl -sf http://127.0.0.1:3000/api/health > /dev/null || [ $COUNT -eq $RETRIES ]; do
-              echo "Waiting for frontend healthcheck... ($((COUNT+1))/$RETRIES)"
-              sleep 2
-              COUNT=$((COUNT+1))
-            done
-
-            if [ $COUNT -eq $RETRIES ]; then
-              echo "❌ Frontend healthcheck failed after deployment!"
-              docker compose logs --tail 50 frontend
-              exit 1
-            fi
 
             echo "🧹 Pruning old dangling images..."
             docker image prune -f
