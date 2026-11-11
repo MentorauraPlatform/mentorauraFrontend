@@ -65,11 +65,14 @@ export function useMessagingSocket(options: UseMessagingSocketOptions = {}) {
 
         if (isCancelled || !token) return;
 
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api\/v\d+\/?$/, '');
         const wsUrl =
           process.env.NEXT_PUBLIC_WS_URL ||
-          (typeof window !== 'undefined'
-            ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:4000/messaging`
-            : 'http://localhost:4000/messaging');
+          (apiBase
+            ? `${apiBase}/messaging`
+            : typeof window !== 'undefined'
+              ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:4000/messaging`
+              : 'http://localhost:4000/messaging');
 
         const socket = io(wsUrl, {
           auth: { token },
