@@ -19,8 +19,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Next.js build-time public environment variables
-ARG NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
-ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ARG NEXT_PUBLIC_API_URL=https://api.mentoraura.com/api/v1
+ARG NEXT_PUBLIC_APP_URL=https://mentoraura.com
 ARG NEXT_PUBLIC_APP_NAME=Mentoraura
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
