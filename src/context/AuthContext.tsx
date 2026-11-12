@@ -17,18 +17,45 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<MeResponse | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<MeResponse | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('mentoraura_user');
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !sessionStorage.getItem('mentoraura_user');
+      } catch {
+        return true;
+      }
+    }
+    return true;
+  });
+
   const router = useRouter();
 
   const fetchMe = useCallback(async () => {
     try {
       const userData = await authService.getCurrentUser();
       setUser(userData);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('mentoraura_user', JSON.stringify(userData));
+      }
     } catch (err: unknown) {
       const apiError = err as { statusCode?: number; message?: string };
       if (apiError.statusCode === 401) {
         setUser(null);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('mentoraura_user');
+        }
       } else {
         console.error('Failed to fetch user session:', err);
       }
@@ -44,6 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Logout error:', err);
     } finally {
       setUser(null);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('mentoraura_user');
+      }
       router.push('/auth?mode=login');
     }
   }, [router]);

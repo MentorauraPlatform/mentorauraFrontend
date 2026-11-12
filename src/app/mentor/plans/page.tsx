@@ -13,6 +13,8 @@ import {
   CheckCircle,
   Trash2,
   Package,
+  Pencil,
+  Video,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
@@ -29,8 +31,9 @@ export default function MentorPlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Form state for creating plan
+  // Form state for creating / editing plan
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [formData, setFormData] = useState<CreatePlanPayload>({
     title: '',
@@ -59,21 +62,58 @@ export default function MentorPlansPage() {
     fetchPlans();
   }, []);
 
-  const handleCreatePlan = async (e: React.FormEvent) => {
+  const handleStartEdit = (plan: PlanItem) => {
+    setEditingPlanId(plan.id);
+    setIsCreating(true);
+    setFormData({
+      title: plan.title,
+      description: plan.description || '',
+      priceAmount: plan.priceAmount,
+      currency: plan.currency,
+      sessionsPerMonth: plan.sessionsPerMonth ?? 4,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelForm = () => {
+    setIsCreating(false);
+    setEditingPlanId(null);
+    setFormData({
+      title: '',
+      description: '',
+      priceAmount: 15000,
+      currency: 'XAF',
+      sessionsPerMonth: 4,
+    });
+  };
+
+  const handleSavePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     setSuccessMsg(null);
 
     try {
-      await marketplaceService.createPlan({
-        ...formData,
-        priceAmount: Number(formData.priceAmount),
-        sessionsPerMonth: Number(formData.sessionsPerMonth),
-      });
+      if (editingPlanId) {
+        await marketplaceService.updatePlan(editingPlanId, {
+          title: formData.title,
+          description: formData.description,
+          priceAmount: Number(formData.priceAmount),
+          currency: formData.currency,
+          sessionsPerMonth: Number(formData.sessionsPerMonth),
+        });
+        setSuccessMsg('Plan updated successfully!');
+      } else {
+        await marketplaceService.createPlan({
+          ...formData,
+          priceAmount: Number(formData.priceAmount),
+          sessionsPerMonth: Number(formData.sessionsPerMonth),
+        });
+        setSuccessMsg(t('planCreatedSuccess'));
+      }
 
-      setSuccessMsg(t('planCreatedSuccess'));
       setIsCreating(false);
+      setEditingPlanId(null);
       setFormData({
         title: '',
         description: '',
@@ -83,9 +123,9 @@ export default function MentorPlansPage() {
       });
       fetchPlans();
     } catch (err: unknown) {
-      console.error('Failed to create plan:', err);
+      console.error('Failed to save plan:', err);
       const e = err as { message?: string };
-      setError(e?.message || 'Failed to create plan');
+      setError(e?.message || 'Failed to save plan');
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +161,13 @@ export default function MentorPlansPage() {
             variant="primary"
             size="md"
             className="gap-2 font-bold shrink-0 self-start sm:self-auto"
-            onClick={() => setIsCreating((prev) => !prev)}
+            onClick={() => {
+              if (isCreating) {
+                handleCancelForm();
+              } else {
+                setIsCreating(true);
+              }
+            }}
           >
             <Plus className="w-4 h-4" />
             {isCreating ? t('cancel') : t('createNewPlan')}
@@ -148,10 +194,10 @@ export default function MentorPlansPage() {
           <Card padding="lg" className="p-6 bg-white border-2 border-orange-200 rounded-2xl space-y-5 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
               <Package className="w-5 h-5 text-orange-500" />
-              {t('newPlanHeading')}
+              {editingPlanId ? 'Edit Mentorship Plan' : t('newPlanHeading')}
             </h3>
 
-            <form onSubmit={handleCreatePlan} className="space-y-4">
+            <form onSubmit={handleSavePlan} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   {t('planTitleLabel')}
@@ -227,7 +273,7 @@ export default function MentorPlansPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsCreating(false)}
+                  onClick={handleCancelForm}
                 >
                   {t('cancel')}
                 </Button>
@@ -239,7 +285,7 @@ export default function MentorPlansPage() {
                   className="font-bold gap-2"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t('savePlan')}
+                  {editingPlanId ? 'Update Plan' : t('savePlan')}
                 </Button>
               </div>
             </form>
@@ -300,19 +346,34 @@ export default function MentorPlansPage() {
                   </div>
                 </div>
 
-                {plan.isActive && (
-                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeactivate(plan.id)}
-                      className="text-rose-600 hover:bg-rose-50 gap-1 text-xs"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      {t('deactivate')}
-                    </Button>
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg">
+                    <Video className="w-3.5 h-3.5" />
+                    <span>{plan.sessionsPerMonth ?? 1} Sessions Included</span>
                   </div>
-                )}
+                  {plan.isActive && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartEdit(plan)}
+                        className="text-slate-700 hover:bg-slate-100 gap-1 text-xs"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeactivate(plan.id)}
+                        className="text-rose-600 hover:bg-rose-50 gap-1 text-xs"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {t('deactivate')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </Card>
             ))}
           </div>

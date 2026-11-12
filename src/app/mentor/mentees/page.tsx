@@ -4,10 +4,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { applicationsApi, mentorshipsApi } from '@/lib/api/client';
+import { messagingApi } from '@/lib/api/messaging';
 import type { MentorshipApplication, Mentorship } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { MentorDashboardLayout } from '@/components/layout/MentorDashboardLayout';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { toast } from 'sonner';
+import {
+  Target,
+  Plus,
+  Trash2,
+  MessageSquare,
+  Check,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 type Tab = 'applications' | 'mentees';
 
@@ -151,6 +165,89 @@ export default function MentorMenteesPage() {
       alert(apiError.message || t('failedToLoadData'));
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Goals management state
+  const [editingGoalsMentorshipId, setEditingGoalsMentorshipId] = useState<string | null>(null);
+  const [goalsDraft, setGoalsDraft] = useState<Record<string, string[]>>({});
+  const [newGoalInputs, setNewGoalInputs] = useState<Record<string, string>>({});
+  const [savingGoalsId, setSavingGoalsId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const draft: Record<string, string[]> = {};
+    for (const m of mentorships) {
+      draft[m.id] = m.mentee?.menteeProfile?.goals || [];
+    }
+    setGoalsDraft(draft);
+  }, [mentorships]);
+
+  const handleAddGoal = (mentorshipId: string) => {
+    const input = (newGoalInputs[mentorshipId] || '').trim();
+    if (!input) return;
+    const current = goalsDraft[mentorshipId] || [];
+    if (current.includes(input)) return;
+    setGoalsDraft((prev) => ({
+      ...prev,
+      [mentorshipId]: [...current, input],
+    }));
+    setNewGoalInputs((prev) => ({ ...prev, [mentorshipId]: '' }));
+  };
+
+  const handleRemoveGoal = (mentorshipId: string, indexToRemove: number) => {
+    setGoalsDraft((prev) => ({
+      ...prev,
+      [mentorshipId]: (prev[mentorshipId] || []).filter((_, i) => i !== indexToRemove),
+    }));
+  };
+
+  const handleSaveGoals = async (mentorshipId: string) => {
+    setSavingGoalsId(mentorshipId);
+    try {
+      const goalsToSave = goalsDraft[mentorshipId] || [];
+      const res = await mentorshipsApi.updateMenteeGoals(mentorshipId, goalsToSave);
+      const updatedData = (res.data as any)?.data || res.data;
+      const updatedGoals = updatedData?.goals || goalsToSave;
+      const updatedCompleted = updatedData?.completedGoals || [];
+
+      toast.success('Learning goals updated for mentee');
+      setEditingGoalsMentorshipId(null);
+      setMentorships((prev) =>
+        prev.map((m) =>
+          m.id === mentorshipId && m.mentee
+            ? {
+                ...m,
+                mentee: {
+                  ...m.mentee,
+                  menteeProfile: {
+                    ...(m.mentee.menteeProfile || {}),
+                    goals: updatedGoals,
+                    completedGoals: updatedCompleted,
+                  },
+                },
+              }
+            : m
+        )
+      );
+    } catch (err: unknown) {
+      console.error('Failed to save goals:', err);
+      const e = err as { message?: string };
+      toast.error(e?.message || 'Failed to update learning goals');
+    } finally {
+      setSavingGoalsId(null);
+    }
+  };
+
+  const handleMessageMentee = async (menteeUserId: string) => {
+    try {
+      const res = await messagingApi.getOrCreateDirect(menteeUserId);
+      const conversationId = res.data?.id;
+      if (conversationId) {
+        router.push(`/mentor/dashboard/messages?conversationId=${conversationId}`);
+      }
+    } catch (err: unknown) {
+      console.error('Failed to start conversation with mentee:', err);
+      toast.error('Could not open conversation');
     }
   };
 
@@ -361,8 +458,191 @@ export default function MentorMenteesPage() {
                                   {t('cancelBtn')}
                                 </button>
                               )}
+
+                              {mentorship.mentee?.id && (
+                                <button
+                                  onClick={() => handleMessageMentee(mentorship.mentee!.id)}
+                                  className="px-3 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg text-xs font-semibold hover:bg-orange-100 flex items-center gap-1.5 whitespace-nowrap flex-nowrap shrink-0"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Message Mentee</span>
+                                </button>
+                              )}
                             </div>
                           </div>
+                        </div>
+
+                        {/* Mentor-Set Learning Goals Section */}
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          {(() => {
+                            const currentGoals = goalsDraft[mentorship.id] || [];
+                            const completedGoals = mentorship.mentee?.menteeProfile?.completedGoals || [];
+                            const completedCount = currentGoals.filter((g) => completedGoals.includes(g)).length;
+                            const totalCount = currentGoals.length;
+                            const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+                            return (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Target className="w-4 h-4 text-orange-600" />
+                                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                      Learning Goals ({totalCount})
+                                    </span>
+                                    {totalCount > 0 && (
+                                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                        {completedCount}/{totalCount} ticked ({percent}%)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      setEditingGoalsMentorshipId(
+                                        editingGoalsMentorshipId === mentorship.id ? null : mentorship.id
+                                      )
+                                    }
+                                    className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                                  >
+                                    <span>
+                                      {editingGoalsMentorshipId === mentorship.id
+                                        ? 'Collapse'
+                                        : totalCount
+                                        ? 'Edit Learning Goals'
+                                        : '+ Set Learning Goals'}
+                                    </span>
+                                    {editingGoalsMentorshipId === mentorship.id ? (
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Display Goals Pills when not editing */}
+                                {editingGoalsMentorshipId !== mentorship.id && (
+                                  <div className="mt-2.5">
+                                    {totalCount === 0 ? (
+                                      <p className="text-xs text-gray-400 italic">
+                                        No learning goals assigned yet. Click &ldquo;+ Set Learning Goals&rdquo; to define goals for this mentee.
+                                      </p>
+                                    ) : (
+                                      <div className="flex flex-wrap gap-2">
+                                        {currentGoals.map((goal, idx) => {
+                                          const isDone = completedGoals.includes(goal);
+                                          return (
+                                            <span
+                                              key={idx}
+                                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                                isDone
+                                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80 line-through'
+                                                  : 'bg-orange-50/70 text-orange-900 border-orange-200/60'
+                                              }`}
+                                            >
+                                              {isDone ? (
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                              ) : (
+                                                <Clock className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                                              )}
+                                              <span>{goal}</span>
+                                              <span
+                                                className={`text-[10px] font-bold uppercase tracking-wider ml-1 px-1.5 py-0.5 rounded ${
+                                                  isDone ? 'bg-emerald-200/60 text-emerald-800' : 'bg-orange-100 text-orange-700'
+                                                }`}
+                                              >
+                                                {isDone ? 'Ticked' : 'In Progress'}
+                                              </span>
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+
+                          {/* Expanded Goal Editor */}
+                          {editingGoalsMentorshipId === mentorship.id && (
+                            <div className="mt-3 p-4 bg-orange-50/40 border border-orange-200/80 rounded-xl space-y-3">
+                              <p className="text-xs text-slate-600">
+                                Define goals and milestones for {mentorship.mentee?.menteeProfile?.fullName || mentorship.mentee?.email || 'this mentee'}. These will guide their roadmap in the Mentee Dashboard.
+                              </p>
+
+                              {/* List of draft goals */}
+                              <div className="space-y-1.5">
+                                {(goalsDraft[mentorship.id] || []).map((goal, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-[10px]">
+                                        {idx + 1}
+                                      </span>
+                                      <span className="font-medium text-gray-800">{goal}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveGoal(mentorship.id, idx)}
+                                      className="text-gray-400 hover:text-red-500 p-1"
+                                      title="Remove goal"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Input to add a new goal */}
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={newGoalInputs[mentorship.id] || ''}
+                                  onChange={(e) =>
+                                    setNewGoalInputs((prev) => ({
+                                      ...prev,
+                                      [mentorship.id]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleAddGoal(mentorship.id);
+                                    }
+                                  }}
+                                  placeholder="e.g. Master System Design & Microservices"
+                                  className="flex-1 px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddGoal(mentorship.id)}
+                                  className="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-semibold hover:bg-orange-700 flex items-center gap-1"
+                                >
+                                  <Plus className="w-3.5 h-3.5" /> Add
+                                </button>
+                              </div>
+
+                              {/* Save button */}
+                              <div className="flex items-center justify-end gap-2 pt-2 border-t border-orange-200/60">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingGoalsMentorshipId(null)}
+                                  className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={savingGoalsId === mentorship.id}
+                                  onClick={() => handleSaveGoals(mentorship.id)}
+                                  className="px-4 py-1.5 bg-orange-600 text-white text-xs font-bold rounded-lg hover:bg-orange-700 disabled:opacity-50 shadow-xs"
+                                >
+                                  {savingGoalsId === mentorship.id ? 'Saving...' : 'Save Goals for Mentee'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

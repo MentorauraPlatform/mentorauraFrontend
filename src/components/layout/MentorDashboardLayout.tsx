@@ -19,6 +19,12 @@ export interface MentorDashboardLayoutProps {
   hidePadding?: boolean;
 }
 
+let globalMentorProfile: MentorProfile | null = null;
+let lastMentorProfileFetch = 0;
+let globalMentorUnreadCount = 0;
+let lastMentorUnreadFetch = 0;
+const MENTOR_CACHE_TTL = 30 * 1000;
+
 export function MentorDashboardLayout({
   children,
   activeTab = 'overview',
@@ -31,9 +37,9 @@ export function MentorDashboardLayout({
   const tSidebar = useTranslations('mentorSidebar');
   const tCommon = useTranslations('common');
   const { user, isLoading: authLoading, logout } = useAuth();
-  const [profile, setProfile] = useState<MentorProfile | null>(null);
+  const [profile, setProfile] = useState<MentorProfile | null>(globalMentorProfile);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(globalMentorUnreadCount);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,18 +60,34 @@ export function MentorDashboardLayout({
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+    const now = Date.now();
+
+    if (now - lastMentorProfileFetch < MENTOR_CACHE_TTL && globalMentorProfile) {
+      setProfile(globalMentorProfile);
+    } else {
       mentorApi
         .getMyProfile()
         .then((res) => {
-          setProfile(res.data || null);
+          if (res.data) {
+            globalMentorProfile = res.data;
+            lastMentorProfileFetch = Date.now();
+            setProfile(res.data);
+          }
         })
         .catch(() => {});
+    }
 
+    if (now - lastMentorUnreadFetch < MENTOR_CACHE_TTL) {
+      setUnreadMessagesCount(globalMentorUnreadCount);
+    } else {
       messagingApi
         .getUnreadCount()
         .then((res) => {
-          setUnreadMessagesCount(res.data?.unreadCount ?? 0);
+          const count = res.data?.unreadCount ?? 0;
+          globalMentorUnreadCount = count;
+          lastMentorUnreadFetch = Date.now();
+          setUnreadMessagesCount(count);
         })
         .catch(() => {});
     }

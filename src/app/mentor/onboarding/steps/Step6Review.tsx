@@ -1,19 +1,8 @@
 'use client';
 
 import type { SkillLevel } from '@/lib/types';
-import { CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { OnboardingData } from '../hooks/useMentorOnboarding';
-
-const DAY_LABELS: Record<string, string> = {
-  MONDAY: 'Mon',
-  TUESDAY: 'Tue',
-  WEDNESDAY: 'Wed',
-  THURSDAY: 'Thu',
-  FRIDAY: 'Fri',
-  SATURDAY: 'Sat',
-  SUNDAY: 'Sun',
-};
 
 const LEVEL_COLORS: Record<SkillLevel, string> = {
   BEGINNER: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -61,6 +50,12 @@ export function Step6Review({ data, getSkillLevelLabel }: Step6ReviewProps) {
               <dt className="w-40 text-[#64748B] font-medium">{t('review.titleLabel')}</dt>
               <dd className="text-[#172033]">{data.title || '—'}</dd>
             </div>
+            {data.headline && (
+              <div className="flex flex-wrap gap-x-4">
+                <dt className="w-40 text-[#64748B] font-medium">{t('professional.headline')}</dt>
+                <dd className="text-[#172033]">{data.headline}</dd>
+              </div>
+            )}
             <div className="flex flex-wrap gap-x-4">
               <dt className="w-40 text-[#64748B] font-medium">{t('review.companyLabel')}</dt>
               <dd className="text-[#172033]">{data.company || '—'}</dd>

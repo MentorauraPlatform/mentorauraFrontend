@@ -25,4 +25,10 @@ export const mentorshipsApi = {
 
   resume: (id: string) =>
     apiClient.post<Mentorship>(`/mentorships/${id}/resume`, {}),
+
+  updateMenteeGoals: (mentorshipId: string, goals: string[]) =>
+    apiClient.patch<{ data?: { goals: string[]; completedGoals?: string[] }; goals?: string[]; completedGoals?: string[] }>(
+      `/mentorships/${mentorshipId}/goals`,
+      { goals },
+    ),
 };

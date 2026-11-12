@@ -1,15 +1,24 @@
 'use client';
 
-import type { SkillLevel } from '@/lib/types';
 import { AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { OnboardingData } from '../hooks/useMentorOnboarding';
 
-const inputClass =
-  'w-full h-14 text-base border border-[#E5E7EB] rounded-xl px-5 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200';
-const textareaClass =
-  'w-full text-base border border-[#E5E7EB] rounded-xl px-5 py-4 text-[#172033] placeholder:text-[#94A3B8] bg-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] transition-all duration-200 resize-none';
 const labelClass = 'block text-sm font-bold uppercase tracking-wider text-[#64748B] mb-2';
+
+const getInputClasses = (hasError: boolean, extraClasses = '') =>
+  `w-full h-14 text-base border rounded-xl px-5 text-[#172033] placeholder:text-[#94A3B8] focus:outline-none transition-all duration-200 ${
+    hasError
+      ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 bg-red-50/10'
+      : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] bg-white'
+  } ${extraClasses}`;
+
+const getTextareaClasses = (hasError: boolean, extraClasses = '') =>
+  `w-full text-base border rounded-xl px-5 py-4 text-[#172033] placeholder:text-[#94A3B8] focus:outline-none transition-all duration-200 resize-none ${
+    hasError
+      ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 bg-red-50/10'
+      : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#F97316]/40 focus:border-[#F97316] bg-white'
+  } ${extraClasses}`;
 
 interface Step4ExperienceProps {
   data: OnboardingData;
@@ -19,10 +28,27 @@ interface Step4ExperienceProps {
   onUpdateData?: (updates: Partial<OnboardingData>) => void;
   onBlur: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  errors?: Record<string, string>;
+  setTouched?: (field: string) => void;
 }
 
-export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperienceChange, onUpdateData, onBlur, onKeyDown }: Step4ExperienceProps) {
+export function Step4Experience({
+  data,
+  rawAreas,
+  onRawAreasChange,
+  onExperienceChange,
+  onUpdateData,
+  onBlur,
+  onKeyDown,
+  errors,
+  setTouched,
+}: Step4ExperienceProps) {
   const t = useTranslations('onboarding');
+
+  const handleFieldChange = (field: keyof OnboardingData, value: string) => {
+    onUpdateData?.({ [field]: value });
+    setTouched?.(field);
+  };
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -34,32 +60,42 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
           {t('experience.heading')}
         </h2>
         <p className="mt-3 text-xl text-[#475569]">{t('experience.subheading')}</p>
-        {!data.experience.trim() && (
-          <div className="mt-4 p-5 bg-[#FFF7ED] border border-[#F97316]/30 rounded-xl">
-            <p className="text-base text-[#F97316] font-medium flex items-center gap-3">
-              <AlertCircle className="w-5 h-5" />
-              {t('experience.experienceRequiredMessage')}
-            </p>
-          </div>
-        )}
       </div>
+
       <div className="space-y-6">
+        {/* Experience description */}
         <div>
-          <label className={labelClass}>{t('experience.experienceRequired')} <span className="text-red-500">*</span></label>
+          <label className={labelClass}>
+            {t('experience.experienceRequired')} <span className="text-red-500">*</span>
+          </label>
           <textarea
             value={data.experience}
-            onChange={(e) => onExperienceChange(e.target.value)}
+            onChange={(e) => {
+              onExperienceChange(e.target.value);
+              setTouched?.('experience');
+            }}
+            onBlur={() => setTouched?.('experience')}
             rows={10}
-            className={`${textareaClass} ${
-              !data.experience.trim() ? 'border-[#F97316]' : 'border-[#E5E7EB]'
-            }`}
+            maxLength={5000}
+            className={getTextareaClasses(Boolean(errors?.experience))}
             placeholder={t('experience.experiencePlaceholder')}
           />
-          <div className="mt-3 flex justify-between text-sm text-[#64748B]">
-            <span>{t('experience.charactersCount', { count: data.experience.length })}</span>
-            <span>{t('experience.experienceHint')}</span>
+          <div className="mt-2 flex justify-between items-center text-xs">
+            {errors?.experience ? (
+              <p className="text-red-600 font-semibold flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{errors.experience}</span>
+              </p>
+            ) : (
+              <span className="text-[#64748B]">{t('experience.experienceHint')}</span>
+            )}
+            <span className={data.experience.length > 5000 ? 'text-red-600 font-bold' : 'text-[#64748B]'}>
+              {data.experience.length} / 5000
+            </span>
           </div>
         </div>
+
+        {/* Areas of Expertise */}
         <div>
           <label className={labelClass}>{t('experience.areasOfExpertise')}</label>
           <input
@@ -68,7 +104,7 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
             onChange={(e) => onRawAreasChange(e.target.value)}
             onBlur={onBlur}
             onKeyDown={onKeyDown}
-            className={inputClass}
+            className={getInputClasses(false)}
             placeholder={t('experience.areasPlaceholder')}
           />
           <p className="mt-2 text-sm text-[#64748B]">{t('experience.areasHint')}</p>
@@ -85,6 +121,8 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
             </div>
           )}
         </div>
+
+        {/* Additional credentials */}
         {onUpdateData && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
@@ -94,30 +132,55 @@ export function Step4Experience({ data, rawAreas, onRawAreasChange, onExperience
                 min={0}
                 max={60}
                 value={data.yearsOfExperience}
-                onChange={(e) => onUpdateData({ yearsOfExperience: e.target.value })}
-                className={inputClass}
+                onChange={(e) => handleFieldChange('yearsOfExperience', e.target.value)}
+                onBlur={() => setTouched?.('yearsOfExperience')}
+                className={getInputClasses(Boolean(errors?.yearsOfExperience))}
                 placeholder={t('experience.yearsPlaceholder')}
               />
+              {errors?.yearsOfExperience && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{errors.yearsOfExperience}</span>
+                </p>
+              )}
             </div>
+
             <div>
               <label className={labelClass}>{t('experience.cvUrl')}</label>
               <input
                 type="url"
                 value={data.cvUrl}
-                onChange={(e) => onUpdateData({ cvUrl: e.target.value })}
-                className={inputClass}
+                onChange={(e) => handleFieldChange('cvUrl', e.target.value)}
+                onBlur={() => setTouched?.('cvUrl')}
+                maxLength={512}
+                className={getInputClasses(Boolean(errors?.cvUrl))}
                 placeholder={t('experience.cvPlaceholder')}
               />
+              {errors?.cvUrl && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{errors.cvUrl}</span>
+                </p>
+              )}
             </div>
+
             <div>
               <label className={labelClass}>{t('experience.idDocUrl')}</label>
               <input
                 type="url"
                 value={data.idDocumentUrl}
-                onChange={(e) => onUpdateData({ idDocumentUrl: e.target.value })}
-                className={inputClass}
+                onChange={(e) => handleFieldChange('idDocumentUrl', e.target.value)}
+                onBlur={() => setTouched?.('idDocumentUrl')}
+                maxLength={512}
+                className={getInputClasses(Boolean(errors?.idDocumentUrl))}
                 placeholder={t('experience.idDocPlaceholder')}
               />
+              {errors?.idDocumentUrl && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{errors.idDocumentUrl}</span>
+                </p>
+              )}
             </div>
           </div>
         )}

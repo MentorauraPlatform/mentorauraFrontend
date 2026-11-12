@@ -24,6 +24,8 @@ import {
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import { applicationsApi, mentorshipsApi } from '@/lib/api/client';
+import { messagingApi } from '@/lib/api/messaging';
+import { toast } from 'sonner';
 import type { MentorshipApplication, Mentorship } from '@/lib/types';
 import {
   marketplaceService,
@@ -43,6 +45,50 @@ export default function PublicMentorProfilePage() {
 
   const [applications, setApplications] = useState<MentorshipApplication[]>([]);
   const [mentorships, setMentorships] = useState<Mentorship[]>([]);
+  const [messagingLoading, setMessagingLoading] = useState<boolean>(false);
+
+  const handleMessageMentor = async () => {
+    if (!mentor) return;
+
+    if (!user) {
+      toast.info('Please log in or sign up to message this mentor');
+      const currentPath =
+        typeof window !== 'undefined'
+          ? window.location.pathname
+          : `/mentors/${mentor.slug || mentor.id}`;
+      router.push(`/auth?mode=login&redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
+    if (user.id === mentor.userId) {
+      toast.info('This is your own mentor profile');
+      return;
+    }
+
+    setMessagingLoading(true);
+    try {
+      const res = await messagingApi.getOrCreateDirect(mentor.userId);
+      const conversationId = res.data?.id;
+
+      if (!conversationId) {
+        throw new Error('Could not open conversation');
+      }
+
+      const userRole = String(user.role ?? '').toLowerCase();
+      const targetPath =
+        user.isMentor || userRole === 'mentor'
+          ? `/mentor/dashboard/messages?conversationId=${conversationId}`
+          : `/mentee/dashboard/messages?conversationId=${conversationId}`;
+
+      router.push(targetPath);
+    } catch (err: unknown) {
+      console.error('Failed to start conversation with mentor:', err);
+      const e = err as { message?: string };
+      toast.error(e?.message || 'Failed to start conversation');
+    } finally {
+      setMessagingLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -299,6 +345,24 @@ export default function PublicMentorProfilePage() {
             </div>
 
             <div className="w-full md:w-auto flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+              {/* Message Mentor Button */}
+              {user?.id !== mentor.userId && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleMessageMentor}
+                  disabled={messagingLoading}
+                  className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 gap-2 shadow-xs transition-all"
+                >
+                  {messagingLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-orange-600" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4 text-orange-600" />
+                  )}
+                  <span>Message {mentor.fullName.split(' ')[0]}</span>
+                </Button>
+              )}
+
               {mentorPendingApp ? (
                 <Button
                   variant="outline"
@@ -591,6 +655,31 @@ export default function PublicMentorProfilePage() {
                     })()}
                   </Card>
                 ))
+              )}
+
+              {/* Direct Message Questions Card */}
+              {user?.id !== mentor.userId && (
+                <div className="p-5 bg-gradient-to-br from-orange-50/70 to-amber-50/50 border border-orange-200/80 rounded-2xl space-y-2.5 shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-orange-100 text-orange-700 rounded-lg">
+                      <MessageSquare className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800">
+                      Have questions before booking?
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Send a message to {mentor.fullName.split(' ')[0]} directly to discuss your background, mentorship expectations, or custom scheduling.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleMessageMentor}
+                    disabled={messagingLoading}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 underline inline-flex items-center gap-1 transition-colors"
+                  >
+                    {messagingLoading ? 'Opening chat...' : `Chat with ${mentor.fullName.split(' ')[0]} →`}
+                  </button>
+                </div>
               )}
             </div>
           </div>

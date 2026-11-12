@@ -10,7 +10,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import TimeSlotPicker from '@/components/scheduling/TimeSlotPicker';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import { PhoneCall } from 'lucide-react';
+import { PhoneCall, Video, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 function NewBookingContent() {
   const router = useRouter();
@@ -24,6 +24,36 @@ function NewBookingContent() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quota, setQuota] = useState<{
+    status: string;
+    isIntro: boolean;
+    totalSessionsAllowed: number;
+    sessionsBooked: number;
+    sessionsRemaining: number;
+    canBook: boolean;
+    planTitle: string;
+  } | null>(null);
+  const [loadingQuota, setLoadingQuota] = useState(false);
+
+  useEffect(() => {
+    if (!selectedMentorshipId) {
+      setQuota(null);
+      return;
+    }
+
+    void (async () => {
+      try {
+        setLoadingQuota(true);
+        const res = await schedulingApi.getBookingQuota(selectedMentorshipId);
+        const data = (res.data as any)?.data || res.data;
+        setQuota(data);
+      } catch (err) {
+        console.error('Failed to load quota:', err);
+      } finally {
+        setLoadingQuota(false);
+      }
+    })();
+  }, [selectedMentorshipId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -108,8 +138,8 @@ function NewBookingContent() {
           </div>
 
           {selectedMentorship && (
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-xs text-gray-600 flex-wrap">
                 <span className={`px-2.5 py-1 rounded-full border font-semibold ${
                   selectedMentorship.status === 'INTRO'
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
@@ -122,19 +152,65 @@ function NewBookingContent() {
                 </span>
               </div>
 
-              {selectedMentorship.status === 'INTRO' && (
-                <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-900 text-xs">
-                  <PhoneCall className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <div>
-                    <span className="font-bold">Complimentary Intro Call (Free): </span>
-                    This first session is included with your accepted application. Pick a slot that fits your schedule to meet your mentor.
+              {loadingQuota && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 text-xs text-slate-500">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                  <span>Checking plan session quota...</span>
+                </div>
+              )}
+
+              {quota && quota.isIntro && (
+                quota.canBook ? (
+                  <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-900 text-xs">
+                    <PhoneCall className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div>
+                      <span className="font-bold">Complimentary Intro Call (Free): </span>
+                      This 1 free introductory call is included with your accepted application. Pick a slot that fits your schedule to meet your mentor.
+                    </div>
                   </div>
+                ) : (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-amber-900 text-xs">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold">Intro Call Already Booked</p>
+                      <p>
+                        You have already booked your complimentary intro call for this mentorship. Once completed, activate your plan to book recurring mentorship sessions.
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {quota && !quota.isIntro && (
+                <div className={`p-4 rounded-xl border space-y-2 ${
+                  quota.canBook
+                    ? 'bg-orange-50/40 border-orange-200/80'
+                    : 'bg-rose-50 border-rose-200'
+                }`}>
+                  <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <Video className="w-4 h-4 text-orange-600 shrink-0" />
+                      <span>Plan Allowance: {quota.totalSessionsAllowed} {quota.totalSessionsAllowed === 1 ? 'session' : 'sessions'} / month</span>
+                    </span>
+                    <span className={`font-extrabold px-2.5 py-0.5 rounded-full text-xs ${
+                      quota.sessionsRemaining > 0
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-rose-100 text-rose-800 border border-rose-200'
+                    }`}>
+                      {quota.sessionsRemaining} of {quota.totalSessionsAllowed} sessions remaining
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    {quota.canBook
+                      ? `The number of sessions you can book is determined by your ${quota.planTitle} plan. You have booked ${quota.sessionsBooked} session(s) this month.`
+                      : `You have reached the maximum number of sessions allowed (${quota.totalSessionsAllowed}/${quota.totalSessionsAllowed}) for your ${quota.planTitle} plan this month.`}
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {selectedMentorship && selectedMentorshipId && (
+          {selectedMentorship && selectedMentorshipId && (quota ? quota.canBook : true) && (
             <TimeSlotPicker mentorId={selectedMentorship.mentor?.id || ''} selectedSlotUtc={selectedSlot?.slotUtc ?? null} onSelectSlot={setSelectedSlot} />
           )}
 
@@ -151,7 +227,7 @@ function NewBookingContent() {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!selectedMentorshipId || !selectedSlot || submitting}
+              disabled={!selectedMentorshipId || !selectedSlot || submitting || (quota ? !quota.canBook : false)}
               className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 disabled:opacity-50 whitespace-nowrap inline-flex items-center shrink-0"
             >
               <span>{submitting ? t('booking') : t('confirmBooking')}</span>

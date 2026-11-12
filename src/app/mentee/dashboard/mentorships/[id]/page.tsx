@@ -182,10 +182,14 @@ export default function MentorshipDetailPage({
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
                 {t('planDetailsHeading')}
               </h3>
-              <p className="mt-1 text-gray-900">{mentorship.plan?.title || '—'}</p>
-              <p className="text-sm text-gray-600">
-                {mentorship.plan?.priceAmount} {mentorship.plan?.currency}
-              </p>
+              <p className="mt-1 font-bold text-gray-900">{mentorship.plan?.title || '—'}</p>
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
+                <span>{mentorship.plan?.priceAmount} {mentorship.plan?.currency}</span>
+                <span>•</span>
+                <span className="font-semibold text-orange-600">
+                  {mentorship.plan?.sessionsPerMonth ?? 1} {mentorship.plan?.sessionsPerMonth === 1 ? 'session' : 'sessions'} included / month
+                </span>
+              </div>
             </div>
 
             {mentorship.startedAt && (
