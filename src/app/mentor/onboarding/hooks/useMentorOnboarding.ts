@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { mentorApi, apiClient } from '@/lib/api/client';
@@ -67,6 +67,15 @@ export const LEVEL_COLORS: Record<SkillLevel, string> = {
   ADVANCED: 'bg-purple-100 text-purple-800 border-purple-200',
   EXPERT: 'bg-amber-100 text-amber-800 border-amber-200',
 };
+
+function isValidUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
 export function useMentorOnboarding() {
   const router = useRouter();
@@ -156,33 +165,168 @@ export function useMentorOnboarding() {
     }
   }, [profileLoaded, user, profile, router]);
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const markFieldTouched = (field: string) => {
+    setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+  };
+
+  const touchStep = (step: number) => {
+    if (step === 2) {
+      setTouched((prev) => ({
+        ...prev,
+        fullName: true,
+        title: true,
+        headline: true,
+        company: true,
+        linkedinUrl: true,
+        githubUrl: true,
+        bio: true,
+      }));
+    } else if (step === 4) {
+      setTouched((prev) => ({
+        ...prev,
+        experience: true,
+        yearsOfExperience: true,
+        cvUrl: true,
+        idDocumentUrl: true,
+      }));
+    }
+  };
+
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
   };
 
+  const allErrors = useMemo(() => {
+    const errs: Record<string, string> = {};
+
+    // Step 2
+    if (!data.fullName.trim()) {
+      errs.fullName = t('errors.nameRequired');
+    } else if (data.fullName.trim().length > 100) {
+      errs.fullName = t('errors.fullNameTooLong');
+    }
+
+    if (!data.title.trim()) {
+      errs.title = t('errors.titleRequired');
+    } else if (data.title.trim().length > 300) {
+      errs.title = t('errors.titleTooLong');
+    }
+
+    if (data.headline && data.headline.trim().length > 255) {
+      errs.headline = t('errors.headlineTooLong');
+    }
+
+    if (data.company && data.company.trim().length > 100) {
+      errs.company = t('errors.companyTooLong');
+    }
+
+    if (data.bio && data.bio.length > 5000) {
+      errs.bio = t('errors.bioTooLong');
+    }
+
+    if (data.linkedinUrl && data.linkedinUrl.trim()) {
+      const trimmed = data.linkedinUrl.trim();
+      if (trimmed.length > 512 || !isValidUrl(trimmed)) {
+        errs.linkedinUrl = t('errors.invalidUrl');
+      }
+    }
+
+    if (data.githubUrl && data.githubUrl.trim()) {
+      const trimmed = data.githubUrl.trim();
+      if (trimmed.length > 512 || !isValidUrl(trimmed)) {
+        errs.githubUrl = t('errors.invalidUrl');
+      }
+    }
+
+    // Step 4
+    if (!data.experience.trim()) {
+      errs.experience = t('errors.experienceRequired');
+    } else if (data.experience.length > 5000) {
+      errs.experience = t('errors.experienceTooLong');
+    }
+
+    if (data.yearsOfExperience && data.yearsOfExperience.trim() !== '') {
+      const years = Number(data.yearsOfExperience);
+      if (isNaN(years) || !Number.isInteger(years) || years < 0 || years > 60) {
+        errs.yearsOfExperience = t('errors.invalidYearsOfExperience');
+      }
+    }
+
+    if (data.cvUrl && data.cvUrl.trim()) {
+      const trimmed = data.cvUrl.trim();
+      if (trimmed.length > 512 || !isValidUrl(trimmed)) {
+        errs.cvUrl = t('errors.invalidUrl');
+      }
+    }
+
+    if (data.idDocumentUrl && data.idDocumentUrl.trim()) {
+      const trimmed = data.idDocumentUrl.trim();
+      if (trimmed.length > 512 || !isValidUrl(trimmed)) {
+        errs.idDocumentUrl = t('errors.invalidUrl');
+      }
+    }
+
+    return errs;
+  }, [data, t]);
+
+  const visibleErrors = useMemo(() => {
+    const visible: Record<string, string> = {};
+    for (const [key, errorMsg] of Object.entries(allErrors)) {
+      const val = (data as unknown as Record<string, unknown>)[key];
+      const hasValue = typeof val === 'string' ? val.length > 0 : val != null;
+      const isTouched = Boolean(touched[key]);
+
+      if (key === 'fullName' || key === 'title' || key === 'experience') {
+        if (isTouched) {
+          visible[key] = errorMsg;
+        }
+      } else {
+        if (hasValue || isTouched) {
+          visible[key] = errorMsg;
+        }
+      }
+    }
+    return visible;
+  }, [allErrors, data, touched]);
+
   const validateStep = (step: number): { valid: boolean; message?: string } => {
     switch (step) {
-      case 2:
-        if (!data.fullName.trim() || !data.title.trim()) {
-          return { valid: false, message: t('errors.nameAndTitleRequired') };
+      case 2: {
+        const step2Keys = ['fullName', 'title', 'headline', 'company', 'bio', 'linkedinUrl', 'githubUrl'];
+        const firstErrorKey = step2Keys.find((k) => allErrors[k]);
+        if (firstErrorKey) {
+          return { valid: false, message: allErrors[firstErrorKey] };
         }
         return { valid: true };
+      }
       case 3:
         if (data.skills.length === 0) {
           return { valid: false, message: t('errors.skillRequired') };
         }
         return { valid: true };
-      case 4:
-        if (!data.experience.trim()) {
-          return { valid: false, message: t('errors.experienceRequired') };
+      case 4: {
+        const step4Keys = ['experience', 'yearsOfExperience', 'cvUrl', 'idDocumentUrl'];
+        const firstErrorKey = step4Keys.find((k) => allErrors[k]);
+        if (firstErrorKey) {
+          return { valid: false, message: allErrors[firstErrorKey] };
         }
         return { valid: true };
+      }
+      case 5: {
+        if (!data.availability || !Array.isArray(data.availability.slots)) {
+          return { valid: false, message: t('errors.failedToUpdateAvailability') };
+        }
+        return { valid: true };
+      }
       default:
         return { valid: true };
     }
   };
 
   const nextStep = async () => {
+    touchStep(currentStep);
     const result = validateStep(currentStep);
     if (!result.valid) {
       setError(result.message ?? null);
@@ -193,27 +337,20 @@ export function useMentorOnboarding() {
     if (currentStep === 2) {
       try {
         setLoading(true);
+        const payload = {
+          fullName: data.fullName.trim(),
+          title: data.title.trim(),
+          headline: data.headline.trim() || undefined,
+          company: data.company.trim() || undefined,
+          bio: data.bio.trim() || undefined,
+          linkedinUrl: data.linkedinUrl.trim() || undefined,
+          githubUrl: data.githubUrl.trim() || undefined,
+        };
         if (!profile) {
-          const res = await mentorApi.createProfile({
-            fullName: data.fullName,
-            title: data.title,
-            headline: data.headline || undefined,
-            company: data.company || undefined,
-            bio: data.bio || undefined,
-            linkedinUrl: data.linkedinUrl || undefined,
-            githubUrl: data.githubUrl || undefined,
-          });
+          const res = await mentorApi.createProfile(payload);
           setProfile(res.data);
         } else {
-          const res = await mentorApi.updateProfile({
-            fullName: data.fullName,
-            title: data.title,
-            headline: data.headline || undefined,
-            company: data.company || undefined,
-            bio: data.bio || undefined,
-            linkedinUrl: data.linkedinUrl || undefined,
-            githubUrl: data.githubUrl || undefined,
-          });
+          const res = await mentorApi.updateProfile(payload);
           setProfile(res.data);
         }
       } catch (err: unknown) {
@@ -236,41 +373,47 @@ export function useMentorOnboarding() {
   };
 
   const handleSubmit = async () => {
+    // Touch all steps and validate before sending any requests
+    touchStep(2);
+    touchStep(4);
+    for (const step of [2, 3, 4, 5]) {
+      const result = validateStep(step);
+      if (!result.valid) {
+        setError(result.message ?? null);
+        setCurrentStep(step as Step);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
       setSubmitFailed(false);
-      const parsedYears = data.yearsOfExperience ? Number(data.yearsOfExperience) : undefined;
+      const parsedYears =
+        data.yearsOfExperience && data.yearsOfExperience.trim() !== ''
+          ? Number(data.yearsOfExperience)
+          : undefined;
+
+      const payload = {
+        fullName: data.fullName.trim(),
+        title: data.title.trim(),
+        headline: data.headline.trim() || undefined,
+        company: data.company.trim() || undefined,
+        bio: data.bio.trim() || undefined,
+        experience: data.experience.trim() || undefined,
+        yearsOfExperience: parsedYears,
+        linkedinUrl: data.linkedinUrl.trim() || undefined,
+        githubUrl: data.githubUrl.trim() || undefined,
+        cvUrl: data.cvUrl.trim() || undefined,
+        idDocumentUrl: data.idDocumentUrl.trim() || undefined,
+        areasOfExpertise: data.areasOfExpertise,
+      };
+
       if (!profile) {
-        await mentorApi.createProfile({
-          fullName: data.fullName,
-          title: data.title,
-          headline: data.headline || undefined,
-          company: data.company || undefined,
-          bio: data.bio || undefined,
-          experience: data.experience || undefined,
-          yearsOfExperience: parsedYears,
-          linkedinUrl: data.linkedinUrl || undefined,
-          githubUrl: data.githubUrl || undefined,
-          cvUrl: data.cvUrl || undefined,
-          idDocumentUrl: data.idDocumentUrl || undefined,
-          areasOfExpertise: data.areasOfExpertise,
-        });
+        await mentorApi.createProfile(payload);
       } else {
-        await mentorApi.updateProfile({
-          fullName: data.fullName,
-          title: data.title,
-          headline: data.headline || undefined,
-          company: data.company || undefined,
-          bio: data.bio || undefined,
-          experience: data.experience || undefined,
-          yearsOfExperience: parsedYears,
-          linkedinUrl: data.linkedinUrl || undefined,
-          githubUrl: data.githubUrl || undefined,
-          cvUrl: data.cvUrl || undefined,
-          idDocumentUrl: data.idDocumentUrl || undefined,
-          areasOfExpertise: data.areasOfExpertise,
-        });
+        await mentorApi.updateProfile(payload);
       }
       await mentorApi.updateAvailability({ availability: data.availability });
       await mentorApi.submitOnboarding({ confirmed: true });
@@ -306,6 +449,11 @@ export function useMentorOnboarding() {
     skills,
     updateData,
     validateStep,
+    allErrors,
+    visibleErrors,
+    touched,
+    markFieldTouched,
+    touchStep,
     nextStep,
     prevStep,
     handleSubmit,

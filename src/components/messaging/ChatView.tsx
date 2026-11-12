@@ -90,6 +90,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
       if (newMsg.conversationId === activeConversationId) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === newMsg.id)) return prev;
+          const tempMatch = prev.find(
+            (m) =>
+              m.id.startsWith('optimistic-') &&
+              m.content === newMsg.content &&
+              m.senderId === newMsg.senderId
+          );
+          if (tempMatch) {
+            return prev.map((m) => (m.id === tempMatch.id ? newMsg : m));
+          }
           return [...prev, newMsg];
         });
 
@@ -169,6 +178,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   }, [activeConversationId]);
 
   useEffect(() => {
+    if (initialConversationId) {
+      setActiveConversationId(initialConversationId);
+      setMobileShowChat(true);
+    }
+  }, [initialConversationId]);
+
+  useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
@@ -242,54 +258,79 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  // Handle Send Message
+  // Handle Send Message with Instant Optimistic UI
   const handleSend = async () => {
     const trimmed = inputText.trim();
     if (!trimmed || !activeConversationId || isSending) return;
 
+    const convId = activeConversationId;
+    const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const nowIso = new Date().toISOString();
+
+    const optimisticMessage: ChatMessage = {
+      id: tempId,
+      conversationId: convId,
+      senderId: currentUserId,
+      content: trimmed,
+      isRead: false,
+      createdAt: nowIso,
+      sender: {
+        id: currentUserId,
+        email: '',
+        name: 'You',
+        avatarUrl: null,
+      },
+    };
+
+    // 1. Instant UI update (0ms latency feedback)
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setInputText('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    // Update conversations list preview immediately
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convId
+          ? {
+              ...c,
+              lastMessageAt: nowIso,
+              lastMessage: optimisticMessage,
+            }
+          : c
+      )
+    );
+
+    scrollToBottom(true);
+    sendTypingStop(convId);
     setIsSending(true);
-    sendTypingStop(activeConversationId);
 
     try {
-      // Optimistically create UI message or send via socket / REST fallback
       let sentMessage: ChatMessage;
 
       if (isConnected) {
         try {
-          sentMessage = await socketSendMessage(
-            activeConversationId,
-            trimmed
-          );
+          sentMessage = await socketSendMessage(convId, trimmed);
         } catch {
           // Fallback to REST if socket fails
-          const res = await messagingApi.sendMessage(
-            activeConversationId,
-            trimmed
-          );
+          const res = await messagingApi.sendMessage(convId, trimmed);
           sentMessage = res.data;
         }
       } else {
-        const res = await messagingApi.sendMessage(
-          activeConversationId,
-          trimmed
-        );
+        const res = await messagingApi.sendMessage(convId, trimmed);
         sentMessage = res.data;
       }
 
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === sentMessage.id)) return prev;
-        return [...prev, sentMessage];
-      });
+      // Replace optimistic placeholder with real confirmed message from server
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? sentMessage : m))
+      );
 
-      setInputText('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-
-      // Update conversations list preview
+      // Re-sync conversation preview with server timestamps
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === activeConversationId
+          c.id === convId
             ? {
                 ...c,
                 lastMessageAt: sentMessage.createdAt,
@@ -298,10 +339,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
             : c
         )
       );
-
-      scrollToBottom(true);
     } catch (err) {
       console.error('Failed to send message:', err);
+      toast.error('Failed to send message. Please retry.');
+      // Remove failed optimistic message
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setInputText(trimmed); // Restore message text so user doesn't lose it
     } finally {
       setIsSending(false);
     }

@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { MentorCard } from '@/components/mentor/MentorCard';
-import { Search, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Sparkles, AlertCircle, Filter, ChevronDown, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   marketplaceService,
@@ -103,26 +103,44 @@ function MentorsDirectoryContent() {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-            <Badge
-              variant={selectedCategory === '' ? 'orange' : 'slate'}
-              size="md"
-              className="cursor-pointer shrink-0 transition-all hover:scale-105"
-              onClick={() => handleCategorySelect('')}
-            >
-              {t('allCategories')}
-            </Badge>
-            {categories.map((cat) => (
-              <Badge
-                key={cat.id}
-                variant={selectedCategory === cat.slug ? 'orange' : 'slate'}
-                size="md"
-                className="cursor-pointer shrink-0 transition-all hover:scale-105"
-                onClick={() => handleCategorySelect(cat.slug)}
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative w-full sm:w-72">
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all">
+                <Filter className="w-4 h-4 text-orange-500 shrink-0" />
+                <select
+                  id="browse-mentors-category-dropdown"
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full text-xs font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer appearance-none pr-6 py-0.5"
+                >
+                  <option value="">{t('allCategories')}</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.slug} className="text-slate-900 py-1 font-medium">
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
+              </div>
+            </div>
+
+            {selectedCategory && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('');
+                  setPage(1);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
+                title="Clear category filter"
               >
-                {cat.name}
-              </Badge>
-            ))}
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

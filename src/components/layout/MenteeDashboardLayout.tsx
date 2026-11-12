@@ -17,6 +17,10 @@ export interface MenteeDashboardLayoutProps {
   hidePadding?: boolean;
 }
 
+let globalMenteeUnreadCount: number = 0;
+let lastMenteeUnreadFetch = 0;
+const UNREAD_CACHE_TTL = 30 * 1000; // 30s TTL
+
 export function MenteeDashboardLayout({
   children,
   activeTab = 'overview',
@@ -29,7 +33,7 @@ export function MenteeDashboardLayout({
   const tCommon = useTranslations('common');
   const { user, isLoading: authLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(globalMenteeUnreadCount);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -55,14 +59,22 @@ export function MenteeDashboardLayout({
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
-      messagingApi
-        .getUnreadCount()
-        .then((res) => {
-          setUnreadMessagesCount(res.data?.unreadCount ?? 0);
-        })
-        .catch(() => {});
+    if (!user) return;
+    const now = Date.now();
+    if (now - lastMenteeUnreadFetch < UNREAD_CACHE_TTL) {
+      setUnreadMessagesCount(globalMenteeUnreadCount);
+      return;
     }
+
+    messagingApi
+      .getUnreadCount()
+      .then((res) => {
+        const count = res.data?.unreadCount ?? 0;
+        globalMenteeUnreadCount = count;
+        lastMenteeUnreadFetch = Date.now();
+        setUnreadMessagesCount(count);
+      })
+      .catch(() => {});
   }, [user]);
 
   const handleTabChange = (tab: MenteeTab) => {

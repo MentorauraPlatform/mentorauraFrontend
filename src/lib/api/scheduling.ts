@@ -24,6 +24,17 @@ export const schedulingApi = {
   getMyBookings: () =>
     apiClient.get<unknown[]>('/bookings/mine'),
 
+  getBookingQuota: (mentorshipId: string) =>
+    apiClient.get<{
+      status: string;
+      isIntro: boolean;
+      totalSessionsAllowed: number;
+      sessionsBooked: number;
+      sessionsRemaining: number;
+      canBook: boolean;
+      planTitle: string;
+    }>(`/bookings/quota/${mentorshipId}`),
+
   getMentorBookings: () =>
     apiClient.get<unknown[]>('/bookings/mine'),
 

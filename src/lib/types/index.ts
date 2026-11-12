@@ -56,6 +56,7 @@ export interface MenteeProfile {
   avatarUrl: string | null;
   headline: string | null;
   goals: string[];
+  completedGoals?: string[];
   interests: string[];
   currentRole?: string | null;
   educationBackground?: string | null;
@@ -209,6 +210,14 @@ export interface Mentorship {
   mentee?: {
     id: string;
     email: string;
+    menteeProfile?: {
+      id?: string;
+      fullName?: string;
+      avatarUrl?: string | null;
+      headline?: string | null;
+      goals?: string[];
+      completedGoals?: string[];
+    };
   };
   mentor?: {
     id: string;
@@ -220,6 +229,7 @@ export interface Mentorship {
     title: string;
     priceAmount: number;
     currency: string;
+    sessionsPerMonth?: number;
   };
   bookings?: Array<{
     id: string;
@@ -325,6 +335,14 @@ export interface MentorshipApplication {
   mentee?: {
     id: string;
     email: string;
+    menteeProfile?: {
+      id?: string;
+      fullName?: string;
+      avatarUrl?: string | null;
+      headline?: string | null;
+      goals?: string[];
+      completedGoals?: string[];
+    };
   };
   mentor?: {
     id: string;
@@ -337,6 +355,7 @@ export interface MentorshipApplication {
     title: string;
     priceAmount: number;
     currency: string;
+    sessionsPerMonth?: number;
   };
   bookings?: Array<{
     id: string;

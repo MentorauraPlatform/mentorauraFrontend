@@ -177,7 +177,12 @@ export default function MentorOnboardingPage() {
               <Step1Intro visibleSteps={visibleSteps} />
             )}
             {onboarding.currentStep === 2 && (
-              <Step2Professional data={onboarding.data} updateData={onboarding.updateData} />
+              <Step2Professional
+                data={onboarding.data}
+                updateData={onboarding.updateData}
+                errors={onboarding.visibleErrors}
+                setTouched={onboarding.markFieldTouched}
+              />
             )}
             {onboarding.currentStep === 3 && (
               <Step3Skills
@@ -202,6 +207,8 @@ export default function MentorOnboardingPage() {
                 onUpdateData={onboarding.updateData}
                 onBlur={syncAreasFromRaw}
                 onKeyDown={handleKeyDown}
+                errors={onboarding.visibleErrors}
+                setTouched={onboarding.markFieldTouched}
               />
             )}
             {onboarding.currentStep === 5 && (
@@ -242,6 +249,7 @@ export default function MentorOnboardingPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
                   {onboarding.t('buttons.previous')}
                 </button>
+                {/* <p>{onboarding.validateStep(onboarding.currentStep).message|| ''}</p> */}
                 {onboarding.currentStep === 6 ? (
                   <button
                     onClick={onboarding.handleSubmit}
@@ -254,12 +262,8 @@ export default function MentorOnboardingPage() {
                 ) : (
                   <button
                     onClick={onboarding.nextStep}
-                    disabled={!onboarding.validateStep(onboarding.currentStep).valid}
-                    className={`w-full sm:w-auto px-10 py-4 rounded-xl font-bold text-base transition-colors flex items-center justify-center gap-3 ${
-                      !onboarding.validateStep(onboarding.currentStep).valid
-                        ? 'bg-[#E5E7EB] text-[#64748B] cursor-not-allowed'
-                        : 'bg-[#F97316] text-white hover:bg-[#ea580c]'
-                    }`}
+                    disabled={onboarding.loading}
+                    className="w-full sm:w-auto px-10 py-4 bg-[#F97316] text-white rounded-xl hover:bg-[#ea580c] disabled:opacity-50 font-bold text-base transition-colors flex items-center justify-center gap-3"
                   >
                     {onboarding.t('buttons.next')}
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>

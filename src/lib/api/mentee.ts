@@ -38,6 +38,12 @@ export const menteeApi = {
   updateGoals: (data: { goals: string[] }) =>
     apiClient.patch<MenteeProfile>('/mentee/onboarding/me/goals', data),
 
+  toggleGoal: (data: { goal: string }) =>
+    apiClient.patch<{ data: MenteeProfile; message: string }>('/mentee/onboarding/me/goals/toggle', data),
+
+  updateCompletedGoals: (data: { completedGoals: string[] }) =>
+    apiClient.patch<{ data: MenteeProfile; message: string }>('/mentee/onboarding/me/goals/completed', data),
+
   updateExperience: (data: UpdateMenteeExperiencePayload) =>
     apiClient.patch<MenteeProfile>('/mentee/onboarding/me/experience', data),
 
