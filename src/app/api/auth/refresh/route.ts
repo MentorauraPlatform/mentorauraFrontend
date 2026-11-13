@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api';
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const backendApiUrl = getApiBaseUrl();
     let refreshToken =
       request.cookies.get('refreshToken')?.value ||
       request.cookies.get('refresh_token')?.value;
@@ -20,10 +22,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const backendRes = await fetch(`${BACKEND_API_URL}/auth/refresh`, {
+    const backendRes = await fetch(`${backendApiUrl}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
     });
 
     const data = await backendRes.json();
