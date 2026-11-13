@@ -15,11 +15,47 @@ env:
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
-  # 1. Build & Push Docker Image to GHCR
+  # 1. CI Automated Tests & Verification
+  # ────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Frontend CI Tests & Checks
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://api.mentoraura.com/api/v1' }}
+      NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://mentoraura.com' }}
+      NEXT_PUBLIC_APP_NAME: ${{ vars.NEXT_PUBLIC_APP_NAME || 'Mentoraura' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check TypeScript Types
+        run: npx tsc --noEmit
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Vitest Unit & Component Tests
+        run: npm test
+
+      - name: Build Next.js Application
+        run: npm run build
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. Build & Push Docker Image to GHCR (Only if tests pass)
   # ────────────────────────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    needs: test
     permissions:
       contents: read
       packages: write
@@ -68,7 +104,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ────────────────────────────────────────────────────────────────────────────
-  # 2. Deploy to Production VPS via SSH
+  # 3. Deploy to Production VPS via SSH
   # ────────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Production VPS
