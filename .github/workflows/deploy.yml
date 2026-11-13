@@ -99,7 +99,4 @@ jobs:
             echo "🚀 Updating frontend service with zero downtime..."
             docker compose up -d --no-deps frontend
 
-            echo "🧹 Pruning old dangling images..."
-            docker image prune -f
-
             echo "✅ Frontend successfully  deployed to production!"
