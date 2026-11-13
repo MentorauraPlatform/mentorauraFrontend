@@ -3,6 +3,7 @@
  */
 
 export * from './http';
+export * from './base-url';
 export * from './auth';
 export * from './mentor';
 export * from './mentee';

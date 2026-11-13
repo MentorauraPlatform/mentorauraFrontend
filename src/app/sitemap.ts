@@ -1,9 +1,7 @@
 import { MetadataRoute } from 'next';
+import { getApiBaseUrl } from '@/lib/api';
 
-const API_BASE =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:3001/api/v1';
+const API_BASE = getApiBaseUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://mentoraura.com';

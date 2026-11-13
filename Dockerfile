@@ -18,17 +18,19 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js build-time public environment variables
+# Next.js build-time public and internal environment variables
 ARG NEXT_PUBLIC_API_URL=https://api.mentoraura.com/api/v1
 ARG NEXT_PUBLIC_APP_URL=https://mentoraura.com
 ARG NEXT_PUBLIC_APP_NAME=Mentoraura
+ARG INTERNAL_API_URL=http://backend:4000/api/v1
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
+ENV INTERNAL_API_URL=$INTERNAL_API_URL
+ENV BACKEND_API_URL=http://backend:4000/api/v1
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV BACKEND_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
@@ -40,6 +42,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV INTERNAL_API_URL=http://backend:4000/api/v1
+ENV BACKEND_API_URL=http://backend:4000/api/v1
 
 RUN apk add --no-cache dumb-init curl
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api';
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const backendApiUrl = getApiBaseUrl();
     const accessToken =
       request.cookies.get('accessToken')?.value ||
       request.cookies.get('access_token')?.value;
@@ -15,10 +17,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const backendRes = await fetch(`${BACKEND_API_URL}/auth/me`, {
+    const backendRes = await fetch(`${backendApiUrl}/auth/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
+      cache: 'no-store',
     });
 
     const data = await backendRes.json();

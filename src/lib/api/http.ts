@@ -2,6 +2,8 @@
  * Core HTTP Client and base request handlers for Mentoraura frontend.
  */
 
+import { getApiBaseUrl } from './base-url';
+
 export type ApiResponse<T> = {
   data: T;
   message?: string;
@@ -39,7 +41,7 @@ export function getEndpointUrl(path: string): string {
     }
     return `/api/proxy${path}`;
   }
-  const baseUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  const baseUrl = getApiBaseUrl();
   return `${baseUrl}${path}`;
 }
 

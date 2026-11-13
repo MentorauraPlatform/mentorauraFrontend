@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api';
 
-// const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const BACKEND_API_URL = 'https://api.mentoraura.com/api/v1'
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const backendApiUrl = getApiBaseUrl();
     const body = await request.json();
 
-    const backendRes = await fetch(`${BACKEND_API_URL}/auth/admin/accept-invite`, {
+    const backendRes = await fetch(`${backendApiUrl}/auth/admin/accept-invite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      cache: 'no-store',
     });
 
     const data = await backendRes.json();

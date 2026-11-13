@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api';
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+export const dynamic = 'force-dynamic';
 
 async function handleProxy(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
+    const backendApiUrl = getApiBaseUrl();
     const resolvedParams = await params;
     const pathStr = resolvedParams.path.join('/');
     const url = new URL(request.url);
     const queryString = url.search;
 
-    const targetUrl = `${BACKEND_API_URL}/${pathStr}${queryString}`;
+    const targetUrl = `${backendApiUrl}/${pathStr}${queryString}`;
 
     const accessToken =
       request.cookies.get('accessToken')?.value ||
@@ -35,7 +37,10 @@ async function handleProxy(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    const backendRes = await fetch(targetUrl, init);
+    const backendRes = await fetch(targetUrl, {
+      ...init,
+      cache: 'no-store',
+    });
 
     const data = await backendRes.json().catch(() => ({}));
 
