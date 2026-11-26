@@ -15,3 +15,4 @@ export * from './scheduling';
 export * from './payments';
 export * from './messaging';
 export * from './notifications';
+export * from './reviews';

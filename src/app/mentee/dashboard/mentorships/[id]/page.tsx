@@ -3,7 +3,9 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { mentorshipsApi, sessionsApi } from '@/lib/api/client';
+import { mentorshipsApi, sessionsApi, reviewsApi } from '@/lib/api/client';
+import type { Review } from '@/lib/api/reviews';
+import { ReviewModal } from '@/components/reviews/ReviewModal';
 import type { Mentorship, MentorshipSession } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { MenteeDashboardLayout } from '@/components/layout/MenteeDashboardLayout';
@@ -25,6 +27,8 @@ export default function MentorshipDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [review, setReview] = useState<Review | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -40,7 +44,10 @@ export default function MentorshipDetailPage({
           mentorshipsApi.getMentorship(id),
           sessionsApi.list(id),
         ]);
-        setMentorship(mentorshipRes.data);
+        // Some backend routes return the mentorship directly instead of wrapped in { data }
+        setMentorship(
+          ((mentorshipRes as { data?: Mentorship }).data ?? mentorshipRes) as Mentorship,
+        );
         const sessionsList: MentorshipSession[] = Array.isArray(sessionsRes.data)
           ? sessionsRes.data
           : Array.isArray((sessionsRes.data as any)?.data)
@@ -55,6 +62,32 @@ export default function MentorshipDetailPage({
       }
     })();
   }, [user, authLoading, router, id, t]);
+
+  // Load this mentee's existing review (if any) once the mentorship is loaded
+  useEffect(() => {
+    if (authLoading || !user || !mentorship) return;
+    let cancelled = false;
+    reviewsApi
+      .getMentorshipReview(id)
+      .then((res) => {
+        if (!cancelled) setReview(res.data ?? null);
+      })
+      .catch(() => {
+        // Reviews are optional on this page, so ignore load errors
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading, mentorship, id]);
+
+  const hasCompletedSession = sessions.some(
+    (session) => String(session.status).toUpperCase() === 'COMPLETED',
+  );
+  const canReview =
+    mentorship &&
+    (String(mentorship.status) === 'COMPLETED' ||
+      (String(mentorship.status) === 'ACTIVE' && hasCompletedSession));
+  const mentorName = mentorship?.mentor?.fullName || 'your mentor';
 
   return (
     <MenteeDashboardLayout
@@ -170,6 +203,43 @@ export default function MentorshipDetailPage({
             </div>
           )}
 
+          {canReview && !review && (
+            <div className="mb-8 p-5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-bold text-gray-900">
+                  How was your experience with {mentorName}?
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Leave a review to help other mentees.
+                </p>
+              </div>
+              <button
+                onClick={() => setReviewModalOpen(true)}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap"
+              >
+                Leave Review
+              </button>
+            </div>
+          )}
+
+          {review && (
+            <div className="mb-8 p-5 bg-white rounded-2xl border border-gray-200">
+              <h4 className="text-sm font-bold text-gray-900">Your Review</h4>
+              <p className="mt-1 text-lg tracking-wider text-amber-500" aria-label={`${review.rating} out of 5 stars`}>
+                {'★'.repeat(review.rating)}
+                <span className="text-gray-300">{'★'.repeat(5 - review.rating)}</span>
+              </p>
+              {review.comment && (
+                <p className="mt-1 whitespace-pre-line text-sm italic text-gray-700">
+                  &ldquo;{review.comment}&rdquo;
+                </p>
+              )}
+              <p className="mt-2 text-xs text-gray-500">
+                Submitted {new Date(review.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-6">
             <div>
               <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -276,6 +346,16 @@ export default function MentorshipDetailPage({
           onClose={() => setDisputeModalOpen(false)}
           mentorshipId={mentorship.id}
           contextLabel={`${t('planFallback')}: ${mentorship.plan?.title || t('planFallback')}`}
+        />
+      )}
+
+      {mentorship && (
+        <ReviewModal
+          mentorshipId={mentorship.id}
+          mentorName={mentorName}
+          open={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          onSubmitted={(created) => setReview(created)}
         />
       )}
     </MenteeDashboardLayout>
